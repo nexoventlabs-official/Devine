@@ -1831,19 +1831,60 @@ body {
   box-shadow: 0 4px 12px rgba(5, 54, 22, 0.15);
 }
 
+.product-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon-symbol {
+  position: absolute;
+  left: 16px;
+  font-size: 0.95rem;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
 .product-search-input {
-  padding: 0.7rem 1.4rem;
+  padding: 0.75rem 1.4rem 0.75rem 2.7rem;
   border-radius: 50px;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid #cbd5e1;
   font-size: 0.95rem;
   width: 280px;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .product-search-input:focus {
-  border-color: var(--brand-green);
+  border-color: var(--brand-green-dark);
+  box-shadow: 0 0 0 3px rgba(5, 54, 22, 0.1);
+}
+
+.mobile-category-select-wrap {
+  display: none;
+}
+
+.mobile-category-select {
+  width: 100%;
+  padding: 0.85rem 1.4rem;
+  border-radius: 50px;
+  border: 2px solid var(--brand-green-dark);
+  background: #ffffff;
+  color: var(--brand-green-dark);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(5, 54, 22, 0.1);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23053616' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.2rem center;
+  background-size: 1.1rem;
 }
 
 .no-products-found {
@@ -2994,19 +3035,31 @@ html, body {
     text-align: center !important;
   }
 
-  /* Products Filter Toolbar */
+  /* Products Filter Toolbar Mobile Layout */
   .products-filter-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.2rem;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+    margin-bottom: 2.2rem !important;
+    padding: 0 1rem !important;
+  }
+
+  .desktop-category-pills {
+    display: none !important;
+  }
+
+  .mobile-category-select-wrap {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .product-search-wrap {
+    width: 100% !important;
   }
 
   .product-search-input {
-    width: 100%;
-  }
-
-  .category-pills {
-    justify-content: center;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* About Page */

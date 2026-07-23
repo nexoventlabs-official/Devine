@@ -112,7 +112,8 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
 
       {/* Filter and Search Toolbar */}
       <div className="products-filter-toolbar">
-        <div className="category-pills">
+        {/* Desktop Category Pills */}
+        <div className="category-pills desktop-category-pills">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -124,10 +125,27 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
           ))}
         </div>
 
+        {/* Mobile Category Dropdown Select */}
+        <div className="mobile-category-select-wrap">
+          <select 
+            className="mobile-category-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat === 'All' ? '🏷️ All Categories (9 Products)' : `🏷️ Category: ${cat}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Search Input Box */}
         <div className="product-search-wrap">
+          <span className="search-icon-symbol">🔍</span>
           <input
             type="text"
-            placeholder="Search 9 products..."
+            placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="product-search-input"
