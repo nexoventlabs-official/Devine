@@ -2776,6 +2776,12 @@ html, body {
 
 /* Tablet & Smaller Screens (< 1024px) */
 @media (max-width: 1024px) {
+  /* Wave SVG background active by default without hover on tablet & mobile */
+  .card-wave-bg {
+    transform: translateY(0%) !important;
+    opacity: 1 !important;
+  }
+
   .footer-container {
     grid-template-columns: 1fr 1fr;
     gap: 2.5rem;
@@ -2863,15 +2869,40 @@ html, body {
     font-size: 1rem;
   }
 
-  /* Featured Showcase & Products Grid */
+  /* Featured Showcase Mobile Optimization (Zero Overlap & Equal Card Sizes) */
+  .featured-showcase-section {
+    padding-top: 5rem;
+  }
+
   .featured-grid-container {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 6rem;
+    margin-top: 4.5rem;
   }
 
   .featured-card {
-    min-height: 420px;
-    padding: 1.8rem 1.4rem;
+    min-height: auto;
+    padding: 2.2rem 1.6rem 2rem;
+    transform: none !important;
+  }
+
+  /* Product #2 (Honey Fig) Reset on Mobile - Same size as 1 and 3 */
+  .featured-card.default-active {
+    transform: none !important;
+    padding: 2.2rem 1.6rem 2rem !important;
+    box-shadow: 0 10px 30px rgba(0, 135, 61, 0.08) !important;
+    z-index: 1 !important;
+  }
+
+  .featured-card.default-active:hover {
+    transform: none !important;
+    box-shadow: 0 10px 30px rgba(0, 135, 61, 0.08) !important;
+  }
+
+  .featured-card.default-active .card-popout-img,
+  .featured-card.default-active:hover .card-popout-img {
+    transform: none !important;
+    max-height: 240px !important;
   }
 
   .products-grid-container {
