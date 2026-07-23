@@ -2748,3 +2748,211 @@ body {
   text-align: center;
   color: #6b7280;
 }
+
+/* ==========================================================================
+   MOBILE, TABLET & DEVICE OPTIMIZATION MEDIA QUERIES
+   ========================================================================== */
+
+/* Prevent Horizontal Scroll on all devices */
+html, body {
+  overflow-x: hidden !important;
+  width: 100%;
+}
+
+.mobile-hamburger-btn {
+  display: none;
+  background: var(--brand-green-dark);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.3rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Tablet & Smaller Screens (< 1024px) */
+@media (max-width: 1024px) {
+  .footer-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+  }
+  
+  .about-grid-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  .career-layout-grid, .contact-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .admin-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile Screens (< 768px) */
+@media (max-width: 768px) {
+  /* Mobile Navigation Drawer */
+  .mobile-hamburger-btn {
+    display: flex;
+  }
+
+  .desktop-contact-btn {
+    display: none;
+  }
+
+  .nav-center-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #0f2e1b;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    gap: 1.2rem;
+    border-bottom: 3px solid var(--bg-yellow);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 999;
+  }
+
+  .nav-center-links.mobile-nav-active {
+    display: flex;
+  }
+
+  .nav-link-item {
+    font-size: 1.1rem;
+    text-align: left;
+    width: 100%;
+    padding: 0.5rem 0;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 6rem 1rem 3rem;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+  }
+
+  /* Featured Showcase & Products Grid */
+  .featured-grid-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .featured-card {
+    min-height: 420px;
+    padding: 1.8rem 1.4rem;
+  }
+
+  .products-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* Products Filter Toolbar */
+  .products-filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.2rem;
+  }
+
+  .product-search-input {
+    width: 100%;
+  }
+
+  .category-pills {
+    justify-content: center;
+  }
+
+  /* About Page */
+  .about-award-badge-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.2rem;
+  }
+
+  .timeline-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Footer */
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 0.8rem;
+    text-align: center;
+  }
+
+  /* Admin Dashboard */
+  .admin-header-bar {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-tab-nav {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    justify-content: flex-start;
+  }
+
+  .admin-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-search-input {
+    width: 100%;
+  }
+
+  .toolbar-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Extra Small Phones (< 480px) */
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 2.1rem;
+  }
+
+  .career-form-card, .contact-form-card {
+    padding: 1.4rem 1.1rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
