@@ -2850,9 +2850,32 @@ html, body {
 
 /* Mobile Screens (< 768px) */
 @media (max-width: 768px) {
+  .navbar {
+    padding: 0.8rem 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .nav-left {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .nav-right {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .brand-logo-img {
+    height: 44px !important;
+  }
+
   /* Mobile Navigation Drawer */
   .mobile-hamburger-btn {
     display: flex;
+    margin-right: 0 !important;
   }
 
   .desktop-contact-btn {
