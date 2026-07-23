@@ -1,0 +1,30 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules/
+server/node_modules/
+
+# Production build outputs
+dist/
+build/
+
+# Environment files (CRITICAL SECURITY - DO NOT PUSH SECRETS)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+server/.env
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db

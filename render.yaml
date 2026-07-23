@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: devine-backend
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: node server/server.js
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://perivihari8_db_user:SHZIoKxGisEONmkc@cluster0.7gu0joy.mongodb.net/?appName=Cluster0
+      - key: PORT
+        value: 5000
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: admin
+      - key: JWT_SECRET
+        value: devine_admin_secret_key_2026

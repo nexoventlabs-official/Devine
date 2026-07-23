@@ -1,0 +1,24 @@
+<svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Drop shadow filter -->
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Red background rectangle with rounded corners -->
+  <rect x="0" y="5" width="170" height="40" rx="8" fill="#C41E3A" filter="url(#shadow)"/>
+  
+  <!-- Logo group tilted slightly -->
+  <g transform="rotate(-2, 85, 25)">
+    <!-- "Devine" text -->
+    <text x="85" y="32" font-family="Arial, sans-serif" font-weight="bold" font-size="22" fill="white" text-anchor="middle">Devine</text>
+    
+    <!-- Yellow circle/fruit above the "i" -->
+    <circle cx="68" cy="14" r="5" fill="#FFD700"/>
+    
+    <!-- Green leaves -->
+    <path d="M68 9 Q65 5 62 7 Q65 8 68 9" fill="#4CAF50"/>
+    <path d="M68 9 Q71 5 74 7 Q71 8 68 9" fill="#4CAF50"/>
+  </g>
+</svg>
