@@ -2916,6 +2916,16 @@ html, body {
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 65px), 0 calc(100% - 20px));
   }
 
+  /* Move hero.svg down on mobile screens so it sits cleanly below text without overlapping */
+  .hero-bottle-wrap {
+    margin-top: 1.5rem !important;
+  }
+
+  .bottle-img-card {
+    max-width: 380px !important;
+    margin: 0 auto !important;
+  }
+
   .marquee-ticker {
     transform: rotate(-4.5deg) scale(1.14);
     margin-top: -60px;
