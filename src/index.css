@@ -2912,8 +2912,12 @@ html, body {
 
   /* Hero Section & Marquee Ticker Mobile Angle Optimization */
   .hero-section {
-    padding: 6rem 1rem 3rem;
+    padding: 10.5rem 1rem 3rem !important;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 65px), 0 calc(100% - 20px));
+  }
+
+  .hero-top-svg-wrap {
+    height: 180px !important;
   }
 
   /* Move hero.svg down on mobile screens so it sits cleanly below text without overlapping */
