@@ -2840,9 +2840,19 @@ html, body {
     border-bottom: 1px solid rgba(255,255,255,0.1);
   }
 
-  /* Hero Section */
+  /* Hero Section & Marquee Ticker Mobile Angle Optimization */
   .hero-section {
     padding: 6rem 1rem 3rem;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 65px), 0 calc(100% - 20px));
+  }
+
+  .marquee-ticker {
+    transform: rotate(-4.5deg) scale(1.14);
+    margin-top: -60px;
+    padding: 1rem 0;
+    width: 114%;
+    margin-left: -7%;
+    font-size: 1.25rem;
   }
 
   .hero-title {
@@ -2942,6 +2952,19 @@ html, body {
 
 /* Extra Small Phones (< 480px) */
 @media (max-width: 480px) {
+  .hero-section {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 55px), 0 calc(100% - 15px));
+  }
+
+  .marquee-ticker {
+    transform: rotate(-5deg) scale(1.16);
+    margin-top: -55px;
+    padding: 0.9rem 0;
+    width: 116%;
+    margin-left: -8%;
+    font-size: 1.15rem;
+  }
+
   .hero-title {
     font-size: 2.1rem;
   }
