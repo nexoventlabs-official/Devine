@@ -49,11 +49,7 @@ export default function HeroSection() {
             <span className="line-divider"></span>
           </div>
 
-          <div className="hero-actions" style={{ marginTop: '1.4rem' }}>
-            <a href="#story" className="btn-pill btn-pill-lime" style={{ padding: '0.85rem 2.4rem', fontSize: '1rem' }}>
-              OUR STORY
-            </a>
-          </div>
+
         </div>
 
         {/* Hero Bottle Container Crossing Over Torn Paper Divider */}
