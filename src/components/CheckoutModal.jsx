@@ -6,7 +6,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setOrderId(`BLTZ-${Math.floor(100000 + Math.random() * 900000)}`);
+    setOrderId(`DEVINE-${Math.floor(100000 + Math.random() * 900000)}`);
     setOrderConfirmed(true);
   };
 
@@ -24,7 +24,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
 
         {orderConfirmed ? (
           <div style={{ padding: '2rem 0' }}>
-            <div style={{ fontSize: '3.5rem', color: '#76f013', marginBottom: '1rem' }}>⚡</div>
+            <div style={{ fontSize: '3.5rem', color: '#10b981', marginBottom: '1rem' }}>🍃</div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
               ORDER CONFIRMED!
             </h3>

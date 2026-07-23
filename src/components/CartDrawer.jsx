@@ -8,11 +8,11 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onProce
   const subtotal = discountActive ? Math.round(rawSubtotal * 0.9) : rawSubtotal;
 
   const handleApplyPromo = () => {
-    if (promoCode.trim().toUpperCase() === 'BLITZ10') {
+    if (promoCode.trim().toUpperCase() === 'DEVINE10') {
       setDiscountActive(true);
-      alert('🎉 Promo Code BLITZ10 applied! 10% Discount active.');
+      alert('🎉 Promo Code DEVINE10 applied! 10% Discount active.');
     } else {
-      alert('Invalid Promo Code. Try "BLITZ10" for 10% off!');
+      alert('Invalid Promo Code. Try "DEVINE10" for 10% off!');
     }
   };
 
@@ -50,7 +50,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onProce
             <input 
               type="text" 
               className="promo-input" 
-              placeholder="Promo code (e.g. BLITZ10)" 
+              placeholder="Promo code (e.g. DEVINE10)" 
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
             />

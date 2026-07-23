@@ -59,7 +59,7 @@ export default function HeroSection() {
         {/* Hero Bottle Container Crossing Over Torn Paper Divider */}
         <div className="hero-bottle-wrap" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
           <div className="bottle-img-card" ref={cardRef} style={tiltStyle}>
-            <img src="/assets/hero.svg" alt="Blitz Energy Drink Showcase" />
+            <img src="/assets/hero.svg" alt="Devine Natural & Organic Foods Showcase" />
           </div>
         </div>
       </div>

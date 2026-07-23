@@ -12,10 +12,10 @@ export default function SocialModal({ isOpen, onClose }) {
         >
           ✕
         </button>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', color: 'var(--neon-lime)', marginBottom: '0.5rem' }}>
-          #BLITZITUP
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', color: 'var(--bg-yellow)', marginBottom: '0.5rem' }}>
+          #DEVINEORGANIC
         </h3>
-        <p style={{ color: '#a0a0a0', marginBottom: '1.5rem' }}>Join the movement. Tag us on Instagram & TikTok to get featured!</p>
+        <p style={{ color: '#ffffff', marginBottom: '1.5rem' }}>Join the natural living movement. Tag us on Instagram & YouTube to get featured!</p>
         
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <a href="https://instagram.com" target="_blank" rel="noreferrer" className="btn-pill btn-pill-magenta">

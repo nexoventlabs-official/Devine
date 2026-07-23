@@ -9,7 +9,7 @@ export default function ScienceSection() {
       </div>
 
       <div className="science-grid">
-        <div className="comparison-card card-blitz">
+        <div className="comparison-card card-devine">
           <div className="card-header-tag" style={{ color: 'var(--brand-green-dark)' }}>
             <span>🌿 DEVINE 100% NATURAL FORMULATION</span>
           </div>

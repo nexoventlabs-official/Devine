@@ -30,7 +30,7 @@ export default function StoreLocator() {
       <div className="locator-container">
         <div className="section-header">
           <span className="section-tag">RETAIL & QUICK COMMERCE</span>
-          <h2 className="section-title">FIND BLITZ NEAR YOU</h2>
+          <h2 className="section-title">FIND DEVINE STORES NEAR YOU</h2>
         </div>
 
         <div className="locator-controls">
