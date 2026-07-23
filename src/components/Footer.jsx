@@ -95,7 +95,7 @@ export default function Footer({ onOpenSocial, onNavigate, onOpenEnquiry }) {
                 type="email" 
                 required
                 placeholder="Enter your email address..." 
-                style={{ padding: '0.65rem 1rem', background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: '50px', color: '#fff', flex: 1, minWidth: '180px', fontSize: '0.85rem', fontWeight: 600 }}
+                className="footer-newsletter-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

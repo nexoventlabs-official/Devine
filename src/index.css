@@ -1171,6 +1171,33 @@ body {
   transform: translateX(4px);
 }
 
+.footer-newsletter-input {
+  padding: 0.7rem 1.2rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50px;
+  color: #ffffff;
+  flex: 1;
+  min-width: 180px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.footer-newsletter-input::placeholder {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.footer-newsletter-input:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--bg-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 222, 0, 0.25);
+}
+
 .footer-bottom {
   max-width: 1200px;
   margin: 0 auto;
