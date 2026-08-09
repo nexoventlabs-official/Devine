@@ -1,0 +1,385 @@
+// B2B WhatsApp conversation handler.
+import { getClient } from './metaCloud.js';
+import { getAsset, ASSET_KEYS } from './assets.js';
+import { flowId } from '../flows/flowKeys.js';
+import { getConversation, setStep, patchContext, resetConversation } from './conversationState.js';
+import DealerProfile from '../models/DealerProfile.js';
+import Lead from '../models/Lead.js';
+import Product from '../models/Product.js';
+import SupplyCountry from '../models/SupplyCountry.js';
+import { emitLead } from './eventBus.js';
+import logger from './logger.js';
+
+const CH = 'b2b';
+const wa = () => getClient('b2b');
+
+const GREETING = /^(hi|hello|hey|start|menu|hai|vanakkam|namaskaram)/i;
+
+// ---- Welcome: image header + body + "Choose Service" flow CTA ----
+export async function sendWelcome(phone, name = '') {
+  const banner = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2B);
+  const dealer = await DealerProfile.findOne({ phone });
+
+  const services = [
+    dealer
+      ? { id: 'already_dealer', title: 'Already a Dealer - Profile' }
+      : { id: 'dealer', title: 'Become a Dealer / Distributor' },
+    { id: 'bulk', title: 'Bulk / Wholesale Enquiry' },
+    { id: 'gifting', title: 'Corporate Gifting (B2B)' },
+    { id: 'export', title: 'Export / International Supply' }
+  ];
+
+  const body =
+    '🌿 *Welcome to Devine Food Products (Business)*\n\n' +
+    'Natural, preservative-free products from Tamil Nadu since 2015.\n\n' +
+    'Tap *Choose Service* to get started.';
+
+  const fId = flowId('b2b_service');
+  await setStep(phone, CH, 'awaiting_service', { name });
+
+  if (fId) {
+    return wa().sendFlowMessage(phone, {
+      flowId: fId,
+      flowCta: 'Choose Service',
+      headerImageUrl: banner || undefined,
+      headerText: banner ? undefined : 'Devine Business',
+      bodyText: body,
+      footerText: 'Devine Natural Foods',
+      screenName: 'CHOOSE_SERVICE',
+      screenData: { services },
+      flowToken: `b2b_service_${clean(phone)}`,
+      flowAction: 'navigate'
+    });
+  }
+  // Fallback to buttons/list if the flow isn't published yet
+  return wa().sendList(phone, 'Choose Service', body, 'Choose Service', [
+    { title: 'Services', rows: services.map((s) => ({ id: s.id, title: s.title })) }
+  ]);
+}
+
+// ---- Main entry ----
+export async function handle(msg) {
+  const { phone, text, type, selectedId, flowResponse, location, name } = msg;
+
+  if (type === 'text' && GREETING.test((text || '').trim())) {
+    return sendWelcome(phone, name);
+  }
+
+  // Flow completion payloads
+  if (flowResponse) {
+    return handleFlowResponse(phone, flowResponse, name);
+  }
+
+  // List/button fallback service selection (when flow unavailable)
+  if (selectedId && ['dealer', 'already_dealer', 'bulk', 'gifting', 'export'].includes(selectedId)) {
+    return routeService(phone, selectedId, name);
+  }
+
+  const convo = await getConversation(phone, CH);
+
+  // Bulk flow: after MOQ + qty we asked for location
+  if (location && convo.step === 'bulk_awaiting_location') {
+    return finishBulk(phone, convo, location);
+  }
+
+  // Default: re-show welcome
+  return sendWelcome(phone, name);
+}
+
+async function handleFlowResponse(phone, resp, name) {
+  const token = resp.flow_token || '';
+
+  // Service selection flow completed
+  if (token.startsWith('b2b_service_') && resp.selected_service) {
+    return routeService(phone, resp.selected_service, name);
+  }
+  // Dealer flow completed
+  if (token.startsWith('b2b_dealer_')) {
+    return finishDealer(phone, resp, name);
+  }
+  // Bulk flow completed -> ask for location next
+  if (token.startsWith('b2b_bulk_')) {
+    await patchContext(phone, CH, {
+      bulk_range: resp.product_range,
+      bulk_qty: resp.quantity
+    });
+    await setStep(phone, CH, 'bulk_awaiting_location', {
+      bulk_range: resp.product_range,
+      bulk_qty: resp.quantity
+    });
+    const locImg = await getAsset(ASSET_KEYS.BULK_HEADER);
+    if (locImg) await wa().sendImage(phone, locImg, 'Great! One last step.').catch(() => {});
+    return wa().sendLocationRequest(phone, '📍 Please share your location so we can arrange dispatch and pricing.');
+  }
+  // Gifting flow completed
+  if (token.startsWith('b2b_gifting_')) {
+    return finishGifting(phone, resp, name);
+  }
+  // Export flow completed
+  if (token.startsWith('b2b_export_')) {
+    return finishExport(phone, resp, name);
+  }
+
+  return sendWelcome(phone, name);
+}
+
+async function routeService(phone, service, name) {
+  switch (service) {
+    case 'dealer':
+      return startDealer(phone, name);
+    case 'already_dealer':
+      return showDealerProfile(phone);
+    case 'bulk':
+      return startBulk(phone, name);
+    case 'gifting':
+      return startGifting(phone, name);
+    case 'export':
+      return startExport(phone, name);
+    default:
+      return sendWelcome(phone, name);
+  }
+}
+
+// ---------- DEALER ----------
+async function startDealer(phone, name) {
+  const fId = flowId('b2b_dealer');
+  await setStep(phone, CH, 'dealer_flow', { name });
+  if (!fId) {
+    return wa().sendText(phone, 'Dealer registration is being set up. Please try again shortly.');
+  }
+  return wa().sendFlowMessage(phone, {
+    flowId: fId,
+    flowCta: 'Start Registration',
+    bodyText: 'Great! To share our dealer pricing and product catalogue, we need a few quick details.',
+    headerText: 'Dealer Registration',
+    screenName: 'BUSINESS_NAME',
+    flowToken: `b2b_dealer_${clean(phone)}`,
+    flowAction: 'data_exchange'
+  });
+}
+
+async function finishDealer(phone, resp, name) {
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'dealer',
+    name: name || '',
+    phone,
+    businessName: resp.summary_business || resp.business_name || '',
+    businessType: resp.summary_type || resp.business_type || '',
+    state: resp.state || '',
+    district: resp.district || '',
+    city: resp.city || resp.summary_location || '',
+    capacity: resp.summary_capacity || resp.capacity || '',
+    details: resp
+  });
+  emitLead(lead);
+
+  const pdf = await getAsset(ASSET_KEYS.DEALER_PDF);
+  const displayName = name || resp.summary_business || 'there';
+  const body =
+    `Thank you ${displayName}! Here is our complete dealer information:\n\n` +
+    '*Our dealer margin ranges from 20-35% depending on product and volume.*\n\n' +
+    '*A Devine team member will call you within 2 hours to discuss your requirements.*\n\n' +
+    "Meanwhile, here's what dealers say about us:\n\n" +
+    '⭐⭐⭐⭐⭐ *"Best margins and fastest dispatch." - Karthik, Coimbatore*\n' +
+    '⭐⭐⭐⭐⭐ *"Genuine natural products, great support." - Meera, Madurai*';
+
+  await setStep(phone, CH, 'dealer_done');
+
+  if (pdf) {
+    return wa().sendDocumentWithCtaUrl(
+      phone,
+      pdf,
+      'Devine-Dealer-Info.pdf',
+      body,
+      'Choose Service',
+      serviceDeepLink(),
+      'Devine Natural Foods'
+    ).catch(() => wa().sendText(phone, body));
+  }
+  return wa().sendText(phone, body);
+}
+
+async function showDealerProfile(phone) {
+  const dealer = await DealerProfile.findOne({ phone });
+  if (!dealer) return sendWelcome(phone);
+  const table =
+    '📋 *Your Dealer Profile*\n' +
+    '━━━━━━━━━━━━━━━\n' +
+    `*Dealer ID:*  ${dealer.dealerId || '-'}\n` +
+    `*Name:*  ${dealer.name || '-'}\n` +
+    `*Business:*  ${dealer.businessName || '-'}\n` +
+    `*Type:*  ${dealer.businessType || '-'}\n` +
+    `*Location:*  ${[dealer.city, dealer.district, dealer.state].filter(Boolean).join(', ')}\n` +
+    `*Capacity:*  ${dealer.capacity || '-'}\n` +
+    `*Area Manager:*  ${dealer.areaManagerName || '-'} ${dealer.areaManagerPhone ? '(' + dealer.areaManagerPhone + ')' : ''}\n` +
+    `*Status:*  ${dealer.status}\n` +
+    '━━━━━━━━━━━━━━━';
+  return wa().sendButtons(phone, table, [{ id: 'menu', text: 'Main Menu' }]);
+}
+
+// ---------- BULK ----------
+async function startBulk(phone, name) {
+  const fId = flowId('b2b_bulk');
+  const ranges = [
+    { id: 'honey', title: 'Honey Range - MOQ 50/variant' },
+    { id: 'gulkand', title: 'Gulkand Range - MOQ 50/variant' },
+    { id: 'dryfruits', title: 'Dry Fruits - MOQ 25 kg' },
+    { id: 'narumanam', title: 'Narumanam - MOQ 100/variant' }
+  ];
+  await setStep(phone, CH, 'bulk_flow', { name });
+  if (!fId) {
+    return wa().sendList(phone, 'Bulk / Wholesale', 'Select a product range (MOQ applies).', 'Select', [
+      { title: 'Ranges', rows: ranges }
+    ]);
+  }
+  return wa().sendFlowMessage(phone, {
+    flowId: fId,
+    flowCta: 'Start',
+    bodyText: 'For bulk orders, our minimum order quantities are listed inside. Select a range and quantity.',
+    headerText: 'Bulk / Wholesale',
+    screenName: 'BULK_ORDER',
+    screenData: { ranges },
+    flowToken: `b2b_bulk_${clean(phone)}`,
+    flowAction: 'navigate'
+  });
+}
+
+async function finishBulk(phone, convo, location) {
+  const range = convo.context?.bulk_range || '';
+  const qty = convo.context?.bulk_qty || '';
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'bulk',
+    name: convo.context?.name || '',
+    phone,
+    details: { range, quantity: qty, location }
+  });
+  emitLead(lead);
+
+  const header = await getAsset(ASSET_KEYS.BULK_HEADER);
+  const body =
+    '✅ *Bulk Enquiry Received*\n\n' +
+    `*Product:* ${labelRange(range)}\n` +
+    `*Quantity:* ${qty}\n` +
+    `*Location:* ${location.address || `${location.latitude}, ${location.longitude}`}\n\n` +
+    'Our team will contact you shortly with pricing and dispatch details.';
+  await setStep(phone, CH, 'awaiting_service');
+  const buttons = [{ id: 'menu', text: 'Choose Service' }];
+  if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
+  return wa().sendButtons(phone, body, buttons);
+}
+
+// ---------- GIFTING ----------
+async function startGifting(phone, name) {
+  const fId = flowId('b2b_gifting');
+  await setStep(phone, CH, 'gifting_flow', { name });
+  const intro =
+    '🎁 *Devine Corporate Gifting - Premium Natural Gift Hampers*\n\n' +
+    'We create custom gift hampers for:\n' +
+    '✅ Diwali & Festival Gifting\n' +
+    '✅ Client Appreciation Gifts\n' +
+    '✅ Employee Wellness Hampers\n' +
+    '✅ Wedding Favours (Bulk)\n\n' +
+    'Our hampers start from Rs.299 per unit (MOQ: 50 units).';
+  if (!fId) return wa().sendText(phone, intro + '\n\nReply with hampers count, budget, delivery date, company.');
+  return wa().sendFlowMessage(phone, {
+    flowId: fId,
+    flowCta: 'Get a Quote',
+    bodyText: intro,
+    headerImageUrl: (await getAsset(ASSET_KEYS.GIFTING_HEADER)) || undefined,
+    headerText: 'Corporate Gifting',
+    screenName: 'GIFTING',
+    flowToken: `b2b_gifting_${clean(phone)}`,
+    flowAction: 'navigate'
+  });
+}
+
+async function finishGifting(phone, resp, name) {
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'gifting',
+    name: name || resp.company || '',
+    phone,
+    businessName: resp.company || '',
+    details: resp
+  });
+  emitLead(lead);
+  const pdf = await getAsset(ASSET_KEYS.GIFTING_PDF);
+  const body =
+    `Thank you! We've received your corporate gifting request for *${resp.hampers}* hampers.\n\n` +
+    'Our gifting specialist will share a custom catalogue and quote shortly.';
+  await setStep(phone, CH, 'awaiting_service');
+  if (pdf) {
+    return wa().sendDocumentWithCtaUrl(phone, pdf, 'Devine-Gifting-Catalogue.pdf', body, 'Choose Service', serviceDeepLink())
+      .catch(() => wa().sendText(phone, body));
+  }
+  return wa().sendCtaUrl(phone, body, 'Choose Service', serviceDeepLink());
+}
+
+// ---------- EXPORT ----------
+async function startExport(phone, name) {
+  const fId = flowId('b2b_export');
+  const countries = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
+  const options = [
+    { id: 'enquiry', title: 'Enquiry' },
+    ...countries.map((c) => ({ id: String(c._id), title: c.name }))
+  ];
+  await setStep(phone, CH, 'export_flow', { name });
+  if (!fId) {
+    return wa().sendList(phone, 'Export / International', 'Select a country or make an enquiry.', 'Select', [
+      { title: 'Countries', rows: options.slice(0, 10) }
+    ]);
+  }
+  return wa().sendFlowMessage(phone, {
+    flowId: fId,
+    flowCta: 'Start',
+    bodyText: 'Select a destination country or make a general enquiry. Our export team responds within 24 hours.',
+    headerImageUrl: (await getAsset(ASSET_KEYS.EXPORT_HEADER)) || undefined,
+    headerText: 'Export / International Supply',
+    screenName: 'COUNTRY_SELECT',
+    screenData: { countries: options },
+    flowToken: `b2b_export_${clean(phone)}`,
+    flowAction: 'data_exchange'
+  });
+}
+
+async function finishExport(phone, resp, name) {
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'export',
+    name: name || '',
+    phone,
+    details: resp
+  });
+  emitLead(lead);
+  const header = await getAsset(ASSET_KEYS.EXPORT_HEADER);
+  const body = '🌍 Thank you! *Our export team will respond within 24 hours.*';
+  await setStep(phone, CH, 'awaiting_service');
+  const buttons = [{ id: 'menu', text: 'Choose Service' }];
+  if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
+  return wa().sendButtons(phone, body, buttons);
+}
+
+// ---------- helpers ----------
+function labelRange(id) {
+  return (
+    {
+      honey: 'Honey Range',
+      gulkand: 'Gulkand Range',
+      dryfruits: 'Dry Fruits',
+      narumanam: 'Narumanam'
+    }[id] || id
+  );
+}
+
+function serviceDeepLink() {
+  const num = process.env.WA_B2B_DISPLAY_NUMBER || '';
+  return num ? `https://wa.me/${num.replace(/\D/g, '')}?text=hi` : 'https://wa.me/';
+}
+
+function clean(phone) {
+  return String(phone || '').replace(/\D/g, '');
+}
+
+export default { sendWelcome, handle };

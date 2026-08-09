@@ -2,16 +2,43 @@ services:
   - type: web
     name: devine-backend
     env: node
-    buildCommand: cd server && npm install
-    startCommand: node server/server.js
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
     envVars:
       - key: MONGODB_URI
-        value: mongodb+srv://perivihari8_db_user:SHZIoKxGisEONmkc@cluster0.7gu0joy.mongodb.net/?appName=Cluster0
+        sync: false
       - key: PORT
         value: 5000
       - key: ADMIN_USERNAME
-        value: admin
+        sync: false
       - key: ADMIN_PASSWORD
-        value: admin
+        sync: false
       - key: JWT_SECRET
-        value: devine_admin_secret_key_2026
+        sync: false
+      # WhatsApp / Meta
+      - key: WA_VERIFY_TOKEN
+        sync: false
+      - key: WA_APP_ID
+        sync: false
+      - key: WA_APP_SECRET
+        sync: false
+      - key: WA_B2B_TOKEN
+        sync: false
+      - key: WA_B2B_PHONE_NUMBER_ID
+        sync: false
+      - key: WA_B2B_WABA_ID
+        sync: false
+      - key: WA_B2C_TOKEN
+        sync: false
+      - key: WA_B2C_PHONE_NUMBER_ID
+        sync: false
+      - key: WA_B2C_WABA_ID
+        sync: false
+      # Cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
