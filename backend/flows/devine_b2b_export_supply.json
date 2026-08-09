@@ -1,0 +1,153 @@
+{
+  "version": "5.1",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "COUNTRY_SELECT": [
+      "EXPORT_DETAILS"
+    ],
+    "EXPORT_DETAILS": []
+  },
+  "screens": [
+    {
+      "id": "COUNTRY_SELECT",
+      "title": "Export / International",
+      "data": {
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "enquiry",
+              "title": "Enquiry"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextBody",
+            "text": "Select a destination country or make a general enquiry."
+          },
+          {
+            "type": "Dropdown",
+            "name": "country",
+            "label": "Country",
+            "required": true,
+            "data-source": "${data.countries}"
+          },
+          {
+            "type": "Footer",
+            "label": "Continue",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": {
+                "screen": "COUNTRY_SELECT",
+                "country": "${form.country}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "EXPORT_DETAILS",
+      "title": "Export Requirements",
+      "terminal": true,
+      "data": {
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "honey",
+              "title": "Honey"
+            }
+          ]
+        },
+        "country_label": {
+          "type": "string",
+          "__example__": "Enquiry"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextInput",
+            "name": "country_of_import",
+            "label": "Country of import",
+            "required": true,
+            "input-type": "text"
+          },
+          {
+            "type": "CheckboxGroup",
+            "name": "products_required",
+            "label": "Products required",
+            "required": true,
+            "data-source": "${data.products}"
+          },
+          {
+            "type": "TextInput",
+            "name": "monthly_volume",
+            "label": "Estimated monthly volume",
+            "required": true,
+            "input-type": "text"
+          },
+          {
+            "type": "TextInput",
+            "name": "iec",
+            "label": "Import license / IEC number",
+            "required": false,
+            "input-type": "text"
+          },
+          {
+            "type": "DocumentPicker",
+            "name": "document",
+            "label": "Upload your document (optional)",
+            "max-file-size-kb": 10240,
+            "allowed-mime-types": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Confirm",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "country_of_import": "${form.country_of_import}",
+                "products_required": "${form.products_required}",
+                "monthly_volume": "${form.monthly_volume}",
+                "iec": "${form.iec}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

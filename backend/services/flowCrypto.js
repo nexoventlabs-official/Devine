@@ -11,10 +11,20 @@ let privateKeyCache = null;
 
 function loadPrivateKey() {
   if (privateKeyCache) return privateKeyCache;
-  const p = process.env.WA_FLOW_PRIVATE_KEY_PATH || './keys/flow_private.pem';
-  const abs = path.isAbsolute(p) ? p : path.join(__dirname, '..', p);
-  const pem = fs.readFileSync(abs, 'utf8');
   const passphrase = process.env.WA_FLOW_KEY_PASSPHRASE || '';
+  let pem;
+  // Preferred on hosts where the gitignored .pem is not deployed (e.g. Render):
+  // provide the key via env. FLOW_PRIVATE_KEY_B64 is base64 of the PEM (safest
+  // for single-line env vars); FLOW_PRIVATE_KEY is the raw PEM (\n allowed).
+  if (process.env.FLOW_PRIVATE_KEY_B64) {
+    pem = Buffer.from(process.env.FLOW_PRIVATE_KEY_B64, 'base64').toString('utf8');
+  } else if (process.env.FLOW_PRIVATE_KEY) {
+    pem = process.env.FLOW_PRIVATE_KEY.split('\\n').join('\n');
+  } else {
+    const p = process.env.WA_FLOW_PRIVATE_KEY_PATH || './keys/flow_private.pem';
+    const abs = path.isAbsolute(p) ? p : path.join(__dirname, '..', p);
+    pem = fs.readFileSync(abs, 'utf8');
+  }
   privateKeyCache = crypto.createPrivateKey({ key: pem, passphrase });
   return privateKeyCache;
 }

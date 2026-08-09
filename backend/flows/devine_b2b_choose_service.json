@@ -1,0 +1,54 @@
+{
+  "version": "5.1",
+  "screens": [
+    {
+      "id": "CHOOSE_SERVICE",
+      "title": "Choose a Service",
+      "terminal": true,
+      "data": {
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "dealer",
+              "title": "Become a Dealer / Distributor"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "RadioButtonsGroup",
+            "name": "selected_service",
+            "label": "How can we help your business?",
+            "required": true,
+            "data-source": "${data.services}"
+          },
+          {
+            "type": "Footer",
+            "label": "Continue",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "selected_service": "${form.selected_service}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

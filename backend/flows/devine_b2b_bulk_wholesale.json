@@ -1,0 +1,66 @@
+{
+  "version": "5.1",
+  "screens": [
+    {
+      "id": "BULK_ORDER",
+      "title": "Bulk / Wholesale",
+      "terminal": true,
+      "data": {
+        "ranges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "honey",
+              "title": "Honey Range - MOQ 50 units/variant"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextBody",
+            "text": "For bulk orders, our minimum order quantities are:"
+          },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "product_range",
+            "label": "Select product range",
+            "required": true,
+            "data-source": "${data.ranges}"
+          },
+          {
+            "type": "TextInput",
+            "name": "quantity",
+            "label": "Quantity required",
+            "required": true,
+            "input-type": "number"
+          },
+          {
+            "type": "Footer",
+            "label": "Confirm",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "product_range": "${form.product_range}",
+                "quantity": "${form.quantity}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

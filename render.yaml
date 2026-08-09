@@ -16,8 +16,18 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Public URLs
+      - key: PUBLIC_BASE_URL
+        value: https://devine-yebh.onrender.com
+      - key: FRONTEND_BASE_URL
+        sync: false
       # WhatsApp / Meta
       - key: WA_VERIFY_TOKEN
+        sync: false
+      # WhatsApp Flow encryption (private key provided via env since keys are gitignored)
+      - key: FLOW_PRIVATE_KEY_B64
+        sync: false
+      - key: WA_FLOW_KEY_PASSPHRASE
         sync: false
       - key: WA_APP_ID
         sync: false
