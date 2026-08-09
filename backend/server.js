@@ -28,6 +28,7 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const SERVER_STARTED_AT = new Date();
 
 // Socket.IO for live order tracking
 const io = new SocketServer(server, { cors: { origin: '*' } });
@@ -55,7 +56,60 @@ mongoose
   .catch((err) => logger.error('MongoDB connection error', { error: err.message }));
 
 // ---------------- Health ----------------
-app.get('/api/health', (req, res) => res.json({ status: 'OK', message: 'Devine Backend Running' }));
+const MONGO_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+
+function buildHealthReport() {
+  const mongoState = MONGO_STATES[mongoose.connection.readyState] || 'unknown';
+  const has = (v) => Boolean(v && String(v).trim());
+  const base = process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
+
+  return {
+    service: 'Devine WhatsApp Automation Backend',
+    status: mongoState === 'connected' ? 'OK' : 'DEGRADED',
+    timestamp: new Date().toISOString(),
+    startedAt: SERVER_STARTED_AT.toISOString(),
+    uptimeSeconds: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV || 'development',
+    connections: {
+      mongodb: { connected: mongoState === 'connected', state: mongoState },
+      whatsapp_b2b: {
+        configured: has(process.env.WA_B2B_TOKEN) && has(process.env.WA_B2B_PHONE_NUMBER_ID),
+        phoneNumberId: process.env.WA_B2B_PHONE_NUMBER_ID || null,
+        wabaId: process.env.WA_B2B_WABA_ID || null
+      },
+      whatsapp_b2c: {
+        configured: has(process.env.WA_B2C_TOKEN) && has(process.env.WA_B2C_PHONE_NUMBER_ID),
+        phoneNumberId: process.env.WA_B2C_PHONE_NUMBER_ID || null,
+        wabaId: process.env.WA_B2C_WABA_ID || null
+      },
+      cloudinary: { configured: has(process.env.CLOUDINARY_CLOUD_NAME) && has(process.env.CLOUDINARY_API_KEY) },
+      razorpay: { configured: has(process.env.RAZORPAY_KEY_ID) && has(process.env.RAZORPAY_KEY_SECRET) }
+    },
+    whatsapp: {
+      callbackUrl: `${base}/api/whatsapp/webhook`,
+      verifyTokenConfigured: has(process.env.WA_VERIFY_TOKEN),
+      flowEndpointUrl: `${base}/api/whatsapp/flow-endpoint`
+    },
+    endpoints: [
+      { path: '/api/health', method: 'GET', description: 'Simple health check' },
+      { path: '/api/whatsapp/webhook', method: 'GET/POST', description: 'Meta WhatsApp webhook (B2B + B2C)' },
+      { path: '/api/whatsapp/flow-endpoint', method: 'POST', description: 'WhatsApp Flow data-exchange endpoint' },
+      { path: '/api/products', method: 'GET/POST/DELETE', description: 'Products management' },
+      { path: '/api/catalog', method: 'GET', description: 'Public catalog (categories + products)' },
+      { path: '/api/leads', method: 'GET', description: 'B2B leads (real-time alerts)' },
+      { path: '/api/orders', method: 'GET/POST', description: 'Orders + live tracking' },
+      { path: '/api/crm', method: 'GET/POST', description: 'CRM chats, templates, broadcasts' },
+      { path: '/api/enquiries', method: 'GET/POST', description: 'Website enquiries' },
+      { path: '/api/careers', method: 'GET/POST', description: 'Career applications' },
+      { path: '/api/admin/login', method: 'POST', description: 'Admin authentication' },
+      { path: '/api/admin/stats', method: 'GET', description: 'Admin dashboard stats' }
+    ]
+  };
+}
+
+// Root URL -> full project health + endpoint connection status (JSON)
+app.get('/', (req, res) => res.json(buildHealthReport()));
+app.get('/api/health', (req, res) => res.json(buildHealthReport()));
 
 // ---------------- WhatsApp ----------------
 app.use('/api/whatsapp/webhook', webhookRouter);
