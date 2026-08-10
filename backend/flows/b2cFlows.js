@@ -20,7 +20,8 @@ function arrayDataWithImage(example = [{ id: 'x', title: 'y', description: 'z', 
         title: { type: 'string' },
         description: { type: 'string' },
         image: { type: 'string' }
-      }
+      },
+      required: ['id', 'title']
     },
     __example__: example
   };

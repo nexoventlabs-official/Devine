@@ -6,6 +6,7 @@ import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
 import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
 import { urlToBase64 } from '../services/imageBase64.js';
+import { DEFAULT_BANNER_B64, DEFAULT_ICON_B64 } from '../services/defaultFlowAssets.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -46,8 +47,8 @@ router.post('/', async (req, res) => {
         {
           screen: 'SERVICE_MENU',
           data: {
-            welcome_banner: welcomeBannerB64 || '',
-            has_welcome_banner: !!welcomeBannerB64,
+            welcome_banner: welcomeBannerB64,
+            has_welcome_banner: true,
             heading: 'Welcome to Devine Natural Foods 🌿',
             subheading: 'Select a service below to explore',
             services
@@ -79,11 +80,12 @@ router.post('/', async (req, res) => {
 async function getWelcomeBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
-    if (!bannerUrl) return '';
-    return await urlToBase64(bannerUrl, { width: 1000, height: 125, crop: 'fill', format: 'jpg' });
-  } catch (_) {
-    return '';
-  }
+    if (bannerUrl) {
+      const b64 = await urlToBase64(bannerUrl, { width: 1000, height: 125, crop: 'fill', format: 'jpg' });
+      if (b64) return b64;
+    }
+  } catch (_) {}
+  return DEFAULT_BANNER_B64;
 }
 
 // Build 1:1 ratio icon options for B2C service menu (raw base64 format required for Meta Flow)
@@ -100,33 +102,38 @@ async function serviceOptions() {
       id: 'browse',
       title: 'Browse our products',
       description: 'Explore natural food items, honey, ghee & spices',
-      rawUrl: assets[ASSET_KEYS.B2C_ICON_BROWSE] || 'https://img.icons8.com/color/120/shopping-bag--v1.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_BROWSE] || ''
     },
     {
       id: 'gifting',
       title: 'Corporate / Bulk gifting',
       description: 'Custom hampers starting from Rs.299 (MOQ: 50)',
-      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || 'https://img.icons8.com/color/120/gift--v1.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || ''
     },
     {
       id: 'track',
       title: 'Track Order',
       description: 'Live delivery status & map tracking',
-      rawUrl: assets[ASSET_KEYS.B2C_ICON_TRACK] || 'https://img.icons8.com/color/120/deliver-food.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TRACK] || ''
     },
     {
       id: 'talk',
       title: 'Talk to us',
       description: 'Chat or call with customer support',
-      rawUrl: assets[ASSET_KEYS.B2C_ICON_TALK] || 'https://img.icons8.com/color/120/headset.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TALK] || ''
     }
   ];
 
   return Promise.all(
     items.map(async (item) => {
-      const b64 = await urlToBase64(item.rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
       const { rawUrl, ...rest } = item;
-      if (b64) rest.image = b64;
+      let b64 = '';
+      if (rawUrl) {
+        try {
+          b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
+        } catch (_) {}
+      }
+      rest.image = b64 || DEFAULT_ICON_B64;
       return rest;
     })
   );
@@ -166,15 +173,19 @@ async function categoryOptions() {
 
   return Promise.all(
     cats.map(async (c) => {
-      const rawUrl = c.imageUrl || 'https://img.icons8.com/color/120/ingredients.png';
-      const b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
-      const item = {
+      const rawUrl = c.imageUrl || '';
+      let b64 = '';
+      if (rawUrl) {
+        try {
+          b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
+        } catch (_) {}
+      }
+      return {
         id: c.slug,
         title: c.name,
-        description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products'
+        description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products',
+        image: b64 || DEFAULT_ICON_B64
       };
-      if (b64) item.image = b64;
-      return item;
     })
   );
 }
