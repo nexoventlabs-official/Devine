@@ -10,6 +10,22 @@ function arrayData(example = [{ id: 'x', title: 'y' }]) {
   };
 }
 
+function arrayDataWithImage(example = [{ id: 'x', title: 'y', description: 'z', image: 'https://...' }]) {
+  return {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        image: { type: 'string' }
+      }
+    },
+    __example__: example
+  };
+}
+
 // ---------------------------------------------------------------------------
 // 1) B2C SERVICE SELECTION (Browse products / Gifting / Track Order / Talk to us)
 // ---------------------------------------------------------------------------
@@ -21,26 +37,41 @@ export function serviceFlow() {
     screens: [
       {
         id: 'SERVICE_MENU',
-        title: 'How can we help?',
-        data: {},
+        title: 'Choose Service',
+        data: {
+          banner_image: { type: 'string', __example__: 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png' },
+          services: arrayDataWithImage([
+            { id: 'browse', title: 'Browse our products', description: 'Explore natural food items & products', image: 'https://img.icons8.com/color/120/shopping-bag--v1.png' },
+            { id: 'gifting', title: 'Corporate & Bulk gifting', description: 'Custom hampers starting from Rs.299', image: 'https://img.icons8.com/color/120/gift--v1.png' },
+            { id: 'track', title: 'Track Order', description: 'Live order & delivery tracking', image: 'https://img.icons8.com/color/120/deliver-food.png' },
+            { id: 'talk', title: 'Talk to us', description: 'Chat or call customer support', image: 'https://img.icons8.com/color/120/headset.png' }
+          ])
+        },
         layout: {
           type: 'SingleColumnLayout',
           children: [
             {
-              type: 'RadioButtonsGroup',
-              name: 'selected_service',
-              label: 'What brings you here today?',
-              required: true,
-              'data-source': [
-                { id: 'browse', title: 'Browse our products' },
-                { id: 'gifting', title: 'Corporate / Bulk gifting' },
-                { id: 'track', title: 'Track Order' },
-                { id: 'talk', title: 'Talk to us' }
-              ]
+              type: 'Image',
+              src: '${data.banner_image}',
+              height: 140,
+              'scale-type': 'cover'
             },
             {
-              // data_exchange lets the server branch: browse -> categories screen,
-              // everything else -> completes the flow immediately.
+              type: 'TextHeading',
+              text: 'Welcome to Devine Natural Foods 🌿'
+            },
+            {
+              type: 'TextCaption',
+              text: 'Select a service below to explore'
+            },
+            {
+              type: 'RadioButtonsGroup',
+              name: 'selected_service',
+              label: '\u2800',
+              required: true,
+              'data-source': '${data.services}'
+            },
+            {
               type: 'Footer',
               label: 'Continue',
               'on-click-action': {
@@ -56,15 +87,31 @@ export function serviceFlow() {
         title: 'Browse Categories',
         terminal: true,
         success: true,
-        data: { categories: arrayData([{ id: 'honey', title: 'Honey' }]) },
+        data: {
+          banner_image: { type: 'string', __example__: 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png' },
+          categories: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Pure & raw natural honey', image: 'https://img.icons8.com/color/120/ingredients.png' }])
+        },
         layout: {
           type: 'SingleColumnLayout',
           children: [
-            { type: 'TextBody', text: 'Select a category to see our products.' },
+            {
+              type: 'Image',
+              src: '${data.banner_image}',
+              height: 140,
+              'scale-type': 'cover'
+            },
+            {
+              type: 'TextHeading',
+              text: '🛍️ Select a Category'
+            },
+            {
+              type: 'TextCaption',
+              text: 'Tap a category below to explore our products'
+            },
             {
               type: 'RadioButtonsGroup',
               name: 'selected_category',
-              label: 'Categories',
+              label: '\u2800',
               required: true,
               'data-source': '${data.categories}'
             },

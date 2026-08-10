@@ -4,6 +4,7 @@ import { districtOptions, stateOptions } from '../data/geo.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
+import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -34,7 +35,14 @@ router.post('/', async (req, res) => {
         return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
       }
       if (token.startsWith('b2c_service_')) {
-        return sendEncrypted(res, { screen: 'SERVICE_MENU', data: {} }, aesKeyBuffer, initialVectorBuffer);
+        const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+        const services = await serviceOptions();
+        return sendEncrypted(
+          res,
+          { screen: 'SERVICE_MENU', data: { banner_image: bannerUrl || 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png', services } },
+          aesKeyBuffer,
+          initialVectorBuffer
+        );
       }
       // Dealer flow starts on business name.
       return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
@@ -58,14 +66,50 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Build 1:1 ratio icon options for B2C service menu
+async function serviceOptions() {
+  const assets = await getAssets([
+    ASSET_KEYS.B2C_ICON_BROWSE,
+    ASSET_KEYS.B2C_ICON_GIFTING,
+    ASSET_KEYS.B2C_ICON_TRACK,
+    ASSET_KEYS.B2C_ICON_TALK
+  ]);
+
+  return [
+    {
+      id: 'browse',
+      title: 'Browse our products',
+      description: 'Explore natural food items, honey, ghee & spices',
+      image: assets[ASSET_KEYS.B2C_ICON_BROWSE] || 'https://img.icons8.com/color/120/shopping-bag--v1.png'
+    },
+    {
+      id: 'gifting',
+      title: 'Corporate / Bulk gifting',
+      description: 'Custom hampers starting from Rs.299 (MOQ: 50)',
+      image: assets[ASSET_KEYS.B2C_ICON_GIFTING] || 'https://img.icons8.com/color/120/gift--v1.png'
+    },
+    {
+      id: 'track',
+      title: 'Track Order',
+      description: 'Live delivery status & map tracking',
+      image: assets[ASSET_KEYS.B2C_ICON_TRACK] || 'https://img.icons8.com/color/120/deliver-food.png'
+    },
+    {
+      id: 'talk',
+      title: 'Talk to us',
+      description: 'Chat or call with customer support',
+      image: assets[ASSET_KEYS.B2C_ICON_TALK] || 'https://img.icons8.com/color/120/headset.png'
+    }
+  ];
+}
+
 // Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
 async function countryOptions() {
   const list = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
   return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...list.map((c) => ({ id: String(c._id), title: c.name }))];
 }
 
-// Categories for the B2C browse flow: active Category docs, else auto-derive
-// from in-stock products (and create the Category rows so admin can add images).
+// Categories for the B2C browse flow with 1:1 image thumbnails
 async function categoryOptions() {
   let cats = await Category.find({ active: true }).sort({ order: 1 }).lean();
   if (!cats.length) {
@@ -81,10 +125,22 @@ async function categoryOptions() {
           { upsert: true }
         );
       } catch (_) { /* ignore */ }
-      cats.push({ slug, name: names[i] });
+      cats.push({ slug, name: names[i], imageUrl: '' });
     }
   }
-  return cats.map((c) => ({ id: c.slug, title: c.name }));
+
+  const products = await Product.find({ active: true, inStock: true }).select('category').lean();
+  const countMap = {};
+  products.forEach((p) => {
+    if (p.category) countMap[p.category] = (countMap[p.category] || 0) + 1;
+  });
+
+  return cats.map((c) => ({
+    id: c.slug,
+    title: c.name,
+    description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products',
+    image: c.imageUrl || 'https://img.icons8.com/color/120/ingredients.png'
+  }));
 }
 
 async function handleDataExchange(screen, data, token = '') {
@@ -93,7 +149,14 @@ async function handleDataExchange(screen, data, token = '') {
     case 'SERVICE_MENU': {
       const service = data.selected_service;
       if (service === 'browse') {
-        return { screen: 'CATEGORY_SELECT', data: { categories: await categoryOptions() } };
+        const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+        return {
+          screen: 'CATEGORY_SELECT',
+          data: {
+            banner_image: bannerUrl || 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png',
+            categories: await categoryOptions()
+          }
+        };
       }
       // Non-browse services complete the flow immediately (returns via nfm_reply).
       return {

@@ -29,6 +29,10 @@ export const ASSET_KEYS = {
   LEAD_THANKS_HEADER: 'lead_thanks_header',
   // B2C
   WELCOME_BANNER_B2C: 'welcome_banner_b2c',
+  B2C_ICON_BROWSE: 'b2c_icon_browse',
+  B2C_ICON_GIFTING: 'b2c_icon_gifting',
+  B2C_ICON_TRACK: 'b2c_icon_track',
+  B2C_ICON_TALK: 'b2c_icon_talk',
   ORDER_CONFIRMED: 'order_confirmed',
   PAYMENT_HEADER: 'payment_header',
   REVIEW_HEADER: 'review_header',
