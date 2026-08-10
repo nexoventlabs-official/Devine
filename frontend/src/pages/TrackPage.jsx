@@ -160,11 +160,18 @@ export default function TrackPage() {
       {/* Map */}
       <div style={s.mapWrap}>
         <MapContainer center={destPos || storePos} zoom={12} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-          <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer
+            attribution='&copy; OpenStreetMap &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            subdomains="abcd"
+            maxZoom={20}
+          />
+          {/* Subtle blue casing under the route for a clean map look */}
+          {route.length > 1 && <Polyline positions={route} color="#1a73e8" weight={9} opacity={0.25} />}
+          {route.length > 1 && <Polyline positions={route} color="#1a73e8" weight={5} opacity={0.95} />}
           <Marker position={storePos} icon={storeIcon}><Popup>Devine Store</Popup></Marker>
           {destPos && <Marker position={destPos} icon={homeIcon}><Popup>Delivery Location</Popup></Marker>}
           {driverPos && <Marker position={driverPos} icon={lorryIcon}><Popup>Your delivery is on the way</Popup></Marker>}
-          {route.length > 1 && <Polyline positions={route} color="#0e7a3b" weight={5} opacity={0.85} />}
           <FitBounds points={route.length > 1 ? route : mapPoints} />
         </MapContainer>
       </div>
@@ -233,13 +240,13 @@ export default function TrackPage() {
 }
 
 const s = {
-  page: { maxWidth: 480, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', minHeight: '100vh', paddingBottom: 30 },
+  page: { maxWidth: 480, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', minHeight: '100vh', paddingBottom: 30, boxSizing: 'border-box', overflowX: 'hidden', width: '100%' },
   center: { display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', color: '#555', fontFamily: 'Inter, sans-serif' },
-  headerBar: { background: '#0e7a3b', color: '#fff', padding: '16px 20px', textAlign: 'center' },
+  headerBar: { background: '#0e7a3b', color: '#fff', padding: '16px 20px', textAlign: 'center', boxSizing: 'border-box', width: '100%' },
   headerTitle: { fontSize: 22, fontWeight: 800 },
   etaPill: { display: 'inline-block', marginTop: 8, background: 'rgba(255,255,255,.18)', padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600 },
-  mapWrap: { height: 360, width: '100%' },
-  card: { margin: '-28px 14px 0', position: 'relative', borderRadius: 18, padding: 18, color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,.18)' },
+  mapWrap: { height: 360, width: '100%', boxSizing: 'border-box' },
+  card: { margin: '-28px 14px 0', position: 'relative', borderRadius: 18, padding: 18, color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,.18)', boxSizing: 'border-box' },
   cardTitleRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   cardTitle: { fontSize: 22, fontWeight: 800 },
   checkBadge: { background: 'rgba(255,255,255,.25)', width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 },
