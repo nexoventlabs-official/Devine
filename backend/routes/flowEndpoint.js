@@ -194,12 +194,12 @@ async function handleDataExchange(screen, data, token = '') {
     case 'SERVICE_MENU': {
       const service = data.selected_service;
       if (service === 'browse') {
-        const { b64: welcomeBannerB64, hasBanner } = await getWelcomeBannerB64();
         return {
           screen: 'CATEGORY_SELECT',
           data: {
-            welcome_banner: welcomeBannerB64,
-            has_welcome_banner: hasBanner,
+            // No banner on the category screen (per design) — hide the Image component.
+            welcome_banner: '',
+            has_welcome_banner: false,
             heading: '🛍️ Select a Category',
             subheading: 'Tap a category below to explore our products',
             categories: await categoryOptions()
