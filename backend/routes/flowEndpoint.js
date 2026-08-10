@@ -3,6 +3,7 @@ import { decryptRequest, encryptResponse } from '../services/flowCrypto.js';
 import { districtOptions, stateOptions } from '../data/geo.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
+import Category from '../models/Category.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -32,12 +33,15 @@ router.post('/', async (req, res) => {
       if (token.startsWith('b2b_export_')) {
         return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
       }
+      if (token.startsWith('b2c_service_')) {
+        return sendEncrypted(res, { screen: 'SERVICE_MENU', data: {} }, aesKeyBuffer, initialVectorBuffer);
+      }
       // Dealer flow starts on business name.
       return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
     }
 
     if (action === 'data_exchange') {
-      const response = await handleDataExchange(screen, data);
+      const response = await handleDataExchange(screen, data, token);
       return sendEncrypted(res, response, aesKeyBuffer, initialVectorBuffer);
     }
 
@@ -60,8 +64,44 @@ async function countryOptions() {
   return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...list.map((c) => ({ id: String(c._id), title: c.name }))];
 }
 
-async function handleDataExchange(screen, data) {
+// Categories for the B2C browse flow: active Category docs, else auto-derive
+// from in-stock products (and create the Category rows so admin can add images).
+async function categoryOptions() {
+  let cats = await Category.find({ active: true }).sort({ order: 1 }).lean();
+  if (!cats.length) {
+    const names = (await Product.distinct('category', { active: true, inStock: true })).filter(Boolean);
+    const slugify = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    cats = [];
+    for (let i = 0; i < names.length; i++) {
+      const slug = slugify(names[i]);
+      try {
+        await Category.findOneAndUpdate(
+          { name: names[i] },
+          { $setOnInsert: { name: names[i], slug, order: i, active: true } },
+          { upsert: true }
+        );
+      } catch (_) { /* ignore */ }
+      cats.push({ slug, name: names[i] });
+    }
+  }
+  return cats.map((c) => ({ id: c.slug, title: c.name }));
+}
+
+async function handleDataExchange(screen, data, token = '') {
   switch (screen) {
+    // B2C service selection: browse -> show categories screen; else -> finish flow.
+    case 'SERVICE_MENU': {
+      const service = data.selected_service;
+      if (service === 'browse') {
+        return { screen: 'CATEGORY_SELECT', data: { categories: await categoryOptions() } };
+      }
+      // Non-browse services complete the flow immediately (returns via nfm_reply).
+      return {
+        screen: 'SUCCESS',
+        data: { extension_message_response: { params: { flow_token: token, selected_service: service } } }
+      };
+    }
+
     // Dealer flow: business name captured -> go to state select WITH the states list.
     case 'BUSINESS_NAME':
       return { screen: 'STATE_SELECT', data: { states: stateOptions() } };

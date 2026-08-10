@@ -16,11 +16,12 @@ function arrayData(example = [{ id: 'x', title: 'y' }]) {
 export function serviceFlow() {
   return {
     version: VERSION,
+    data_api_version: '3.0',
+    routing_model: { SERVICE_MENU: ['CATEGORY_SELECT'], CATEGORY_SELECT: [] },
     screens: [
       {
         id: 'SERVICE_MENU',
         title: 'How can we help?',
-        terminal: true,
         data: {},
         layout: {
           type: 'SingleColumnLayout',
@@ -38,9 +39,42 @@ export function serviceFlow() {
               ]
             },
             {
+              // data_exchange lets the server branch: browse -> categories screen,
+              // everything else -> completes the flow immediately.
               type: 'Footer',
               label: 'Continue',
-              'on-click-action': { name: 'complete', payload: { selected_service: '${form.selected_service}' } }
+              'on-click-action': {
+                name: 'data_exchange',
+                payload: { screen: 'SERVICE_MENU', selected_service: '${form.selected_service}' }
+              }
+            }
+          ]
+        }
+      },
+      {
+        id: 'CATEGORY_SELECT',
+        title: 'Browse Categories',
+        terminal: true,
+        success: true,
+        data: { categories: arrayData([{ id: 'honey', title: 'Honey' }]) },
+        layout: {
+          type: 'SingleColumnLayout',
+          children: [
+            { type: 'TextBody', text: 'Select a category to see our products.' },
+            {
+              type: 'RadioButtonsGroup',
+              name: 'selected_category',
+              label: 'Categories',
+              required: true,
+              'data-source': '${data.categories}'
+            },
+            {
+              type: 'Footer',
+              label: 'View Products',
+              'on-click-action': {
+                name: 'complete',
+                payload: { selected_service: 'browse', selected_category: '${form.selected_category}' }
+              }
             }
           ]
         }

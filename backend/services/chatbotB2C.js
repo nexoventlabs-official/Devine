@@ -77,8 +77,10 @@ export async function handle(msg) {
 async function handleFlowResponse(phone, resp, name) {
   const token = resp.flow_token || '';
 
-  if (token.startsWith('b2c_service_') && resp.selected_service) {
-    return routeService(phone, resp.selected_service, name);
+  if (token.startsWith('b2c_service_')) {
+    // Category chosen inside the flow -> send the catalog message for it.
+    if (resp.selected_category) return showCategoryProducts(phone, resp.selected_category);
+    if (resp.selected_service) return routeService(phone, resp.selected_service, name);
   }
   if (token.startsWith('b2c_order_summary_')) {
     // Order summary flow completed -> payment method chosen

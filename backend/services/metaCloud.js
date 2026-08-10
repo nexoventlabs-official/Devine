@@ -445,6 +445,13 @@ export function getClient(channel) {
       return data;
     },
 
+    // Set/update a flow's data-exchange endpoint URI (e.g. when converting a
+    // navigate flow to an endpoint flow). Applies to the draft; publish after.
+    async updateFlowEndpoint(flowId, endpointUri) {
+      const { data } = await api.post(`${GRAPH()}/${flowId}`, { endpoint_uri: endpointUri }, { headers: authHeaders });
+      return data;
+    },
+
     // ---------- Commerce Catalog (product sync) ----------
     // Upsert products into the Meta Commerce Catalog via items_batch.
     // products: [{ retailerId, name, description, price, salePrice?, currency?, imageUrl?, category?, availability, url? }]

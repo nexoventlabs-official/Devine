@@ -24,7 +24,7 @@ const FLOWS = {
   b2b_bulk: { channel: 'b2b', name: 'Devine B2B - Bulk Wholesale', json: b2b.bulkFlow() },
   b2b_gifting: { channel: 'b2b', name: 'Devine B2B - Corporate Gifting', json: b2b.giftingFlow() },
   b2b_export: { channel: 'b2b', name: 'Devine B2B - Export Supply', json: b2b.exportFlow(), endpoint: true },
-  b2c_service: { channel: 'b2c', name: 'Devine B2C - Choose Service', json: b2c.serviceFlow() },
+  b2c_service: { channel: 'b2c', name: 'Devine B2C - Choose Service', json: b2c.serviceFlow(), endpoint: true },
   b2c_order_summary: { channel: 'b2c', name: 'Devine B2C - Order Summary', json: b2c.orderSummaryFlow() },
   b2c_review: { channel: 'b2c', name: 'Devine B2C - Review', json: b2c.reviewFlow() },
   b2c_gifting: { channel: 'b2c', name: 'Devine B2C - Corporate Gifting', json: b2c.giftingFlow() }
@@ -56,6 +56,16 @@ async function run() {
       if (match) {
         flowId = match.id;
         console.log('reusing existing flow id:', flowId, `(status: ${match.status})`);
+        // Ensure endpoint flows have their endpoint_uri set (needed when a flow
+        // was originally created without one, e.g. converting to data_exchange).
+        if (def.endpoint) {
+          try {
+            await wa.updateFlowEndpoint(flowId, ENDPOINT_URI);
+            console.log('endpoint_uri set:', ENDPOINT_URI);
+          } catch (e) {
+            console.warn('could not set endpoint_uri:', e.response?.data?.error?.message || e.message);
+          }
+        }
       } else {
         const created = await wa.createFlow(def.name, ['OTHER'], def.endpoint ? { endpointUri: ENDPOINT_URI } : {});
         flowId = created.id;
