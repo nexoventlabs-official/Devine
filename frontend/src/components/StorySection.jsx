@@ -5,7 +5,7 @@ export default function StorySection() {
     <section className="story-section" id="story">
       <div className="story-container">
         <div className="story-img-wrap">
-          <img src="/assets/creatives/Honey_Fig.svg" alt="Devine Natural Foods" />
+          <img src="https://res.cloudinary.com/zavohueh/image/upload/devine/products/Honey_Fig.png" alt="Devine Natural Foods" />
           <div className="story-badge">
             <h4>DEVINE</h4>
             <p>100% Pure Natural & Organic</p>

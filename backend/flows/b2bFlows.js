@@ -347,12 +347,13 @@ export function exportFlow() {
         terminal: true,
         data: {
           products: arrayData([{ id: 'honey', title: 'Honey' }]),
-          country_label: { type: 'string', __example__: 'Enquiry' }
+          country_label: { type: 'string', __example__: 'Enquiry' },
+          country_of_import: { type: 'string', __example__: '' }
         },
         layout: {
           type: 'SingleColumnLayout',
           children: [
-            { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text' },
+            { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text', 'init-value': '${data.country_of_import}' },
             {
               type: 'CheckboxGroup',
               name: 'products_required',

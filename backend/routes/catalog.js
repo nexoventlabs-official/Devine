@@ -101,6 +101,22 @@ router.post('/supply-countries', auth, upload.single('logo'), async (req, res) =
   }
 });
 
+router.put('/supply-countries/:id', auth, upload.single('logo'), async (req, res) => {
+  try {
+    const update = {};
+    if (req.body.name !== undefined) update.name = req.body.name;
+    if (req.body.order !== undefined) update.order = Number(req.body.order) || 0;
+    if (req.body.active !== undefined) update.active = req.body.active !== 'false';
+    if (req.file) update.logoUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/supply-countries' });
+    else if (req.body.logoUrl) update.logoUrl = req.body.logoUrl;
+    const country = await SupplyCountry.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!country) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: country });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 router.delete('/supply-countries/:id', auth, async (req, res) => {
   await SupplyCountry.findByIdAndDelete(req.params.id);
   res.json({ success: true });

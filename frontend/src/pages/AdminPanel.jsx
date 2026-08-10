@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, authHeaders } from '../config';
 
 export default function AdminPanel({ onNavigateHome }) {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -17,7 +17,21 @@ export default function AdminPanel({ onNavigateHome }) {
   const [stats, setStats] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
   const [careers, setCareers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Product editor state
+  const emptyProduct = {
+    name: '', category: '', description: '', shortDesc: '',
+    price: '', mrp: '', dealerPrice: '', margin: '', moq: '', unit: 'unit',
+    badges: '', featured: false, active: true, imageFile: null, imageUrl: ''
+  };
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null); // null=new, else product _id
+  const [productForm, setProductForm] = useState(emptyProduct);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [productError, setProductError] = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   // Filters
   const [enquirySearch, setEnquirySearch] = useState('');
@@ -55,6 +69,13 @@ export default function AdminPanel({ onNavigateHome }) {
       if (carRes.ok) {
         const carData = await carRes.json();
         setCareers(carData.data || []);
+      }
+
+      // Fetch products (all, including inactive)
+      const prodRes = await fetch(`${API_BASE}/products?all=true`);
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProducts(prodData.data || []);
       }
     } catch (err) {
       console.error('Error loading admin data:', err);
@@ -160,6 +181,87 @@ export default function AdminPanel({ onNavigateHome }) {
       console.error('Failed to delete career:', err);
     }
   };
+
+  // ==========================================
+  // PRODUCT HANDLERS
+  // ==========================================
+  const openNewProduct = () => {
+    setEditingProduct(null);
+    setProductForm(emptyProduct);
+    setProductError('');
+    setShowProductForm(true);
+  };
+
+  const openEditProduct = (p) => {
+    setEditingProduct(p._id);
+    setProductForm({
+      name: p.name || '', category: p.category || '', description: p.description || '',
+      shortDesc: p.shortDesc || '', price: p.price ?? '', mrp: p.mrp ?? '',
+      dealerPrice: p.dealerPrice ?? '', margin: p.margin || '', moq: p.moq || '',
+      unit: p.unit || 'unit', badges: (p.badges || []).join(', '),
+      featured: Boolean(p.featured), active: p.active !== false,
+      imageFile: null, imageUrl: p.imageUrl || ''
+    });
+    setProductError('');
+    setShowProductForm(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    setSavingProduct(true);
+    setProductError('');
+    try {
+      const fd = new FormData();
+      fd.append('name', productForm.name);
+      fd.append('category', productForm.category);
+      fd.append('description', productForm.description);
+      fd.append('shortDesc', productForm.shortDesc);
+      fd.append('price', productForm.price || 0);
+      fd.append('mrp', productForm.mrp || 0);
+      fd.append('dealerPrice', productForm.dealerPrice || 0);
+      fd.append('margin', productForm.margin);
+      fd.append('moq', productForm.moq);
+      fd.append('unit', productForm.unit);
+      fd.append('badges', productForm.badges);
+      fd.append('featured', productForm.featured);
+      fd.append('active', productForm.active);
+      if (productForm.imageFile) fd.append('image', productForm.imageFile);
+      else if (productForm.imageUrl) fd.append('imageUrl', productForm.imageUrl);
+
+      const url = editingProduct ? `${API_BASE}/products/${editingProduct}` : `${API_BASE}/products`;
+      const method = editingProduct ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: { ...authHeaders() }, body: fd });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to save product');
+
+      setShowProductForm(false);
+      setProductForm(emptyProduct);
+      setEditingProduct(null);
+      fetchAdminData();
+    } catch (err) {
+      setProductError(err.message || 'Failed to save product.');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Delete this product? Its Cloudinary image will also be removed.')) return;
+    try {
+      const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
+      if (res.ok) {
+        setProducts((prev) => prev.filter((p) => p._id !== id));
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    const q = productSearch.toLowerCase();
+    return p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+  });
 
   // Filtered Enquiries
   const filteredEnquiries = enquiries.filter(item => {
@@ -267,6 +369,12 @@ export default function AdminPanel({ onNavigateHome }) {
             onClick={() => setActiveTab('careers')}
           >
             Career Applications ({careers.length})
+          </button>
+          <button
+            className={`admin-nav-btn ${activeTab === 'products' ? 'active' : ''}`}
+            onClick={() => setActiveTab('products')}
+          >
+            Products ({products.length})
           </button>
         </nav>
 
@@ -606,7 +714,204 @@ export default function AdminPanel({ onNavigateHome }) {
             </div>
           </div>
         )}
+
+        {/* TAB 4: PRODUCTS MANAGEMENT */}
+        {activeTab === 'products' && (
+          <div className="admin-table-view">
+            <div className="table-toolbar">
+              <div>
+                <h2>Product Catalog Management</h2>
+                <p>Add, edit and remove products. Images are uploaded to Cloudinary and shown live on the website.</p>
+              </div>
+
+              <div className="toolbar-controls">
+                <input
+                  type="text"
+                  placeholder="Search products by name or category..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="admin-search-input"
+                />
+                <button onClick={fetchAdminData} className="refresh-btn">🔄 Refresh</button>
+                <button onClick={openNewProduct} className="btn-pill btn-pill-lime" style={{ padding: '0.5rem 1.2rem' }}>
+                  + Add Product
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-table-container">
+              {filteredProducts.length > 0 ? (
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Product</th>
+                      <th>Category</th>
+                      <th>Price</th>
+                      <th>Flags</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((p) => (
+                      <tr key={p._id}>
+                        <td>
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt={p.name} style={{ width: '54px', height: '54px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #e5e7eb' }} />
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <strong>{p.name}</strong>
+                          <br />
+                          <small className="text-muted">{p.shortDesc || (p.description || '').slice(0, 48)}</small>
+                        </td>
+                        <td><span className="product-tag">{p.category}</span></td>
+                        <td>
+                          <strong>₹{p.price}</strong>
+                          {p.dealerPrice ? <><br /><small className="text-muted">Dealer ₹{p.dealerPrice}</small></> : null}
+                        </td>
+                        <td>
+                          {p.featured && <span className="status-pill contacted">Featured</span>}{' '}
+                          {p.active === false && <span className="status-pill pending">Inactive</span>}
+                        </td>
+                        <td>
+                          <div className="action-buttons-group">
+                            <button onClick={() => openEditProduct(p)} className="action-btn btn-contacted">Edit</button>
+                            <button onClick={() => handleDeleteProduct(p._id)} className="action-btn btn-delete">Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="no-records-card">
+                  <h3>No products yet. Click "+ Add Product" to create one.</h3>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* PRODUCT ADD/EDIT MODAL */}
+      {showProductForm && (
+        <div className="admin-modal-overlay" onClick={() => setShowProductForm(false)}>
+          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+              <button className="admin-modal-close" onClick={() => setShowProductForm(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="admin-product-form">
+              {productError && <div className="admin-error-alert">⚠️ {productError}</div>}
+
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Name *</label>
+                  <input className="form-input" required value={productForm.name}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Category *</label>
+                  <input className="form-input" required list="cat-list" value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })} />
+                  <datalist id="cat-list">
+                    {Array.from(new Set(products.map((p) => p.category).filter(Boolean))).map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Short Description</label>
+                <input className="form-input" value={productForm.shortDesc}
+                  onChange={(e) => setProductForm({ ...productForm, shortDesc: e.target.value })} />
+              </div>
+
+              <div className="form-group">
+                <label>Full Description</label>
+                <textarea className="form-input" rows={3} value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} />
+              </div>
+
+              <div className="form-grid-3">
+                <div className="form-group">
+                  <label>Price (₹) *</label>
+                  <input className="form-input" type="number" required value={productForm.price}
+                    onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>MRP (₹)</label>
+                  <input className="form-input" type="number" value={productForm.mrp}
+                    onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Dealer Price (₹)</label>
+                  <input className="form-input" type="number" value={productForm.dealerPrice}
+                    onChange={(e) => setProductForm({ ...productForm, dealerPrice: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="form-grid-3">
+                <div className="form-group">
+                  <label>Margin</label>
+                  <input className="form-input" placeholder="20-35%" value={productForm.margin}
+                    onChange={(e) => setProductForm({ ...productForm, margin: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>MOQ</label>
+                  <input className="form-input" placeholder="50 units" value={productForm.moq}
+                    onChange={(e) => setProductForm({ ...productForm, moq: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Unit</label>
+                  <input className="form-input" value={productForm.unit}
+                    onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Badges / Labels (comma separated)</label>
+                <input className="form-input" placeholder="100% Natural, Immunity booster" value={productForm.badges}
+                  onChange={(e) => setProductForm({ ...productForm, badges: e.target.value })} />
+              </div>
+
+              <div className="form-group">
+                <label>Product Image {editingProduct ? '(leave empty to keep current)' : ''}</label>
+                <input className="form-input" type="file" accept="image/*"
+                  onChange={(e) => setProductForm({ ...productForm, imageFile: e.target.files?.[0] || null })} />
+                {productForm.imageUrl && !productForm.imageFile && (
+                  <img src={productForm.imageUrl} alt="current" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', marginTop: '0.5rem' }} />
+                )}
+              </div>
+
+              <div className="form-grid-2">
+                <label className="admin-checkbox">
+                  <input type="checkbox" checked={productForm.featured}
+                    onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })} />
+                  Featured on homepage
+                </label>
+                <label className="admin-checkbox">
+                  <input type="checkbox" checked={productForm.active}
+                    onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })} />
+                  Active (visible on site)
+                </label>
+              </div>
+
+              <div className="admin-modal-actions">
+                <button type="button" className="action-btn btn-delete" onClick={() => setShowProductForm(false)}>Cancel</button>
+                <button type="submit" disabled={savingProduct} className="btn-pill btn-pill-lime">
+                  {savingProduct ? 'Saving…' : editingProduct ? 'Update Product' : 'Create Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

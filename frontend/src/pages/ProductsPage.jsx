@@ -1,99 +1,41 @@
-import React, { useState } from 'react';
-
-const allProducts = [
-  {
-    id: "gulganth-dry-fruits",
-    name: "Gulganth Dry Fruits",
-    category: "Gulkand & Dry Fruits",
-    desc: "Exquisite sun-cooked Damask rose petals generously blended with premium cashew nuts, almonds, and pistachios for a royal, invigorating after-meal bite.",
-    labels: ["Royal formulation", "Rich in dry fruits", "100% Natural"],
-    img: "/assets/creatives/Gulganth_Dry_Fruits.svg",
-    price: 699
-  },
-  {
-    id: "honey-amla",
-    name: "Honey Amla",
-    category: "Honey & Infusions",
-    desc: "Fresh organic Indian gooseberries (Amla) slow-steeped in pure wild mountain honey. A classic Ayurvedic daily immunity booster loaded with Vitamin C.",
-    labels: ["Ayurvedic recipe", "Immunity booster", "100% Natural"],
-    img: "/assets/creatives/Honey_Amla.svg",
-    price: 649
-  },
-  {
-    id: "honey-fig",
-    name: "Honey Fig",
-    category: "Honey & Infusions",
-    desc: "Sun-dried Turkish figs soaked in rich raw forest honey. High in natural dietary fiber, iron, and essential minerals for daily vitality.",
-    labels: ["Rich in fiber", "Raw forest honey", "No added sugar"],
-    img: "/assets/creatives/Honey_Fig.svg",
-    price: 699
-  },
-  {
-    id: "honey-garlic",
-    name: "Honey Garlic",
-    category: "Honey & Infusions",
-    desc: "Aged mountain garlic cloves fermented in pure raw honey. A potent traditional remedy known for cardiovascular wellness and natural immunity.",
-    labels: ["Aged fermentation", "Heart health", "Traditional remedy"],
-    img: "/assets/creatives/Honey_Garlic.svg",
-    price: 599
-  },
-  {
-    id: "honey-mappillai-mix",
-    name: "Honey Mappillai Mix",
-    category: "Honey & Infusions",
-    desc: "A heritage South Indian herbal honey blend infused with traditional invigorating herbs, nuts, and botanical extracts for sustained stamina.",
-    labels: ["Heritage blend", "Herbal tonic", "Energy booster"],
-    img: "/assets/creatives/Honey_Mappillai_Mix.svg",
-    price: 799
-  },
-  {
-    id: "gulkand-rose-jam",
-    name: "Gulkand Rose Petal Jam",
-    category: "Gulkand & Dry Fruits",
-    desc: "Authentic sun-cured Damask rose petal preserve prepared using age-old slow cooking techniques. Naturally cooling for digestive health.",
-    labels: ["Sun-cured roses", "Natural cooling", "Pure recipe"],
-    img: "/assets/creatives/Gulkand_Rose_Petal_Jam.svg",
-    price: 499
-  },
-  {
-    id: "narumanam-mouth-freshener",
-    name: "Narumanam Mouth Freshener",
-    category: "Digestives & Beeda",
-    desc: "A fragrant blend of roasted fennel seeds, silver-coated cardamom, dry dates, and herbal cooling seeds for long-lasting fresh breath.",
-    labels: ["Fresh breath", "Herbal blend", "After-meal digestive"],
-    img: "/assets/creatives/Narumanam_Mouth_Freshener.svg",
-    price: 399
-  },
-  {
-    id: "narumanam-agarbatti",
-    name: "Narumanam Agarbatti",
-    category: "Aromatics & Sambrani",
-    desc: "Hand-rolled sacred incense sticks crafted with natural flower resins, sandalwood oils, and pure botanical extracts for peaceful meditation.",
-    labels: ["Hand-rolled", "Natural resins", "Long-burning"],
-    img: "/assets/creatives/Narumanam_Agrabatti.svg",
-    price: 249
-  },
-  {
-    id: "narumanam-cup-sambrani",
-    name: "Narumanam Cup Sambrani",
-    category: "Aromatics & Sambrani",
-    desc: "Traditional charcoal-free sambrani cups filled with pure benzoin resin (Loban). Emits a soothing, purifying herbal smoke for homes and temples.",
-    labels: ["Pure Loban resin", "Charcoal-free", "Purifying fragrance"],
-    img: "/assets/creatives/Narumanam_Cup_sambrani.svg",
-    price: 299
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(['All']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const categories = ['All', 'Honey & Infusions', 'Digestives & Beeda', 'Gulkand & Dry Fruits', 'Aromatics & Sambrani'];
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/products`);
+        const json = await res.json();
+        if (!active) return;
+        const data = json.data || [];
+        setProducts(data);
+        const uniqueCats = Array.from(new Set(data.map((p) => p.category).filter(Boolean))).sort();
+        setCategories(['All', ...uniqueCats]);
+      } catch (err) {
+        if (active) setError('Could not load products. Please try again later.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const filteredProducts = allProducts.filter((prod) => {
+  const filteredProducts = products.filter((prod) => {
     const matchesCategory = selectedCategory === 'All' || prod.category === selectedCategory;
-    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          prod.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      prod.name.toLowerCase().includes(q) || (prod.description || '').toLowerCase().includes(q);
     return matchesCategory && matchesSearch;
   });
 
@@ -127,14 +69,14 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
 
         {/* Mobile Category Dropdown Select */}
         <div className="mobile-category-select-wrap">
-          <select 
+          <select
             className="mobile-category-select"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
-                {cat === 'All' ? '🏷️ All Categories (9 Products)' : `🏷️ Category: ${cat}`}
+                {cat === 'All' ? `🏷️ All Categories (${products.length} Products)` : `🏷️ Category: ${cat}`}
               </option>
             ))}
           </select>
@@ -153,24 +95,32 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
         </div>
       </div>
 
-      {/* Products List matching clean layout without background frame */}
+      {/* Products List */}
       <div className="products-list-container">
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className="no-products-found">
+            <h3>Loading products…</h3>
+          </div>
+        ) : error ? (
+          <div className="no-products-found">
+            <h3>{error}</h3>
+          </div>
+        ) : filteredProducts.length > 0 ? (
           filteredProducts.map((prod) => (
-            <div key={prod.id} className="product-row-card">
-              {/* Product Image Frame (Clean without background design) */}
+            <div key={prod._id} className="product-row-card">
+              {/* Product Image Frame */}
               <div className="product-img-frame">
-                <img src={prod.img} alt={prod.name} className="product-card-img" />
+                <img src={prod.imageUrl} alt={prod.name} className="product-card-img" loading="lazy" />
               </div>
 
               {/* Product Content Details */}
               <div className="product-card-details">
                 <h3 className="product-card-title">{prod.name}</h3>
-                <p className="product-card-desc">{prod.desc}</p>
+                <p className="product-card-desc">{prod.description}</p>
 
-                {/* 3 Pill Labels */}
+                {/* Pill Labels */}
                 <div className="product-labels-group">
-                  {prod.labels.map((lbl, idx) => (
+                  {(prod.badges || []).map((lbl, idx) => (
                     <span key={idx} className="product-pill-label">
                       {lbl}
                     </span>
@@ -179,10 +129,7 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
 
                 {/* Enquire Button */}
                 <div className="product-action-wrap">
-                  <button 
-                    className="enquire-product-btn"
-                    onClick={() => onOpenEnquiry(prod.name)}
-                  >
+                  <button className="enquire-product-btn" onClick={() => onOpenEnquiry(prod.name)}>
                     Enquire About This Product
                   </button>
                 </div>
@@ -192,7 +139,13 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
         ) : (
           <div className="no-products-found">
             <h3>No products match your search.</h3>
-            <button onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }} className="btn-pill btn-pill-lime">
+            <button
+              onClick={() => {
+                setSelectedCategory('All');
+                setSearchQuery('');
+              }}
+              className="btn-pill btn-pill-lime"
+            >
               RESET FILTERS
             </button>
           </div>

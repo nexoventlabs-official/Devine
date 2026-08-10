@@ -36,4 +36,29 @@ export async function triggerReview(phone, orderId) {
   return b2c.startReview(phone, orderId);
 }
 
-export default { logInbound, handleMessage, triggerReview };
+// Handle delivery / read / payment status callbacks from the webhook.
+export async function handleStatus(channel, status) {
+  try {
+    // Native WhatsApp Pay result arrives as a status with a `payment` object.
+    const payment = status?.payment;
+    if (payment) {
+      const referenceId = payment.reference_id || payment.receipt || status.id;
+      const state = (payment.status || payment.transaction?.status || '').toLowerCase();
+      logger.info('Payment status', { channel, referenceId, state });
+      if (['captured', 'success', 'completed', 'paid'].includes(state)) {
+        await b2c.confirmPaidOrder(referenceId, payment);
+      } else if (['failed', 'cancelled', 'canceled', 'declined'].includes(state)) {
+        await b2c.failPaidOrder(referenceId);
+      }
+      return;
+    }
+    // Plain message delivery/read receipts — update CRM status best-effort.
+    if (status?.id && status?.status) {
+      await Message.updateOne({ metaMessageId: status.id }, { $set: { deliveryStatus: status.status } }).catch(() => {});
+    }
+  } catch (err) {
+    logger.warn('handleStatus failed', { channel, error: err.message });
+  }
+}
+
+export default { logInbound, handleMessage, triggerReview, handleStatus };

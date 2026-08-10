@@ -1,6 +1,6 @@
 import express from 'express';
 import { decryptRequest, encryptResponse } from '../services/flowCrypto.js';
-import { districtOptions } from '../data/geo.js';
+import { districtOptions, stateOptions } from '../data/geo.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import logger from '../services/logger.js';
@@ -19,15 +19,20 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const { action, screen, data = {}, version } = decrypted;
+    const { action, screen, data = {}, flow_token, version } = decrypted;
+    const token = flow_token || data.flow_token || '';
 
     // Health check ping from Meta
     if (action === 'ping') {
       return sendEncrypted(res, { data: { status: 'active' } }, aesKeyBuffer, initialVectorBuffer);
     }
 
-    // INIT — first screen open (we mostly use navigate, so return empty data)
+    // INIT — first screen open. Branch by flow token (dealer vs export).
     if (action === 'INIT') {
+      if (token.startsWith('b2b_export_')) {
+        return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
+      }
+      // Dealer flow starts on business name.
       return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
     }
 
@@ -49,11 +54,17 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
+async function countryOptions() {
+  const list = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
+  return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...list.map((c) => ({ id: String(c._id), title: c.name }))];
+}
+
 async function handleDataExchange(screen, data) {
   switch (screen) {
-    // Dealer flow: business name captured -> go to state select (states embedded statically)
+    // Dealer flow: business name captured -> go to state select WITH the states list.
     case 'BUSINESS_NAME':
-      return { screen: 'STATE_SELECT', data: {} };
+      return { screen: 'STATE_SELECT', data: { states: stateOptions() } };
 
     // Dealer flow: state chosen -> return districts for that state
     case 'STATE_SELECT': {
@@ -99,15 +110,20 @@ async function handleDataExchange(screen, data) {
       const products = await Product.find({ active: true }).select('name retailerId').lean();
       const productOptions = products.map((p) => ({ id: p.retailerId, title: p.name }));
       let countryLabel = 'Enquiry';
-      if (data.country && data.country !== 'enquiry') {
+      let prefillCountry = ''; // for a specific country we prefill so we don't re-ask
+      const isEnquiry = !data.country || data.country === 'enquiry';
+      if (!isEnquiry) {
         const c = await SupplyCountry.findById(data.country).lean().catch(() => null);
         countryLabel = c?.name || data.country;
+        prefillCountry = countryLabel;
       }
       return {
         screen: 'EXPORT_DETAILS',
         data: {
           products: productOptions.length ? productOptions : [{ id: 'general', title: 'General' }],
-          country_label: countryLabel
+          country_label: countryLabel,
+          country_of_import: prefillCountry,
+          is_enquiry: isEnquiry
         }
       };
     }

@@ -35,11 +35,11 @@ FMCG/
 
 B2B and B2C share Meta app `1344636914323859`, so there is **one webhook**, routed internally by `phone_number_id`.
 
-| Item | Value |
-|------|-------|
-| **Callback URL** | `https://<your-backend-domain>/api/whatsapp/webhook` |
-| (on your Render backend) | `https://devine-yebh.onrender.com/api/whatsapp/webhook` |
-| **Verify token** | `devine_whatsapp_verify_2026` |
+| Item                         | Value                                                        |
+| ---------------------------- | ------------------------------------------------------------ |
+| **Callback URL**       | `https://<your-backend-domain>/api/whatsapp/webhook`       |
+| (on your Render backend)     | `https://devine-yebh.onrender.com/api/whatsapp/webhook`    |
+| **Verify token**       | `devine_whatsapp_verify_2026`                              |
 | **Flow data endpoint** | `https://<your-backend-domain>/api/whatsapp/flow-endpoint` |
 
 Subscribe the webhook to the **messages** field for **both** WABAs.
@@ -50,24 +50,26 @@ Subscribe the webhook to the **messages** field for **both** WABAs.
 
 Flow public encryption keys were generated and **uploaded to both WABAs** successfully.
 
-| Flow | Channel | Status |
-|------|---------|--------|
-| Choose Service | B2B | ✅ **Published** |
-| Bulk / Wholesale | B2B | ✅ **Published** |
-| Corporate Gifting | B2B | ✅ **Published** |
-| Choose Service | B2C | ✅ **Published** |
-| Order Summary | B2C | ✅ **Published** |
-| Review | B2C | ✅ **Published** |
-| Dealer Registration | B2B | ⏳ **Draft** (endpoint flow) |
-| Export Supply | B2B | ⏳ **Draft** (endpoint flow) |
+| Flow                | Channel | Status                            |
+| ------------------- | ------- | --------------------------------- |
+| Choose Service      | B2B     | ✅**Published**             |
+| Bulk / Wholesale    | B2B     | ✅**Published**             |
+| Corporate Gifting   | B2B     | ✅**Published**             |
+| Choose Service      | B2C     | ✅**Published**             |
+| Order Summary       | B2C     | ✅**Published**             |
+| Review              | B2C     | ✅**Published**             |
+| Dealer Registration | B2B     | ⏳**Draft** (endpoint flow) |
+| Export Supply       | B2B     | ⏳**Draft** (endpoint flow) |
 
 The two draft flows are **endpoint-driven** (dynamic state→district, dynamic export country/product lists). Meta requires the data endpoint to be **live and reachable** before it will publish them. They have valid JSON and their ids are already in `.env`.
 
 **To finish these two:** deploy the backend (so `https://<domain>/api/whatsapp/flow-endpoint` is reachable), then run:
+
 ```bash
 cd backend
 node scripts/publishFlows.js
 ```
+
 The script is idempotent (reuses flows by name) and writes ids back into `.env`.
 
 ---
@@ -143,4 +145,6 @@ Routes: site `/`, admin `/admin`, CRM `/crn`, tracking `/track?order=<id>`.
 - **Tracking** uses **MongoDB** (already in the stack) rather than PostgreSQL — the requested behaviour (Socket.IO live GPS + Leaflet + OpenStreetMap + lorry + timeline) is fully implemented; the datastore differs to stay consistent with the existing app. Can be swapped to PostgreSQL if required.
 - **B2C catalog** is rendered as product cards with Add-to-cart (works without Meta Commerce catalog). Native WhatsApp Commerce catalog (product_list) can be layered on if you set up a Meta catalog + `META_CATALOG_ID`.
 - End-to-end message sending was **not** live-tested against a real handset in this build (no test recipient); the webhook handshake, flow publish, and key upload were verified against Meta.
+
+```
 ```

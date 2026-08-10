@@ -35,6 +35,7 @@ const OrderSchema = new mongoose.Schema(
     totalAmount: { type: Number, default: 0 },
     paymentMethod: { type: String, enum: ['online', 'cod'], default: 'cod' },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'cancelled'], default: 'pending' },
+    paymentRef: { type: String, default: '' },
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered', 'cancelled'],

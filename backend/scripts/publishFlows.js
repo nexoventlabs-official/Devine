@@ -26,7 +26,8 @@ const FLOWS = {
   b2b_export: { channel: 'b2b', name: 'Devine B2B - Export Supply', json: b2b.exportFlow(), endpoint: true },
   b2c_service: { channel: 'b2c', name: 'Devine B2C - Choose Service', json: b2c.serviceFlow() },
   b2c_order_summary: { channel: 'b2c', name: 'Devine B2C - Order Summary', json: b2c.orderSummaryFlow() },
-  b2c_review: { channel: 'b2c', name: 'Devine B2C - Review', json: b2c.reviewFlow() }
+  b2c_review: { channel: 'b2c', name: 'Devine B2C - Review', json: b2c.reviewFlow() },
+  b2c_gifting: { channel: 'b2c', name: 'Devine B2C - Corporate Gifting', json: b2c.giftingFlow() }
 };
 
 function writeEnv(updates) {

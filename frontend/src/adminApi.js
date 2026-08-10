@@ -21,6 +21,7 @@ export const api = {
   postForm: (p, form) => req('POST', p, form, true),
   put: (p, b) => req('PUT', p, b),
   putForm: (p, form) => req('PUT', p, form, true),
+  patch: (p, b) => req('PATCH', p, b),
   del: (p) => req('DELETE', p)
 };
 

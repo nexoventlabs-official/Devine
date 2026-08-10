@@ -5,6 +5,8 @@ import Product from '../models/Product.js';
 import cloudinaryService from '../services/cloudinary.js';
 import { getClient } from '../services/metaCloud.js';
 import { genOrderId } from '../services/ids.js';
+import DealerProfile from '../models/DealerProfile.js';
+import catalogService from '../services/catalogService.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -13,8 +15,15 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const filter = { active: true };
   if (req.query.category) filter.category = req.query.category;
+  if (req.query.featured === 'true') filter.featured = true;
   const products = await Product.find(req.query.all ? {} : filter).sort({ createdAt: -1 });
   res.json({ success: true, data: products });
+});
+
+// Public: distinct categories for filter UI
+router.get('/meta/categories', async (_req, res) => {
+  const categories = await Product.distinct('category', { active: true });
+  res.json({ success: true, data: categories.filter(Boolean).sort() });
 });
 
 router.get('/:id', async (req, res) => {
@@ -51,22 +60,20 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       active: b.active !== 'false'
     });
 
-    // Auto-push "New Product Launch" template to opted-in dealers/customers is a
-    // marketing broadcast; here we only fire it if a launch template + audience
-    // are configured. Non-fatal on failure.
-    if (b.announce === 'true' && b.announcePhone) {
-      try {
-        const wa = getClient(b.announceChannel === 'b2c' ? 'b2c' : 'b2b');
-        await wa.sendTemplate(b.announcePhone, process.env.WA_TEMPLATE_PRODUCT_LAUNCH || 'new_product_launch', {
-          headerImageUrl: imageUrl,
-          bodyParams: [product.name, product.description || product.shortDesc || '', String(product.dealerPrice || product.price), String(product.price), product.margin || '', product.moq || '']
-        });
-      } catch (err) {
-        logger.warn('Product launch template send skipped', { error: err.message });
-      }
-    }
-
+    // Respond first, then sync/broadcast in the background so the admin UI is snappy.
     res.status(201).json({ success: true, data: product });
+
+    // Push to Meta Commerce Catalog (native product cards).
+    catalogService.syncProductToMeta(product).catch(() => {});
+
+    // Auto-announce "New Product Launch" to active B2B dealers (unless disabled).
+    // Uses the approved WA template `new_product_launch` (product image header + SAMPLE button).
+    if (b.announce !== 'false') {
+      broadcastProductLaunch(product, imageUrl).catch((err) =>
+        logger.warn('Product launch broadcast failed', { error: err.message })
+      );
+    }
+    return;
   } catch (err) {
     logger.error('Create product error', { error: err.message });
     res.status(500).json({ success: false, message: err.message });
@@ -85,6 +92,8 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
     });
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
+    // Keep the Meta catalog in sync (price/availability/description).
+    if (product) catalogService.syncProductToMeta(product).catch(() => {});
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -97,7 +106,99 @@ router.delete('/:id', auth, async (req, res) => {
     const pid = cloudinaryService.extractPublicId(p.imageUrl);
     if (pid) cloudinaryService.deleteByPublicId(pid).catch(() => {});
   }
+  catalogService.deleteProductFromMeta(p.retailerId).catch(() => {});
   res.json({ success: true, message: 'Deleted' });
 });
+
+// Admin: toggle out-of-stock (manual pause) -> resync availability to Meta
+router.patch('/:id/availability', auth, async (req, res) => {
+  try {
+    const { inStock, isPaused } = req.body;
+    const update = {};
+    if (inStock !== undefined) update.inStock = inStock === true || inStock === 'true';
+    if (isPaused !== undefined) update.isPaused = isPaused === true || isPaused === 'true';
+    const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!product) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: product });
+    catalogService.syncProductToMeta(product).catch(() => {});
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin: set recurring sold-out schedule
+router.patch('/:id/schedule', auth, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $set: { soldOutSchedule: req.body.soldOutSchedule, soldOutUntil: req.body.soldOutUntil } },
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: product });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin: push all products to the Meta catalog
+router.post('/catalog/sync', auth, async (req, res) => {
+  try {
+    const result = await catalogService.autoSync();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Record a product rating (called by the B2C review flow) -> recompute avg + resync
+router.post('/:retailerId/rating', async (req, res) => {
+  try {
+    const { rating, phone, orderId, comment } = req.body;
+    const r = Math.max(1, Math.min(5, Number(rating) || 0));
+    const product = await Product.findOne({ retailerId: req.params.retailerId });
+    if (!product) return res.status(404).json({ success: false, message: 'Not found' });
+    product.ratings.push({ phone, orderId, rating: r, comment });
+    const total = product.ratings.length;
+    const avg = product.ratings.reduce((s, x) => s + (x.rating || 0), 0) / total;
+    product.totalRatings = total;
+    product.avgRating = Math.round(avg * 10) / 10;
+    product.reviewCount = total;
+    product.rating = product.avgRating;
+    await product.save();
+    res.json({ success: true, data: { avgRating: product.avgRating, totalRatings: product.totalRatings } });
+    catalogService.syncProductToMeta(product).catch(() => {});
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Broadcast a new product to all active dealers via the launch template.
+async function broadcastProductLaunch(product, imageUrl) {
+  const dealers = await DealerProfile.find({ status: 'Active' }).select('phone name').lean();
+  if (!dealers.length) return;
+  const wa = getClient('b2b');
+  const templateName = process.env.WA_TEMPLATE_PRODUCT_LAUNCH || 'new_product_launch';
+  let sent = 0;
+  for (const d of dealers) {
+    try {
+      await wa.sendTemplate(d.phone, templateName, {
+        headerImageUrl: imageUrl || product.imageUrl || null,
+        bodyParams: [
+          product.name,
+          product.shortDesc || product.description || '',
+          String(product.dealerPrice || product.price || ''),
+          String(product.mrp || product.price || ''),
+          product.margin || '',
+          product.moq || ''
+        ]
+      });
+      sent++;
+    } catch (err) {
+      logger.warn('Launch send failed', { phone: d.phone, error: err.response?.data?.error?.message || err.message });
+    }
+  }
+  logger.info('Product launch broadcast', { product: product.name, dealers: dealers.length, sent });
+}
 
 export default router;

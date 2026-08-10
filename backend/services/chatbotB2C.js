@@ -9,6 +9,7 @@ import Order from '../models/Order.js';
 import Lead from '../models/Lead.js';
 import { emitOrder, emitLead } from './eventBus.js';
 import { genOrderId } from './ids.js';
+import catalogService from './catalogService.js';
 import logger from './logger.js';
 
 const CH = 'b2c';
@@ -52,11 +53,14 @@ export async function sendWelcome(phone, name = '') {
 }
 
 export async function handle(msg) {
-  const { phone, text, type, selectedId, flowResponse, location, name } = msg;
+  const { phone, text, type, selectedId, flowResponse, location, name, order } = msg;
 
   if (type === 'text' && GREETING.test((text || '').trim())) {
     return sendWelcome(phone, name);
   }
+
+  // Native WhatsApp catalog cart submission -> build cart + open order summary.
+  if (type === 'order' && order) return handleCatalogOrder(phone, order, name);
 
   if (flowResponse) return handleFlowResponse(phone, flowResponse, name);
 
@@ -84,7 +88,58 @@ async function handleFlowResponse(phone, resp, name) {
   if (token.startsWith('b2c_review_')) {
     return handleReviewSubmit(phone, resp);
   }
+  if (token.startsWith('b2c_gifting_')) {
+    return finishGifting(phone, resp, name);
+  }
   return sendWelcome(phone, name);
+}
+
+// ---------- CORPORATE / BULK GIFTING (B2C, mirrors B2B) ----------
+async function startGifting(phone, name) {
+  const fId = flowId('b2c_gifting');
+  await setStep(phone, CH, 'gifting_flow', { name });
+  const intro =
+    '🎁 *Devine Corporate Gifting — Premium Natural Gift Hampers*\n\n' +
+    'We create custom gift hampers for:\n' +
+    '✅ Festival & Diwali Gifting\n' +
+    '✅ Client Appreciation\n' +
+    '✅ Employee Wellness\n' +
+    '✅ Wedding Favours (Bulk)\n\n' +
+    'Hampers start from Rs.299 per unit (MOQ: 50 units).';
+  if (fId) {
+    return wa().sendFlowMessage(phone, {
+      flowId: fId,
+      flowCta: 'Get a Quote',
+      bodyText: intro,
+      headerImageUrl: (await getAsset(ASSET_KEYS.GIFTING_HEADER)) || undefined,
+      headerText: 'Corporate Gifting',
+      screenName: 'GIFTING',
+      flowToken: `b2c_gifting_${clean(phone)}`,
+      flowAction: 'navigate'
+    });
+  }
+  // Fallback if the B2C gifting flow isn't published yet.
+  return wa().sendCtaUrl(phone, intro, 'Talk to us', supportLink());
+}
+
+async function finishGifting(phone, resp, name) {
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'gifting',
+    name: name || resp.company || '',
+    phone,
+    businessName: resp.company || '',
+    details: resp
+  });
+  emitLead(lead);
+  const header = await getAsset(ASSET_KEYS.GIFTING_HEADER);
+  const body =
+    `Thank you! We've received your gifting request for *${resp.hampers}* hampers.\n\n` +
+    'Our gifting specialist will share a custom catalogue and quote shortly.';
+  await setStep(phone, CH, 'awaiting_service');
+  const buttons = [{ id: 'menu', text: 'Choose Service' }];
+  if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
+  return wa().sendButtons(phone, body, buttons);
 }
 
 async function handleSelection(phone, selectedId, name) {
@@ -115,12 +170,7 @@ async function routeService(phone, service, name) {
     case 'browse':
       return showCategories(phone);
     case 'gifting':
-      return wa().sendCtaUrl(
-        phone,
-        '🎁 For corporate/bulk gifting, our team will craft a custom hamper quote for you. Share your requirement and we will respond shortly.',
-        'Talk to us',
-        supportLink()
-      );
+      return startGifting(phone, name);
     case 'track':
       return wa().sendCtaUrl(
         phone,
@@ -141,6 +191,27 @@ async function showCategories(phone) {
     return wa().sendText(phone, 'Our catalogue is being updated. Please check back soon!');
   }
   await setStep(phone, CH, 'browsing');
+  await wa().sendText(phone, '🛍️ *Browse our range* — tap a category to see products.').catch(() => {});
+
+  // Show each category as an image card with a "View Products" button.
+  const withImages = cats.filter((c) => c.imageUrl);
+  if (withImages.length) {
+    for (const c of withImages.slice(0, 10)) {
+      await wa()
+        .sendImageWithButtons(phone, c.imageUrl, `*${c.name}*`, [{ id: `cat_${c.slug}`, text: 'View Products' }])
+        .catch(() => {});
+    }
+    // Any categories without an image still get listed so nothing is hidden.
+    const noImage = cats.filter((c) => !c.imageUrl);
+    if (noImage.length) {
+      await wa().sendList(phone, 'More Categories', 'More categories:', 'Categories', [
+        { title: 'Categories', rows: noImage.map((c) => ({ id: `cat_${c.slug}`, title: c.name })) }
+      ]);
+    }
+    return true;
+  }
+
+  // Fallback: no images uploaded yet -> interactive list.
   return wa().sendList(phone, 'Our Categories', 'Select a category to explore our products.', 'Categories', [
     { title: 'Categories', rows: cats.map((c) => ({ id: `cat_${c.slug}`, title: c.name })) }
   ]);
@@ -148,12 +219,33 @@ async function showCategories(phone) {
 
 async function showCategoryProducts(phone, slug) {
   const cat = await Category.findOne({ slug }).lean();
-  const products = await Product.find({ active: true, inStock: true, category: cat?.name || slug }).lean();
+  const categoryName = cat?.name || slug;
+  const products = await Product.find({ active: true, inStock: true, category: categoryName }).lean();
   if (!products.length) {
     return wa().sendText(phone, 'No products in this category yet.');
   }
   await setStep(phone, CH, 'browsing');
-  // Send each product as an image card with an Add button (chunked to respect rate)
+
+  // Preferred: native WhatsApp catalog product_list (real product cards with
+  // ratings + details on the product page). Falls back to image cards below.
+  try {
+    const built = await catalogService.buildCategorySections(categoryName);
+    if (built) {
+      await wa().sendProductList(
+        phone,
+        process.env.META_CATALOG_ID,
+        categoryName,
+        `Browse our ${categoryName}. Tap a product for full details, ratings & to add to cart.`,
+        built.sections,
+        'Devine Natural Foods'
+      );
+      return true;
+    }
+  } catch (err) {
+    logger.warn('Catalog product_list failed, using image cards', { error: err.response?.data?.error?.message || err.message });
+  }
+
+  // Fallback: send each product as an image card with an Add button.
   for (const p of products.slice(0, 8)) {
     const body =
       `*${p.name}*\n` +
@@ -188,6 +280,29 @@ async function addToCart(phone, retailerId) {
       { id: 'browse', text: 'Add more' }
     ]
   );
+}
+
+// Convert a native WhatsApp catalog order (cart submission) into our cart,
+// then open the order-summary flow (review + payment method).
+async function handleCatalogOrder(phone, order, name) {
+  const items = order.product_items || [];
+  const cart = [];
+  for (const it of items) {
+    const p = await Product.findOne({ retailerId: it.product_retailer_id }).lean();
+    if (!p) continue;
+    cart.push({
+      retailerId: p.retailerId,
+      name: p.name,
+      price: p.price,
+      quantity: Number(it.quantity) || 1,
+      imageUrl: p.imageUrl
+    });
+  }
+  if (!cart.length) {
+    return wa().sendText(phone, 'We could not read your cart. Type *menu* to browse again.');
+  }
+  await patchContext(phone, CH, { cart, customerName: name || '' });
+  return openOrderSummary(phone);
 }
 
 async function openOrderSummary(phone) {
@@ -360,6 +475,50 @@ async function handleReviewSubmit(phone, resp) {
   return wa().sendButtons(phone, body, buttons);
 }
 
+// Called from the webhook when a native WhatsApp Pay transaction succeeds.
+export async function confirmPaidOrder(referenceId, payment = {}) {
+  const order = await Order.findOne({ orderId: referenceId });
+  if (!order) {
+    logger.warn('confirmPaidOrder: order not found', { referenceId });
+    return;
+  }
+  order.paymentStatus = 'paid';
+  if (order.status === 'pending' || !order.status) order.status = 'confirmed';
+  order.paymentRef = payment?.transaction?.id || payment?.reference_id || referenceId;
+  await order.save();
+  emitOrder(order);
+
+  const phone = order.customer?.phone;
+  const expected = order.expectedDelivery ? new Date(order.expectedDelivery) : new Date(Date.now() + 3 * 864e5);
+  const confirmImg = await getAsset(ASSET_KEYS.ORDER_CONFIRMED);
+  const body =
+    `✅ *Payment received! Order Confirmed, ${order.customer?.name || 'there'}!*\n\n` +
+    `*Order ID:* ${order.orderId}\n` +
+    `*Total Paid:* Rs.${order.totalAmount}\n` +
+    `*Expected delivery:* ${expected.toDateString()}\n\n` +
+    "We'll send you tracking details once dispatched.";
+  const trackUrl = `${FRONTEND()}/track?order=${order.orderId}`;
+  if (confirmImg) return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl, 'Devine Natural Foods', confirmImg);
+  return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl);
+}
+
+// Called when a native payment fails/cancels.
+export async function failPaidOrder(referenceId) {
+  const order = await Order.findOne({ orderId: referenceId });
+  if (!order) return;
+  order.paymentStatus = 'failed';
+  await order.save();
+  emitOrder(order);
+  return wa().sendButtons(
+    order.customer?.phone,
+    '⚠️ Your payment did not go through. You can retry or choose Cash on Delivery.',
+    [
+      { id: 'retry_payment', text: 'Retry Payment' },
+      { id: 'menu', text: 'Choose Service' }
+    ]
+  );
+}
+
 function supportLink() {
   const num = process.env.WA_B2C_DISPLAY_NUMBER || '';
   return num ? `https://wa.me/${num.replace(/\D/g, '')}` : `${FRONTEND()}/contact`;
@@ -368,4 +527,4 @@ function clean(phone) {
   return String(phone || '').replace(/\D/g, '');
 }
 
-export default { sendWelcome, handle, startReview };
+export default { sendWelcome, handle, startReview, confirmPaidOrder, failPaidOrder };

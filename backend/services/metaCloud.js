@@ -443,6 +443,97 @@ export function getClient(channel) {
     async deleteFlow(flowId) {
       const { data } = await api.delete(`${GRAPH()}/${flowId}`, { headers: authHeaders });
       return data;
+    },
+
+    // ---------- Commerce Catalog (product sync) ----------
+    // Upsert products into the Meta Commerce Catalog via items_batch.
+    // products: [{ retailerId, name, description, price, salePrice?, currency?, imageUrl?, category?, availability, url? }]
+    async batchUpsertCatalogProducts(catalogId, products) {
+      if (!catalogId) throw new Error('META_CATALOG_ID not configured');
+      const requests = products.map((p) => {
+        const currency = p.currency || 'INR';
+        const link = p.url || process.env.WEBSITE_URL || `https://wa.me/${cfg.phoneNumberId}`;
+        const data = {
+          id: p.retailerId,
+          title: p.name,
+          description: p.description || p.name,
+          availability: p.availability || 'in stock',
+          price: `${Number(p.price).toFixed(2)} ${currency}`,
+          link,
+          google_product_category: 'Food, Beverages & Tobacco > Food Items',
+          brand: process.env.BUSINESS_NAME || 'Devine Natural Foods',
+          condition: 'new',
+          // Unique group id per product = no variant picker
+          item_group_id: p.retailerId,
+          // Clear strikethrough unless a real sale price is provided
+          sale_price: p.salePrice && p.salePrice < p.price ? `${Number(p.salePrice).toFixed(2)} ${currency}` : ''
+        };
+        if (p.imageUrl) data.image_link = squareUrl(p.imageUrl);
+        return { method: 'CREATE', data };
+      });
+      const { data } = await api.post(
+        `${GRAPH()}/${catalogId}/items_batch`,
+        { item_type: 'PRODUCT_ITEM', requests },
+        { headers: authHeaders }
+      );
+      return data;
+    },
+
+    async deleteCatalogProduct(catalogId, retailerId) {
+      if (!catalogId) throw new Error('META_CATALOG_ID not configured');
+      const { data } = await api.post(
+        `${GRAPH()}/${catalogId}/batch`,
+        { requests: [{ method: 'DELETE', retailer_id: retailerId }] },
+        { headers: authHeaders }
+      );
+      return data;
+    },
+
+    // ---------- Native catalog messages ----------
+    // Multi-product browsable list (native WhatsApp catalog cards).
+    async sendProductList(phone, catalogId, headerText, bodyText, sections, footerText = '') {
+      try {
+        const payload = {
+          messaging_product: 'whatsapp',
+          to: clean(phone),
+          type: 'interactive',
+          interactive: {
+            type: 'product_list',
+            header: { type: 'text', text: (headerText || 'Menu').substring(0, 60) },
+            body: { text: (bodyText || ' ').substring(0, 1024) },
+            ...(footerText ? { footer: { text: footerText.substring(0, 60) } } : {}),
+            action: {
+              catalog_id: catalogId,
+              sections: sections.map((s) => ({
+                title: (s.title || 'Products').substring(0, 24),
+                product_items: (s.productRetailerIds || []).slice(0, 30).map((id) => ({ product_retailer_id: id }))
+              }))
+            }
+          }
+        };
+        const { data } = await post(payload);
+        return data;
+      } catch (err) {
+        logger.error('sendProductList error', { channel, error: err.response?.data?.error?.message || err.message });
+        throw err;
+      }
+    },
+
+    // Single product card (native).
+    async sendProduct(phone, catalogId, retailerId, bodyText = '', footerText = '') {
+      const payload = {
+        messaging_product: 'whatsapp',
+        to: clean(phone),
+        type: 'interactive',
+        interactive: {
+          type: 'product',
+          ...(bodyText ? { body: { text: bodyText.substring(0, 1024) } } : {}),
+          ...(footerText ? { footer: { text: footerText.substring(0, 60) } } : {}),
+          action: { catalog_id: catalogId, product_retailer_id: retailerId }
+        }
+      };
+      const { data } = await post(payload);
+      return data;
     }
   };
 

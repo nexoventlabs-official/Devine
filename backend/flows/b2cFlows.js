@@ -182,4 +182,44 @@ export function reviewFlow() {
   };
 }
 
-export default { serviceFlow, orderSummaryFlow, reviewFlow };
+// ---------------------------------------------------------------------------
+// 4) CORPORATE / BULK GIFTING (B2C) — mirrors the B2B gifting collection.
+// ---------------------------------------------------------------------------
+export function giftingFlow() {
+  return {
+    version: VERSION,
+    screens: [
+      {
+        id: 'GIFTING',
+        title: 'Corporate / Bulk Gifting',
+        terminal: true,
+        data: {},
+        layout: {
+          type: 'SingleColumnLayout',
+          children: [
+            { type: 'TextBody', text: 'Custom premium natural gift hampers. Hampers start from Rs.299/unit (MOQ 50).' },
+            { type: 'TextInput', name: 'hampers', label: 'Number of hampers required', required: true, 'input-type': 'number' },
+            { type: 'TextInput', name: 'budget', label: 'Budget per hamper', required: true, 'input-type': 'number' },
+            { type: 'TextInput', name: 'delivery_date', label: 'Delivery date required', required: true, 'input-type': 'text' },
+            { type: 'TextInput', name: 'company', label: 'Company / Name', required: true, 'input-type': 'text' },
+            {
+              type: 'Footer',
+              label: 'Confirm',
+              'on-click-action': {
+                name: 'complete',
+                payload: {
+                  hampers: '${form.hampers}',
+                  budget: '${form.budget}',
+                  delivery_date: '${form.delivery_date}',
+                  company: '${form.company}'
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  };
+}
+
+export default { serviceFlow, orderSummaryFlow, reviewFlow, giftingFlow };

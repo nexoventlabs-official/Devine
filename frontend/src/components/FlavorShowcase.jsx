@@ -1,30 +1,34 @@
-import React from 'react';
-
-const featuredProducts = [
-  {
-    id: "honey-amla",
-    name: "Honey Amla",
-    desc: "Fresh organic Amla slow-steeped in pure wild mountain honey. A classic Ayurvedic daily immunity booster loaded with Vitamin C.",
-    img: "/assets/creatives/Honey_Amla.svg",
-    waveImg: "/assets/creatives/Honey_Amla_wave.svg"
-  },
-  {
-    id: "honey-fig",
-    name: "Honey Fig",
-    desc: "Sun-dried Turkish figs soaked in rich raw forest honey. High in natural dietary fiber, iron, and essential minerals for daily vitality.",
-    img: "/assets/creatives/Honey_Fig.svg",
-    waveImg: "/assets/creatives/Honey_Fig_wave.svg"
-  },
-  {
-    id: "honey-garlic",
-    name: "Honey Garlic",
-    desc: "Aged mountain garlic cloves fermented in pure raw honey. A potent traditional remedy for heart health and natural immunity.",
-    img: "/assets/creatives/Honey_Garlic.svg",
-    waveImg: "/assets/creatives/Honey_Garlic_wave.svg"
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 export default function FlavorShowcase({ onNavigateProducts }) {
+  const [featured, setFeatured] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/products?featured=true`);
+        const json = await res.json();
+        if (!active) return;
+        let data = json.data || [];
+        // Fallback: if none marked featured, show first 3 products.
+        if (data.length === 0) {
+          const all = await (await fetch(`${API_BASE_URL}/products`)).json();
+          data = (all.data || []).slice(0, 3);
+        }
+        setFeatured(data.slice(0, 3));
+      } catch {
+        setFeatured([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (featured.length === 0) return null;
+
   return (
     <section className="flavor-section featured-showcase-section" id="products">
       <div className="section-header">
@@ -33,39 +37,35 @@ export default function FlavorShowcase({ onNavigateProducts }) {
       </div>
 
       <div className="featured-grid-container">
-        {featuredProducts.map((prod) => (
-          <div 
-            key={prod.id} 
-            className={`featured-card card-${prod.id} ${prod.id === 'honey-fig' ? 'default-active' : ''}`}
+        {featured.map((prod, idx) => (
+          <div
+            key={prod._id}
+            className={`featured-card card-${prod.retailerId || prod._id} ${idx === 1 ? 'default-active' : ''}`}
             style={{ cursor: 'pointer' }}
             onClick={() => onNavigateProducts && onNavigateProducts()}
           >
             {/* Inner Background Clip Layer */}
             <div className="card-bg-clip">
-              {prod.waveImg && (
+              {prod.waveImageUrl && (
                 <div className="card-wave-bg">
-                  <img src={prod.waveImg} alt="" className="wave-svg-img" />
+                  <img src={prod.waveImageUrl} alt="" className="wave-svg-img" />
                 </div>
               )}
             </div>
 
-            {/* Top Product SVG Popping Out */}
+            {/* Top Product Image Popping Out */}
             <div className="card-popout-wrap">
-              <img 
-                src={prod.img} 
-                alt={prod.name} 
-                className="card-popout-img" 
-              />
+              <img src={prod.imageUrl} alt={prod.name} className="card-popout-img" loading="lazy" />
             </div>
 
             {/* Card Content */}
             <div className="card-body-content">
               <h3 className="featured-card-title">{prod.name}</h3>
-              <p className="featured-card-desc">{prod.desc}</p>
+              <p className="featured-card-desc">{prod.shortDesc || prod.description}</p>
 
               {/* Action Button */}
               <div className="featured-card-controls">
-                <button 
+                <button
                   className="featured-action-btn"
                   onClick={(e) => {
                     e.stopPropagation();

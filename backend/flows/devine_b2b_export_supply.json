@@ -89,6 +89,10 @@
         "country_label": {
           "type": "string",
           "__example__": "Enquiry"
+        },
+        "country_of_import": {
+          "type": "string",
+          "__example__": ""
         }
       },
       "layout": {
@@ -99,7 +103,8 @@
             "name": "country_of_import",
             "label": "Country of import",
             "required": true,
-            "input-type": "text"
+            "input-type": "text",
+            "init-value": "${data.country_of_import}"
           },
           {
             "type": "CheckboxGroup",

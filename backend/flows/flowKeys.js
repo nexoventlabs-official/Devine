@@ -8,8 +8,8 @@ export const FLOW_ENV = {
   b2b_export: 'WA_FLOW_B2B_EXPORT_ID',
   b2c_service: 'WA_FLOW_B2C_SERVICE_ID',
   b2c_order_summary: 'WA_FLOW_B2C_ORDER_SUMMARY_ID',
-  b2c_payment: 'WA_FLOW_B2C_PAYMENT_ID',
-  b2c_review: 'WA_FLOW_B2C_REVIEW_ID'
+  b2c_review: 'WA_FLOW_B2C_REVIEW_ID',
+  b2c_gifting: 'WA_FLOW_B2C_GIFTING_ID'
 };
 
 export function flowId(key) {

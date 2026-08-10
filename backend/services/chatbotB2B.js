@@ -8,6 +8,7 @@ import Lead from '../models/Lead.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import { emitLead } from './eventBus.js';
+import { genDealerId } from './ids.js';
 import logger from './logger.js';
 
 const CH = 'b2b';
@@ -74,6 +75,11 @@ export async function handle(msg) {
   if (selectedId && ['dealer', 'already_dealer', 'bulk', 'gifting', 'export'].includes(selectedId)) {
     return routeService(phone, selectedId, name);
   }
+
+  // Reply-button payloads from broadcast/retention templates.
+  if (selectedId === 'menu') return sendWelcome(phone, name);
+  if (selectedId === 'order' || selectedId === 'preorder') return handleOrderIntent(phone, name);
+  if (selectedId === 'book_sample') return handleSampleRequest(phone, name);
 
   const convo = await getConversation(phone, CH);
 
@@ -159,20 +165,52 @@ async function startDealer(phone, name) {
 }
 
 async function finishDealer(phone, resp, name) {
+  const businessName = resp.summary_business || resp.business_name || '';
+  const businessType = resp.summary_type || resp.business_type || '';
+  const capacity = resp.summary_capacity || resp.capacity || '';
+  // summary_location is "City, District, State" — split back out where possible.
+  const [city = '', district = '', state = ''] = (resp.summary_location || '').split(',').map((s) => s.trim());
+
   const lead = await Lead.create({
     channel: CH,
     type: 'dealer',
     name: name || '',
     phone,
-    businessName: resp.summary_business || resp.business_name || '',
-    businessType: resp.summary_type || resp.business_type || '',
-    state: resp.state || '',
-    district: resp.district || '',
-    city: resp.city || resp.summary_location || '',
-    capacity: resp.summary_capacity || resp.capacity || '',
+    businessName,
+    businessType,
+    state: resp.state || state,
+    district: resp.district || district,
+    city: resp.city || city,
+    capacity,
     details: resp
   });
   emitLead(lead);
+
+  // Register/refresh the dealer profile so the "Already a Dealer" path works.
+  // A Devine Dealer ID is issued here; admin can later assign an area manager.
+  try {
+    const existing = await DealerProfile.findOne({ phone });
+    await DealerProfile.findOneAndUpdate(
+      { phone },
+      {
+        $set: {
+          phone,
+          name: name || existing?.name || '',
+          businessName,
+          businessType,
+          state: resp.state || state,
+          district: resp.district || district,
+          city: resp.city || city,
+          capacity,
+          status: 'Active'
+        },
+        $setOnInsert: { dealerId: genDealerId() }
+      },
+      { new: true, upsert: true }
+    );
+  } catch (err) {
+    logger.warn('DealerProfile upsert failed', { phone, error: err.message });
+  }
 
   const pdf = await getAsset(ASSET_KEYS.DEALER_PDF);
   const displayName = name || resp.summary_business || 'there';
@@ -356,6 +394,42 @@ async function finishExport(phone, resp, name) {
   const header = await getAsset(ASSET_KEYS.EXPORT_HEADER);
   const body = '🌍 Thank you! *Our export team will respond within 24 hours.*';
   await setStep(phone, CH, 'awaiting_service');
+  const buttons = [{ id: 'menu', text: 'Choose Service' }];
+  if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
+  return wa().sendButtons(phone, body, buttons);
+}
+
+// ---------- ORDER / SAMPLE (from broadcast reply buttons) ----------
+async function handleOrderIntent(phone, name) {
+  await setStep(phone, CH, 'placing_order');
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'order',
+    name: name || '',
+    phone,
+    details: { via: 'reply_button' }
+  });
+  emitLead(lead);
+  return wa().sendText(
+    phone,
+    '🛒 *Place your order*\n\n' +
+      'Reply in this format:\n*Product Name | Quantity | Delivery Address*\n\n' +
+      'We confirm within 2 hours and dispatch within 48 hours. For urgent orders, call your area manager.'
+  );
+}
+
+async function handleSampleRequest(phone, name) {
+  await setStep(phone, CH, 'sample_requested');
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'sample',
+    name: name || '',
+    phone,
+    details: { via: 'reply_button' }
+  });
+  emitLead(lead);
+  const header = await getAsset(ASSET_KEYS.LEAD_THANKS_HEADER);
+  const body = '🎁 Thank you! *Our team will contact you shortly* to arrange your free sample.';
   const buttons = [{ id: 'menu', text: 'Choose Service' }];
   if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
   return wa().sendButtons(phone, body, buttons);

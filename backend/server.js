@@ -18,6 +18,7 @@ import leadsRouter from './routes/leads.js';
 import ordersRouter from './routes/orders.js';
 import crmRouter from './routes/crm.js';
 import { startSchedulers } from './services/scheduler.js';
+import { startProductScheduler } from './services/productScheduler.js';
 import logger from './services/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -226,6 +227,7 @@ server.listen(PORT, () => {
   logger.info(`Devine Backend listening on http://localhost:${PORT}`);
   try {
     startSchedulers();
+    startProductScheduler();
   } catch (err) {
     logger.warn('Scheduler start failed', { error: err.message });
   }

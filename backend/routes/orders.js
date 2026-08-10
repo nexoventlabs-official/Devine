@@ -123,9 +123,20 @@ router.post('/dealers/approve', auth, async (req, res) => {
     const body =
       `🎉 *Welcome to the Devine Dealer Family, ${name || ''}!*\n\n` +
       `You are now an authorised Devine dealer for ${city || district || ''}.\n\n` +
-      `*Your Dealer ID:* ${dealerId}\n` +
-      `*Your Area Manager:* ${areaManagerName || ''} - ${areaManagerPhone || ''}`;
+      `*Your Dealer ID:* ${dealer.dealerId}\n` +
+      `*Your Area Manager:* ${areaManagerName || 'To be assigned'} - ${areaManagerPhone || ''}`;
     await wa.sendText(phone, body).catch(() => {});
+
+    // Attach the 3 dealer documents (uploaded in admin Flow Images), if available.
+    const [agreement, priceList, brandGuide] = await Promise.all([
+      getAsset(ASSET_KEYS.DEALER_AGREEMENT_PDF),
+      getAsset(ASSET_KEYS.DEALER_PRICE_LIST_PDF),
+      getAsset(ASSET_KEYS.DEALER_BRAND_GUIDE_PDF)
+    ]);
+    if (agreement) await wa.sendDocument(phone, agreement, 'Devine-Dealer-Agreement.pdf', '📄 Devine Dealer Agreement').catch(() => {});
+    if (priceList) await wa.sendDocument(phone, priceList, 'Devine-Price-List-Dealer.pdf', '📄 Product Price List — Dealer Copy').catch(() => {});
+    if (brandGuide) await wa.sendDocument(phone, brandGuide, 'Devine-Brand-Guidelines.pdf', '📄 Brand Guidelines — How to display Devine products').catch(() => {});
+
     // Fire the +10min and +1hr follow-up sequence.
     scheduleDealerWelcome(dealer);
     res.json({ success: true, data: dealer });

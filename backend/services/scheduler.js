@@ -67,7 +67,42 @@ export function startSchedulers() {
     { timezone: 'Asia/Kolkata' }
   );
 
+  // Festival alert — daily 9 AM check; fires exactly 21 days before a festival.
+  cron.schedule(
+    '0 9 * * *',
+    async () => {
+      const festival = festivalExactly21DaysAway();
+      if (!festival) return;
+      const dealers = await DealerProfile.find({ status: 'Active' }).lean();
+      for (const d of dealers) await sendTemplateTo('festival_alert', d, { Festival: festival, X: '30' });
+      logger.info('Festival alerts dispatched', { festival, count: dealers.length });
+    },
+    { timezone: 'Asia/Kolkata' }
+  );
+
   logger.info('CRM schedulers started');
+}
+
+// Major Indian festival dates. Update yearly (or move to a Setting in admin).
+const FESTIVALS = [
+  { name: 'Pongal', date: '2027-01-14' },
+  { name: 'Tamil New Year', date: '2026-04-14' },
+  { name: 'Diwali', date: '2026-11-08' },
+  { name: 'Navratri', date: '2026-10-11' },
+  { name: 'Christmas', date: '2026-12-25' },
+  { name: 'Onam', date: '2026-08-26' }
+];
+
+function festivalExactly21DaysAway() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (const f of FESTIVALS) {
+    const d = new Date(f.date);
+    d.setHours(0, 0, 0, 0);
+    const days = Math.round((d - today) / 86400000);
+    if (days === 21) return f.name;
+  }
+  return null;
 }
 
 export default { startSchedulers, scheduleDealerWelcome };
