@@ -4,6 +4,7 @@ import { districtOptions, stateOptions } from '../data/geo.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
+import Order from '../models/Order.js';
 import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
 import { urlToBase64 } from '../services/imageBase64.js';
 import { DEFAULT_BANNER_B64, DEFAULT_ICON_B64 } from '../services/defaultFlowAssets.js';
@@ -138,6 +139,49 @@ async function serviceOptions() {
   );
 }
 
+// Order status -> label + 1:1 logo asset key (uploaded in admin Flow Images).
+const STATUS_META = {
+  pending: { label: 'Pending', key: ASSET_KEYS.ORDER_STATUS_PENDING },
+  confirmed: { label: 'Confirmed', key: ASSET_KEYS.ORDER_STATUS_CONFIRMED },
+  packed: { label: 'Packed', key: ASSET_KEYS.ORDER_STATUS_PACKED },
+  dispatched: { label: 'Dispatched', key: ASSET_KEYS.ORDER_STATUS_DISPATCHED },
+  out_for_delivery: { label: 'Out for Delivery', key: ASSET_KEYS.ORDER_STATUS_OUT_FOR_DELIVERY },
+  delivered: { label: 'Delivered', key: ASSET_KEYS.ORDER_STATUS_DELIVERED },
+  cancelled: { label: 'Cancelled', key: ASSET_KEYS.ORDER_STATUS_CANCELLED }
+};
+
+const _statusLogoCache = {};
+async function statusLogoB64(status) {
+  const meta = STATUS_META[status] || STATUS_META.confirmed;
+  const cached = _statusLogoCache[status];
+  if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.b64;
+  let b64 = '';
+  try {
+    const url = await getAsset(meta.key);
+    if (url) b64 = await urlToBase64(url, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+  } catch (_) {}
+  _statusLogoCache[status] = { b64, at: Date.now() };
+  return b64;
+}
+
+// Build the customer's order list for the in-flow Track Order screen.
+async function orderOptions(phone) {
+  const orders = await Order.find({ 'customer.phone': phone }).sort({ createdAt: -1 }).limit(10).lean();
+  return Promise.all(
+    orders.map(async (o) => {
+      const meta = STATUS_META[o.status] || STATUS_META.confirmed;
+      const item = {
+        id: o.trackId || o.orderId,
+        title: `${o.orderId} - Rs.${o.totalAmount}`,
+        description: `${meta.label} - ${new Date(o.createdAt).toLocaleDateString('en-IN')}`
+      };
+      const b64 = await statusLogoB64(o.status);
+      if (b64) item.image = b64;
+      return item;
+    })
+  );
+}
+
 // Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
 async function countryOptions() {
   const list = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
@@ -206,7 +250,28 @@ async function handleDataExchange(screen, data, token = '') {
           }
         };
       }
-      // Non-browse services complete the flow immediately (returns via nfm_reply).
+      if (service === 'track') {
+        // Phone is embedded in the flow token: b2c_service_<phone>
+        const phone = token.replace(/^b2c_service_/, '');
+        const orders = await orderOptions(phone);
+        if (!orders.length) {
+          return {
+            screen: 'SUCCESS',
+            data: { extension_message_response: { params: { flow_token: token, selected_service: 'track', no_orders: true } } }
+          };
+        }
+        return {
+          screen: 'TRACK_ORDERS',
+          data: {
+            welcome_banner: '',
+            has_welcome_banner: false,
+            heading: '📦 Your Orders',
+            subheading: 'Select an order to see live tracking',
+            orders
+          }
+        };
+      }
+      // Other services (gifting/talk) complete the flow immediately (returns via nfm_reply).
       return {
         screen: 'SUCCESS',
         data: { extension_message_response: { params: { flow_token: token, selected_service: service } } }

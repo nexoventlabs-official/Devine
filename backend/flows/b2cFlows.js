@@ -34,7 +34,7 @@ export function serviceFlow() {
   return {
     version: VERSION,
     data_api_version: '3.0',
-    routing_model: { SERVICE_MENU: ['CATEGORY_SELECT'], CATEGORY_SELECT: [] },
+    routing_model: { SERVICE_MENU: ['CATEGORY_SELECT', 'TRACK_ORDERS'], CATEGORY_SELECT: [], TRACK_ORDERS: [] },
     screens: [
       {
         id: 'SERVICE_MENU',
@@ -134,6 +134,52 @@ export function serviceFlow() {
               'on-click-action': {
                 name: 'complete',
                 payload: { selected_service: 'browse', selected_category: '${form.selected_category}' }
+              }
+            }
+          ]
+        }
+      },
+      {
+        id: 'TRACK_ORDERS',
+        title: 'Track Order',
+        terminal: true,
+        success: true,
+        data: {
+          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo' },
+          has_welcome_banner: { type: 'boolean', __example__: false },
+          heading: { type: 'string', __example__: '📦 Your Orders' },
+          subheading: { type: 'string', __example__: 'Select an order to see live tracking' },
+          orders: arrayDataWithImage([
+            { id: 'TRK-A1B2C3', title: 'DVN-B2C-1234 - Rs.500', description: 'Out for Delivery - 10/08/2026' }
+          ])
+        },
+        layout: {
+          type: 'SingleColumnLayout',
+          children: [
+            {
+              type: 'Image',
+              src: '${data.welcome_banner}',
+              width: 1000,
+              height: 125,
+              'scale-type': 'cover',
+              'alt-text': 'Devine Natural Foods',
+              visible: '${data.has_welcome_banner}'
+            },
+            { type: 'TextHeading', text: '${data.heading}' },
+            { type: 'TextCaption', text: '${data.subheading}' },
+            {
+              type: 'RadioButtonsGroup',
+              name: 'selected_order',
+              label: 'Your Orders',
+              required: true,
+              'data-source': '${data.orders}'
+            },
+            {
+              type: 'Footer',
+              label: 'Track Order',
+              'on-click-action': {
+                name: 'complete',
+                payload: { selected_service: 'track', selected_order: '${form.selected_order}' }
               }
             }
           ]

@@ -30,7 +30,14 @@ const FIELDS = [
       { key: 'review_header', label: 'Review Request Header', type: 'image', defaultRatio: '1:1' },
       { key: 'review_5star_header', label: '5-Star Thank-You Header', type: 'image', defaultRatio: '1:1' },
       { key: 'review_issue_header', label: 'Low-Rating Header', type: 'image', defaultRatio: '1:1' },
-      { key: 'delivered_pdf_header', label: 'Delivered/Invoice Header', type: 'image', defaultRatio: '8:1', isBanner: true }
+      { key: 'delivered_pdf_header', label: 'Delivered/Invoice Header', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'order_status_pending', label: 'Order Status: Pending (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_confirmed', label: 'Order Status: Confirmed (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_packed', label: 'Order Status: Packed (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_dispatched', label: 'Order Status: Dispatched (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_out_for_delivery', label: 'Order Status: Out for Delivery (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_delivered', label: 'Order Status: Delivered (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'order_status_cancelled', label: 'Order Status: Cancelled (1:1)', type: 'image', defaultRatio: '1:1' }
     ]
   },
   {

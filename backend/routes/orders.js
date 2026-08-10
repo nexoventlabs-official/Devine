@@ -26,7 +26,8 @@ const STATUS_LABEL = {
 
 // Public: fetch an order for the tracking page.
 router.get('/track/:orderId', async (req, res) => {
-  const order = await Order.findOne({ orderId: req.params.orderId }).lean();
+  const key = req.params.orderId;
+  const order = await Order.findOne({ $or: [{ trackId: key }, { orderId: key }] }).lean();
   if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
   res.json({ success: true, data: order });
 });
@@ -60,7 +61,7 @@ router.patch('/:orderId/status', auth, async (req, res) => {
     req.app.get('io')?.to(`order_${order.orderId}`).emit('status', { orderId: order.orderId, status, updates: order.trackingUpdates });
 
     const wa = getClient('b2c');
-    const trackUrl = `${FRONTEND()}/track?order=${order.orderId}`;
+    const trackUrl = `${FRONTEND()}/track?order=${order.trackId || order.orderId}`;
 
     if (status === 'delivered') {
       // Generate invoice PDF + trigger review flow

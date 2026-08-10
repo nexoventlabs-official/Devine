@@ -83,6 +83,14 @@ async function handleFlowResponse(phone, resp, name) {
   if (token.startsWith('b2c_service_')) {
     // Category chosen inside the flow -> send the catalog message for it.
     if (resp.selected_category) return showCategoryProducts(phone, resp.selected_category);
+    // Track Order: an order was picked in the flow -> send its tracking message.
+    if (resp.selected_service === 'track') {
+      if (resp.selected_order) return sendOrderTracking(phone, resp.selected_order);
+      return wa().sendButtons(phone, '📦 You have no orders yet. Browse our products to place your first order!', [
+        { id: 'browse', text: 'Browse Products' },
+        { id: 'menu', text: 'Choose Service' }
+      ]);
+    }
     if (resp.selected_service) return routeService(phone, resp.selected_service, name);
   }
   if (token.startsWith('b2c_order_summary_')) {
@@ -384,10 +392,12 @@ async function finishOrder(phone, convo, location) {
   const itemsTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   const deliveryCharge = itemsTotal >= 500 ? 0 : 40;
   const orderId = genOrderId('DVN-B2C');
+  const trackId = genOrderId('TRK');
   const expected = new Date(Date.now() + 3 * 24 * 3600 * 1000);
 
   const order = await Order.create({
     orderId,
+    trackId,
     channel: 'b2c',
     customer: { name: convo.context?.customerName || convo.name || '', phone },
     items: cart,
@@ -432,7 +442,7 @@ async function finishOrder(phone, convo, location) {
     `*Payment:* ${order.paymentMethod === 'online' ? 'Online' : 'Cash on Delivery'}\n` +
     `*Expected delivery:* ${expected.toDateString()}\n\n` +
     "We'll send you tracking details once dispatched.";
-  const trackUrl = `${FRONTEND()}/track?order=${orderId}`;
+  const trackUrl = `${FRONTEND()}/track?order=${trackId}`;
 
   if (confirmImg) {
     return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl, 'Devine Natural Foods', confirmImg);
@@ -524,7 +534,7 @@ export async function confirmPaidOrder(referenceId, payment = {}) {
     `*Total Paid:* Rs.${order.totalAmount}\n` +
     `*Expected delivery:* ${expected.toDateString()}\n\n` +
     "We'll send you tracking details once dispatched.";
-  const trackUrl = `${FRONTEND()}/track?order=${order.orderId}`;
+  const trackUrl = `${FRONTEND()}/track?order=${order.trackId || order.orderId}`;
   if (confirmImg) return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl, 'Devine Natural Foods', confirmImg);
   return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl);
 }
@@ -544,6 +554,38 @@ export async function failPaidOrder(referenceId) {
       { id: 'menu', text: 'Choose Service' }
     ]
   );
+}
+
+// Status -> label + 1:1 logo asset key (uploaded in admin Flow Images).
+const ORDER_STATUS_UI = {
+  pending: { label: 'Pending', key: ASSET_KEYS.ORDER_STATUS_PENDING },
+  confirmed: { label: 'Order Confirmed', key: ASSET_KEYS.ORDER_STATUS_CONFIRMED },
+  packed: { label: 'Packed', key: ASSET_KEYS.ORDER_STATUS_PACKED },
+  dispatched: { label: 'Dispatched', key: ASSET_KEYS.ORDER_STATUS_DISPATCHED },
+  out_for_delivery: { label: 'Out for Delivery', key: ASSET_KEYS.ORDER_STATUS_OUT_FOR_DELIVERY },
+  delivered: { label: 'Delivered', key: ASSET_KEYS.ORDER_STATUS_DELIVERED },
+  cancelled: { label: 'Cancelled', key: ASSET_KEYS.ORDER_STATUS_CANCELLED }
+};
+
+// Send the tracking message for a specific order (chosen in the Track Order flow).
+async function sendOrderTracking(phone, trackKey) {
+  const order = await Order.findOne({ $or: [{ trackId: trackKey }, { orderId: trackKey }] }).lean();
+  if (!order) return wa().sendText(phone, 'Sorry, we could not find that order. Type *menu* to start again.');
+  const ui = ORDER_STATUS_UI[order.status] || ORDER_STATUS_UI.confirmed;
+  const logo = await getAsset(ui.key);
+  const itemsCount = (order.items || []).reduce((s, i) => s + (i.quantity || 1), 0);
+  const eta = order.expectedDelivery ? new Date(order.expectedDelivery).toDateString() : 'TBA';
+  const body =
+    `📦 *Order ${order.orderId}*\n\n` +
+    `*Track ID:* ${order.trackId || order.orderId}\n` +
+    `*Status:* ${ui.label}\n` +
+    `*Items:* ${itemsCount}\n` +
+    `*Total:* Rs.${order.totalAmount}\n` +
+    `*Expected delivery:* ${eta}\n\n` +
+    'Tap below for live map tracking.';
+  const trackUrl = `${FRONTEND()}/track?order=${order.trackId || order.orderId}`;
+  if (logo) return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl, 'Devine Natural Foods', logo);
+  return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl);
 }
 
 function supportLink() {

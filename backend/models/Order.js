@@ -24,6 +24,8 @@ const TrackingUpdateSchema = new mongoose.Schema(
 const OrderSchema = new mongoose.Schema(
   {
     orderId: { type: String, required: true, unique: true, index: true },
+    // Short, unique tracking id shared with the customer (e.g. TRK-A1B2C3).
+    trackId: { type: String, unique: true, sparse: true, index: true },
     channel: { type: String, default: 'b2c' },
     customer: {
       name: { type: String, default: '' },
