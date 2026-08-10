@@ -1,5 +1,5 @@
-// B2C WhatsApp Flow JSON definitions (Flow JSON v5.1).
-const VERSION = '5.1';
+// B2C WhatsApp Flow JSON definitions.
+const VERSION = '6.3';
 
 // Dynamic-array data schema helper (Flow JSON requires `items` for arrays).
 function arrayData(example = [{ id: 'x', title: 'y' }]) {
@@ -10,7 +10,7 @@ function arrayData(example = [{ id: 'x', title: 'y' }]) {
   };
 }
 
-function arrayDataWithImage(example = [{ id: 'x', title: 'y', description: 'z', image: 'https://...' }]) {
+function arrayDataWithImage(example = [{ id: 'x', title: 'y', description: 'z', image: 'iVBORw0KGgo' }]) {
   return {
     type: 'array',
     items: {
@@ -39,13 +39,15 @@ export function serviceFlow() {
         id: 'SERVICE_MENU',
         title: 'Choose Service',
         data: {
-          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo...' },
-          has_welcome_banner: { type: 'boolean', __example__: true },
+          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo' },
+          has_welcome_banner: { type: 'boolean', __example__: false },
+          heading: { type: 'string', __example__: 'Welcome to Devine Natural Foods 🌿' },
+          subheading: { type: 'string', __example__: 'Select a service below to explore' },
           services: arrayDataWithImage([
-            { id: 'browse', title: 'Browse our products', description: 'Explore natural food items & products', image: 'iVBORw0KGgo...' },
-            { id: 'gifting', title: 'Corporate & Bulk gifting', description: 'Custom hampers starting from Rs.299', image: 'iVBORw0KGgo...' },
-            { id: 'track', title: 'Track Order', description: 'Live order & delivery tracking', image: 'iVBORw0KGgo...' },
-            { id: 'talk', title: 'Talk to us', description: 'Chat or call customer support', image: 'iVBORw0KGgo...' }
+            { id: 'browse', title: 'Browse our products', description: 'Explore natural food items, honey & spices' },
+            { id: 'gifting', title: 'Corporate & Bulk gifting', description: 'Custom hampers starting from Rs.299' },
+            { id: 'track', title: 'Track Order', description: 'Live order & delivery tracking' },
+            { id: 'talk', title: 'Talk to us', description: 'Chat or call customer support' }
           ])
         },
         layout: {
@@ -54,22 +56,24 @@ export function serviceFlow() {
             {
               type: 'Image',
               src: '${data.welcome_banner}',
+              width: 1000,
               height: 125,
               'scale-type': 'cover',
+              'alt-text': 'Devine Natural Foods',
               visible: '${data.has_welcome_banner}'
             },
             {
               type: 'TextHeading',
-              text: 'Welcome to Devine Natural Foods 🌿'
+              text: '${data.heading}'
             },
             {
               type: 'TextCaption',
-              text: 'Select a service below to explore'
+              text: '${data.subheading}'
             },
             {
               type: 'RadioButtonsGroup',
               name: 'selected_service',
-              label: '\u2800',
+              label: 'Services',
               required: true,
               'data-source': '${data.services}'
             },
@@ -90,9 +94,11 @@ export function serviceFlow() {
         terminal: true,
         success: true,
         data: {
-          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo...' },
-          has_welcome_banner: { type: 'boolean', __example__: true },
-          categories: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Pure & raw natural honey', image: 'iVBORw0KGgo...' }])
+          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo' },
+          has_welcome_banner: { type: 'boolean', __example__: false },
+          heading: { type: 'string', __example__: '🛍️ Select a Category' },
+          subheading: { type: 'string', __example__: 'Tap a category below to explore our products' },
+          categories: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Pure & raw natural honey' }])
         },
         layout: {
           type: 'SingleColumnLayout',
@@ -100,22 +106,24 @@ export function serviceFlow() {
             {
               type: 'Image',
               src: '${data.welcome_banner}',
+              width: 1000,
               height: 125,
               'scale-type': 'cover',
+              'alt-text': 'Devine Natural Foods',
               visible: '${data.has_welcome_banner}'
             },
             {
               type: 'TextHeading',
-              text: '🛍️ Select a Category'
+              text: '${data.heading}'
             },
             {
               type: 'TextCaption',
-              text: 'Tap a category below to explore our products'
+              text: '${data.subheading}'
             },
             {
               type: 'RadioButtonsGroup',
               name: 'selected_category',
-              label: '\u2800',
+              label: 'Categories',
               required: true,
               'data-source': '${data.categories}'
             },

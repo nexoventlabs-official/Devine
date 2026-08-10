@@ -30,30 +30,32 @@ router.post('/', async (req, res) => {
       return sendEncrypted(res, { data: { status: 'active' } }, aesKeyBuffer, initialVectorBuffer);
     }
 
-    // INIT — first screen open. Branch by flow token (dealer vs export).
+    // INIT — first screen open. Branch by flow token (export vs dealer vs B2C service).
     if (action === 'INIT') {
       if (token.startsWith('b2b_export_')) {
         return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
       }
-      if (token.startsWith('b2c_service_')) {
-        const welcomeBannerB64 = await getWelcomeBannerB64();
-        const services = await serviceOptions();
-        return sendEncrypted(
-          res,
-          {
-            screen: 'SERVICE_MENU',
-            data: {
-              welcome_banner: welcomeBannerB64 || '',
-              has_welcome_banner: !!welcomeBannerB64,
-              services
-            }
-          },
-          aesKeyBuffer,
-          initialVectorBuffer
-        );
+      if (token.startsWith('b2b_dealer_') || token.startsWith('b2b_')) {
+        return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
       }
-      // Dealer flow starts on business name.
-      return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
+      // B2C service menu (default for b2c_service_... or any welcome flow token)
+      const welcomeBannerB64 = await getWelcomeBannerB64();
+      const services = await serviceOptions();
+      return sendEncrypted(
+        res,
+        {
+          screen: 'SERVICE_MENU',
+          data: {
+            welcome_banner: welcomeBannerB64 || '',
+            has_welcome_banner: !!welcomeBannerB64,
+            heading: 'Welcome to Devine Natural Foods 🌿',
+            subheading: 'Select a service below to explore',
+            services
+          }
+        },
+        aesKeyBuffer,
+        initialVectorBuffer
+      );
     }
 
     if (action === 'data_exchange') {
@@ -189,6 +191,8 @@ async function handleDataExchange(screen, data, token = '') {
           data: {
             welcome_banner: welcomeBannerB64 || '',
             has_welcome_banner: !!welcomeBannerB64,
+            heading: '🛍️ Select a Category',
+            subheading: 'Tap a category below to explore our products',
             categories: await categoryOptions()
           }
         };
