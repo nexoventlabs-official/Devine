@@ -246,7 +246,7 @@ const s = {
   headerTitle: { fontSize: 22, fontWeight: 800 },
   etaPill: { display: 'inline-block', marginTop: 8, background: 'rgba(255,255,255,.18)', padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600 },
   mapWrap: { height: 360, width: '100%', boxSizing: 'border-box' },
-  card: { margin: '-28px 14px 0', position: 'relative', borderRadius: 18, padding: 18, color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,.18)', boxSizing: 'border-box' },
+  card: { margin: '14px 12px 0', position: 'relative', zIndex: 500, borderRadius: 18, padding: '22px 18px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,.18)', boxSizing: 'border-box' },
   cardTitleRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   cardTitle: { fontSize: 22, fontWeight: 800 },
   checkBadge: { background: 'rgba(255,255,255,.25)', width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 },
