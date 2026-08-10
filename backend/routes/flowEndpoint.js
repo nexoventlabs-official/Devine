@@ -5,6 +5,7 @@ import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
 import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
+import { urlToBase64 } from '../services/imageBase64.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -35,11 +36,18 @@ router.post('/', async (req, res) => {
         return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
       }
       if (token.startsWith('b2c_service_')) {
-        const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+        const welcomeBannerB64 = await getWelcomeBannerB64();
         const services = await serviceOptions();
         return sendEncrypted(
           res,
-          { screen: 'SERVICE_MENU', data: { banner_image: bannerUrl || 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png', services } },
+          {
+            screen: 'SERVICE_MENU',
+            data: {
+              welcome_banner: welcomeBannerB64 || '',
+              has_welcome_banner: !!welcomeBannerB64,
+              services
+            }
+          },
           aesKeyBuffer,
           initialVectorBuffer
         );
@@ -66,7 +74,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Build 1:1 ratio icon options for B2C service menu
+async function getWelcomeBannerB64() {
+  try {
+    const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+    if (!bannerUrl) return '';
+    return await urlToBase64(bannerUrl, { width: 1000, height: 125, crop: 'fill', format: 'jpg' });
+  } catch (_) {
+    return '';
+  }
+}
+
+// Build 1:1 ratio icon options for B2C service menu (raw base64 format required for Meta Flow)
 async function serviceOptions() {
   const assets = await getAssets([
     ASSET_KEYS.B2C_ICON_BROWSE,
@@ -75,32 +93,41 @@ async function serviceOptions() {
     ASSET_KEYS.B2C_ICON_TALK
   ]);
 
-  return [
+  const items = [
     {
       id: 'browse',
       title: 'Browse our products',
       description: 'Explore natural food items, honey, ghee & spices',
-      image: assets[ASSET_KEYS.B2C_ICON_BROWSE] || 'https://img.icons8.com/color/120/shopping-bag--v1.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_BROWSE] || 'https://img.icons8.com/color/120/shopping-bag--v1.png'
     },
     {
       id: 'gifting',
       title: 'Corporate / Bulk gifting',
       description: 'Custom hampers starting from Rs.299 (MOQ: 50)',
-      image: assets[ASSET_KEYS.B2C_ICON_GIFTING] || 'https://img.icons8.com/color/120/gift--v1.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || 'https://img.icons8.com/color/120/gift--v1.png'
     },
     {
       id: 'track',
       title: 'Track Order',
       description: 'Live delivery status & map tracking',
-      image: assets[ASSET_KEYS.B2C_ICON_TRACK] || 'https://img.icons8.com/color/120/deliver-food.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TRACK] || 'https://img.icons8.com/color/120/deliver-food.png'
     },
     {
       id: 'talk',
       title: 'Talk to us',
       description: 'Chat or call with customer support',
-      image: assets[ASSET_KEYS.B2C_ICON_TALK] || 'https://img.icons8.com/color/120/headset.png'
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TALK] || 'https://img.icons8.com/color/120/headset.png'
     }
   ];
+
+  return Promise.all(
+    items.map(async (item) => {
+      const b64 = await urlToBase64(item.rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
+      const { rawUrl, ...rest } = item;
+      if (b64) rest.image = b64;
+      return rest;
+    })
+  );
 }
 
 // Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
@@ -109,7 +136,7 @@ async function countryOptions() {
   return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...list.map((c) => ({ id: String(c._id), title: c.name }))];
 }
 
-// Categories for the B2C browse flow with 1:1 image thumbnails
+// Categories for the B2C browse flow with 1:1 image thumbnails in raw base64
 async function categoryOptions() {
   let cats = await Category.find({ active: true }).sort({ order: 1 }).lean();
   if (!cats.length) {
@@ -135,12 +162,19 @@ async function categoryOptions() {
     if (p.category) countMap[p.category] = (countMap[p.category] || 0) + 1;
   });
 
-  return cats.map((c) => ({
-    id: c.slug,
-    title: c.name,
-    description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products',
-    image: c.imageUrl || 'https://img.icons8.com/color/120/ingredients.png'
-  }));
+  return Promise.all(
+    cats.map(async (c) => {
+      const rawUrl = c.imageUrl || 'https://img.icons8.com/color/120/ingredients.png';
+      const b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
+      const item = {
+        id: c.slug,
+        title: c.name,
+        description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products'
+      };
+      if (b64) item.image = b64;
+      return item;
+    })
+  );
 }
 
 async function handleDataExchange(screen, data, token = '') {
@@ -149,11 +183,12 @@ async function handleDataExchange(screen, data, token = '') {
     case 'SERVICE_MENU': {
       const service = data.selected_service;
       if (service === 'browse') {
-        const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+        const welcomeBannerB64 = await getWelcomeBannerB64();
         return {
           screen: 'CATEGORY_SELECT',
           data: {
-            banner_image: bannerUrl || 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png',
+            welcome_banner: welcomeBannerB64 || '',
+            has_welcome_banner: !!welcomeBannerB64,
             categories: await categoryOptions()
           }
         };

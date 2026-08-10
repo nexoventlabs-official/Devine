@@ -39,12 +39,13 @@ export function serviceFlow() {
         id: 'SERVICE_MENU',
         title: 'Choose Service',
         data: {
-          banner_image: { type: 'string', __example__: 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png' },
+          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo...' },
+          has_welcome_banner: { type: 'boolean', __example__: true },
           services: arrayDataWithImage([
-            { id: 'browse', title: 'Browse our products', description: 'Explore natural food items & products', image: 'https://img.icons8.com/color/120/shopping-bag--v1.png' },
-            { id: 'gifting', title: 'Corporate & Bulk gifting', description: 'Custom hampers starting from Rs.299', image: 'https://img.icons8.com/color/120/gift--v1.png' },
-            { id: 'track', title: 'Track Order', description: 'Live order & delivery tracking', image: 'https://img.icons8.com/color/120/deliver-food.png' },
-            { id: 'talk', title: 'Talk to us', description: 'Chat or call customer support', image: 'https://img.icons8.com/color/120/headset.png' }
+            { id: 'browse', title: 'Browse our products', description: 'Explore natural food items & products', image: 'iVBORw0KGgo...' },
+            { id: 'gifting', title: 'Corporate & Bulk gifting', description: 'Custom hampers starting from Rs.299', image: 'iVBORw0KGgo...' },
+            { id: 'track', title: 'Track Order', description: 'Live order & delivery tracking', image: 'iVBORw0KGgo...' },
+            { id: 'talk', title: 'Talk to us', description: 'Chat or call customer support', image: 'iVBORw0KGgo...' }
           ])
         },
         layout: {
@@ -52,9 +53,10 @@ export function serviceFlow() {
           children: [
             {
               type: 'Image',
-              src: '${data.banner_image}',
-              height: 140,
-              'scale-type': 'cover'
+              src: '${data.welcome_banner}',
+              height: 125,
+              'scale-type': 'cover',
+              visible: '${data.has_welcome_banner}'
             },
             {
               type: 'TextHeading',
@@ -88,17 +90,19 @@ export function serviceFlow() {
         terminal: true,
         success: true,
         data: {
-          banner_image: { type: 'string', __example__: 'https://res.cloudinary.com/zavohueh/image/upload/v1/devine/placeholder_banner.png' },
-          categories: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Pure & raw natural honey', image: 'https://img.icons8.com/color/120/ingredients.png' }])
+          welcome_banner: { type: 'string', __example__: 'iVBORw0KGgo...' },
+          has_welcome_banner: { type: 'boolean', __example__: true },
+          categories: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Pure & raw natural honey', image: 'iVBORw0KGgo...' }])
         },
         layout: {
           type: 'SingleColumnLayout',
           children: [
             {
               type: 'Image',
-              src: '${data.banner_image}',
-              height: 140,
-              'scale-type': 'cover'
+              src: '${data.welcome_banner}',
+              height: 125,
+              'scale-type': 'cover',
+              visible: '${data.has_welcome_banner}'
             },
             {
               type: 'TextHeading',
