@@ -16,6 +16,7 @@ export async function getAssets(keys = []) {
 // Canonical asset keys used across flows (surface these in the admin Flow Images page).
 export const ASSET_KEYS = {
   // B2B
+  WELCOME_HEADER_B2B: 'welcome_header_b2b',
   WELCOME_BANNER_B2B: 'welcome_banner_b2b',
   DEALER_PDF: 'dealer_pdf',
   DEALER_HEADER: 'dealer_header',
@@ -28,6 +29,7 @@ export const ASSET_KEYS = {
   EXPORT_HEADER: 'export_header',
   LEAD_THANKS_HEADER: 'lead_thanks_header',
   // B2C
+  WELCOME_HEADER_B2C: 'welcome_header_b2c',
   WELCOME_BANNER_B2C: 'welcome_banner_b2c',
   B2C_ICON_BROWSE: 'b2c_icon_browse',
   B2C_ICON_GIFTING: 'b2c_icon_gifting',

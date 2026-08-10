@@ -19,7 +19,8 @@ const FIELDS = [
   {
     group: 'B2C',
     items: [
-      { key: 'welcome_banner_b2c', label: 'Welcome Banner (B2C)', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'welcome_header_b2c', label: 'Welcome Chat Message Header (1.91:1)', type: 'image', defaultRatio: '2:1' },
+      { key: 'welcome_banner_b2c', label: 'Choose Service Flow Banner (8:1)', type: 'image', defaultRatio: '8:1', isBanner: true },
       { key: 'b2c_icon_browse', label: 'Browse Products Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_gifting', label: 'Corporate Gifting Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_track', label: 'Track Order Icon (1:1)', type: 'image', defaultRatio: '1:1' },

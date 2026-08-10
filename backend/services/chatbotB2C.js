@@ -17,9 +17,10 @@ const wa = () => getClient('b2c');
 const GREETING = /^(hi|hello|hey|start|menu|hai|vanakkam|namaskaram)/i;
 
 const FRONTEND = () => (process.env.FRONTEND_BASE_URL || '').replace(/\/$/, '');
+const cleanPhone = (p) => (p || '').replace(/\D/g, '');
 
 export async function sendWelcome(phone, name = '') {
-  const banner = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
+  const messageHeader = await getAsset(ASSET_KEYS.WELCOME_HEADER_B2C);
   const body =
     '🌿 *Namaskaram! Welcome to Devine Food Products.*\n\n' +
     'We make natural, preservative-free food products - straight from Tamil Nadu to your home since 2015.\n\n' +
@@ -31,11 +32,11 @@ export async function sendWelcome(phone, name = '') {
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Choose Service',
-      headerImageUrl: banner || undefined,
-      headerText: banner ? undefined : 'Devine Natural Foods',
+      headerImageUrl: messageHeader || undefined,
+      headerText: messageHeader ? undefined : 'Devine Natural Foods',
       bodyText: body,
       screenName: 'SERVICE_MENU',
-      flowToken: `b2c_service_${clean(phone)}`,
+      flowToken: `b2c_service_${cleanPhone(phone)}`,
       flowAction: 'navigate'
     });
   }
