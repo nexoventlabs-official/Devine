@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
         return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
       }
       // B2C service menu (default for b2c_service_... or any welcome flow token)
-      const welcomeBannerB64 = await getWelcomeBannerB64();
+      const { b64: welcomeBannerB64, hasBanner } = await getWelcomeBannerB64();
       const services = await serviceOptions();
       return sendEncrypted(
         res,
@@ -48,7 +48,7 @@ router.post('/', async (req, res) => {
           screen: 'SERVICE_MENU',
           data: {
             welcome_banner: welcomeBannerB64,
-            has_welcome_banner: true,
+            has_welcome_banner: hasBanner,
             heading: 'Welcome to Devine Natural Foods 🌿',
             subheading: 'Select a service below to explore',
             services
@@ -81,11 +81,11 @@ async function getWelcomeBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
     if (bannerUrl) {
-      const b64 = await urlToBase64(bannerUrl, { width: 1000, height: 125, crop: 'fill', format: 'jpg' });
-      if (b64) return b64;
+      const b64 = await urlToBase64(bannerUrl, { width: 350, height: 44, crop: 'fill', quality: 25, format: 'jpg' });
+      if (b64) return { b64, hasBanner: true };
     }
   } catch (_) {}
-  return DEFAULT_BANNER_B64;
+  return { b64: '', hasBanner: false };
 }
 
 // Build 1:1 ratio icon options for B2C service menu (raw base64 format required for Meta Flow)
@@ -127,13 +127,12 @@ async function serviceOptions() {
   return Promise.all(
     items.map(async (item) => {
       const { rawUrl, ...rest } = item;
-      let b64 = '';
       if (rawUrl) {
         try {
-          b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
+          const b64 = await urlToBase64(rawUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          if (b64) rest.image = b64;
         } catch (_) {}
       }
-      rest.image = b64 || DEFAULT_ICON_B64;
       return rest;
     })
   );
@@ -173,19 +172,18 @@ async function categoryOptions() {
 
   return Promise.all(
     cats.map(async (c) => {
-      const rawUrl = c.imageUrl || '';
-      let b64 = '';
-      if (rawUrl) {
-        try {
-          b64 = await urlToBase64(rawUrl, { width: 200, height: 200, crop: 'fill', format: 'png' });
-        } catch (_) {}
-      }
-      return {
+      const item = {
         id: c.slug,
         title: c.name,
-        description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products',
-        image: b64 || DEFAULT_ICON_B64
+        description: countMap[c.name] ? `${countMap[c.name]} product(s) available` : 'Explore fresh natural products'
       };
+      if (c.imageUrl) {
+        try {
+          const b64 = await urlToBase64(c.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          if (b64) item.image = b64;
+        } catch (_) {}
+      }
+      return item;
     })
   );
 }
@@ -196,12 +194,12 @@ async function handleDataExchange(screen, data, token = '') {
     case 'SERVICE_MENU': {
       const service = data.selected_service;
       if (service === 'browse') {
-        const welcomeBannerB64 = await getWelcomeBannerB64();
+        const { b64: welcomeBannerB64, hasBanner } = await getWelcomeBannerB64();
         return {
           screen: 'CATEGORY_SELECT',
           data: {
-            welcome_banner: welcomeBannerB64 || '',
-            has_welcome_banner: !!welcomeBannerB64,
+            welcome_banner: welcomeBannerB64,
+            has_welcome_banner: hasBanner,
             heading: '🛍️ Select a Category',
             subheading: 'Tap a category below to explore our products',
             categories: await categoryOptions()
