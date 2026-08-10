@@ -52,15 +52,17 @@ router.get('/flow-assets', async (req, res) => {
 // Upsert by key. Accepts a file (image/pdf) OR a url (for links).
 router.post('/flow-assets', auth, upload.single('file'), async (req, res) => {
   try {
-    const { key, label, type = 'image', group = 'general' } = req.body;
+    const { key, label, type = 'image', group = 'general', aspectRatio } = req.body;
     if (!key) return res.status(400).json({ success: false, message: 'key required' });
     let url = req.body.url || '';
     if (req.file) {
       const isPdf = req.file.mimetype === 'application/pdf';
+      const ratio = aspectRatio || (key.toLowerCase().includes('banner') ? '8:1' : '1:1');
       url = await cloudinaryService.uploadBuffer(req.file.buffer, {
         folder: `devine/flow-assets/${group}`,
         resourceType: isPdf ? 'raw' : 'image',
-        preserveAspect: true
+        preserveAspect: isPdf,
+        aspectRatio: ratio
       });
     }
     const asset = await FlowAsset.findOneAndUpdate(

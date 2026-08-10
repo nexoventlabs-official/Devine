@@ -215,7 +215,8 @@ async function showCategories(phone) {
     }
   }
   await setStep(phone, CH, 'browsing');
-  await wa().sendText(phone, '🛍️ *Browse our range* — tap a category to see products.').catch(() => {});
+  const cleanPhone = (p) => (p || '').replace(/\D/g, '');
+  const fId = flowId('b2c_service');
 
   // Show each category as an image card with a "View Products" button.
   const withImages = cats.filter((c) => c.imageUrl);
@@ -225,18 +226,17 @@ async function showCategories(phone) {
         .sendImageWithButtons(phone, c.imageUrl, `*${c.name}*`, [{ id: `cat_${c.slug}`, text: 'View Products' }])
         .catch(() => {});
     }
-    // Any categories without an image still get listed so nothing is hidden.
     const noImage = cats.filter((c) => !c.imageUrl);
     if (noImage.length) {
-      await wa().sendList(phone, 'More Categories', 'More categories:', 'Categories', [
+      await wa().sendList(phone, 'More Categories', 'Select a category:', 'Categories', [
         { title: 'Categories', rows: noImage.map((c) => ({ id: `cat_${c.slug}`, title: c.name })) }
       ]);
     }
     return true;
   }
 
-  // Fallback: no images uploaded yet -> interactive list.
-  return wa().sendList(phone, 'Our Categories', 'Select a category to explore our products.', 'Categories', [
+  // Fallback: interactive list directly without preamble text header message.
+  return wa().sendList(phone, 'Categories', 'Select a category to explore our products.', 'Categories', [
     { title: 'Categories', rows: cats.map((c) => ({ id: `cat_${c.slug}`, title: c.name })) }
   ]);
 }

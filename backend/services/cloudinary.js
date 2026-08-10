@@ -15,14 +15,27 @@ const cloudinaryService = {
    * @param {object} opts { folder, publicId, resourceType, preserveAspect }
    * @returns {Promise<string>} secure_url
    */
-  uploadBuffer(buffer, { folder = 'devine', publicId = null, resourceType = 'image', preserveAspect = false } = {}) {
+  uploadBuffer(buffer, { folder = 'devine', publicId = null, resourceType = 'image', preserveAspect = false, aspectRatio = '1:1' } = {}) {
     return new Promise((resolve, reject) => {
       const options = { folder, resource_type: resourceType };
       if (publicId) options.public_id = publicId;
       if (resourceType === 'image') {
-        options.transformation = preserveAspect
-          ? [{ width: 1000, crop: 'scale' }, { quality: 'auto:best', fetch_format: 'auto' }]
-          : [{ width: 800, height: 800, crop: 'fill', gravity: 'center' }, { quality: 'auto:best', fetch_format: 'auto' }];
+        if (aspectRatio === '8:1') {
+          options.transformation = [
+            { width: 1000, height: 125, crop: 'fill', gravity: 'center' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
+        } else if (preserveAspect) {
+          options.transformation = [
+            { width: 1000, crop: 'scale' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
+        } else {
+          options.transformation = [
+            { width: 800, height: 800, crop: 'fill', gravity: 'center' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
+        }
       }
       const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
         if (err) {
@@ -53,7 +66,9 @@ const cloudinaryService = {
   /** Optimize an image URL to a fixed aspect ratio for WhatsApp display. */
   getOptimizedUrl(imageUrl, aspectRatio = '1:1') {
     if (!imageUrl || imageUrl.startsWith('data:')) return imageUrl;
-    const dims = aspectRatio === '2:1' ? { w: 1200, h: 600 } : { w: 800, h: 800 };
+    let dims = { w: 800, h: 800 };
+    if (aspectRatio === '8:1') dims = { w: 1000, h: 125 };
+    else if (aspectRatio === '2:1') dims = { w: 1200, h: 600 };
     if (imageUrl.includes('cloudinary.com')) {
       const parts = imageUrl.split('/upload/');
       if (parts.length === 2) {
