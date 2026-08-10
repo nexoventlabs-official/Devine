@@ -29,15 +29,17 @@ export async function sendWelcome(phone, name = '') {
   await setStep(phone, CH, 'awaiting_service', { name });
 
   if (fId) {
+    // Open with data_exchange (no payload) so Meta calls the endpoint's INIT,
+    // which supplies the SERVICE_MENU data: base64 banner + services list.
+    // (Opening with navigate + no data was leaving the screen empty/broken.)
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Choose Service',
       headerImageUrl: messageHeader || undefined,
       headerText: messageHeader ? undefined : 'Devine Natural Foods',
       bodyText: body,
-      screenName: 'SERVICE_MENU',
       flowToken: `b2c_service_${cleanPhone(phone)}`,
-      flowAction: 'navigate'
+      flowAction: 'data_exchange'
     });
   }
   return wa().sendList(phone, 'Welcome', body, 'Choose Service', [
