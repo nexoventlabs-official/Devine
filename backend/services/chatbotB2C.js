@@ -186,9 +186,31 @@ async function routeService(phone, service, name) {
 }
 
 async function showCategories(phone) {
-  const cats = await Category.find({ active: true }).sort({ order: 1 }).lean();
+  let cats = await Category.find({ active: true }).sort({ order: 1 }).lean();
+
+  // Fallback: if no Category docs exist yet, derive them from the products that
+  // actually have stock, and auto-create Category rows so admin can add tile
+  // images later. This prevents the "catalogue is being updated" dead-end.
   if (!cats.length) {
-    return wa().sendText(phone, 'Our catalogue is being updated. Please check back soon!');
+    const names = await Product.distinct('category', { active: true, inStock: true });
+    const clean = names.filter(Boolean);
+    if (!clean.length) {
+      return wa().sendText(phone, 'Our catalogue is being updated. Please check back soon!');
+    }
+    const slugify = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    cats = [];
+    for (let i = 0; i < clean.length; i++) {
+      const name = clean[i];
+      const slug = slugify(name);
+      try {
+        await Category.findOneAndUpdate(
+          { name },
+          { $setOnInsert: { name, slug, order: i, active: true } },
+          { upsert: true }
+        );
+      } catch (_) { /* ignore dup races */ }
+      cats.push({ name, slug, imageUrl: '' });
+    }
   }
   await setStep(phone, CH, 'browsing');
   await wa().sendText(phone, '🛍️ *Browse our range* — tap a category to see products.').catch(() => {});
