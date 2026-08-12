@@ -74,6 +74,7 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
   async function openDetail(prod) {
     setDetail({ ...prod, __partial: true });
     setDetailLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const res = await fetch(`${API_BASE_URL}/products/${prod._id}`);
       const json = await res.json();
@@ -83,6 +84,26 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
     } finally {
       setDetailLoading(false);
     }
+  }
+
+  function closeDetail() {
+    setDetail(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Full-page product detail view (replaces the list).
+  if (detail) {
+    return (
+      <ProductDetailPage
+        product={detail}
+        loading={detailLoading}
+        onBack={closeDetail}
+        onEnquire={() => {
+          const name = detail.name;
+          onOpenEnquiry(name);
+        }}
+      />
+    );
   }
 
   const filteredProducts = products.filter((prod) => {
@@ -261,26 +282,14 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
         )}
       </div>
 
-      {detail && (
-        <ProductDetailOverlay
-          product={detail}
-          loading={detailLoading}
-          onClose={() => setDetail(null)}
-          onEnquire={() => {
-            const name = detail.name;
-            setDetail(null);
-            onOpenEnquiry(name);
-          }}
-        />
-      )}
     </div>
   );
 }
 
-function ProductDetailOverlay({ product, loading, onClose, onEnquire }) {
-  const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 720);
+function ProductDetailPage({ product, loading, onBack, onEnquire }) {
+  const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 820);
   useEffect(() => {
-    const onResize = () => setIsNarrow(window.innerWidth < 720);
+    const onResize = () => setIsNarrow(window.innerWidth < 820);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -295,11 +304,18 @@ function ProductDetailOverlay({ product, loading, onClose, onEnquire }) {
       : 0;
 
   return (
-    <div style={ov.backdrop} onClick={onClose}>
-      <div style={ov.sheet} onClick={(e) => e.stopPropagation()}>
-        <button style={ov.close} onClick={onClose} aria-label="Close">✕</button>
+    <div style={ov.page}>
+      <div style={ov.inner}>
+        {/* Breadcrumb / back */}
+        <div style={ov.breadcrumb}>
+          <button style={ov.backBtn} onClick={onBack}>← Back to Products</button>
+          <span style={{ color: '#ccc' }}>/</span>
+          {product.category && <span style={{ color: '#878787' }}>{product.category}</span>}
+          <span style={{ color: '#ccc' }}>/</span>
+          <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{product.name}</span>
+        </div>
 
-        <div style={{ ...ov.grid, gridTemplateColumns: isNarrow ? '1fr' : 'minmax(0, 360px) 1fr' }}>
+        <div style={{ ...ov.grid, gridTemplateColumns: isNarrow ? '1fr' : 'minmax(0, 420px) 1fr' }}>
           {/* Left: image */}
           <div style={{ ...ov.imgCol, borderRight: isNarrow ? 'none' : '1px solid #f0f0f0', position: isNarrow ? 'static' : 'sticky' }}>
             <div style={ov.imgWrap}>
@@ -315,7 +331,7 @@ function ProductDetailOverlay({ product, loading, onClose, onEnquire }) {
           {/* Right: info */}
           <div style={ov.infoCol}>
             {product.category && <div style={ov.category}>{product.category}</div>}
-            <h2 style={ov.title}>{product.name}</h2>
+            <h1 style={ov.title}>{product.name}</h1>
 
             {/* Rating summary */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '6px 0 10px' }}>
@@ -439,19 +455,20 @@ function ProductDetailOverlay({ product, loading, onClose, onEnquire }) {
 }
 
 const ov = {
-  backdrop: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', zIndex: 2000,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+  page: { background: '#f6f6f6', minHeight: '70vh', padding: '20px 16px 60px' },
+  inner: {
+    background: '#fff', borderRadius: 14, width: 'min(1100px, 100%)', margin: '0 auto',
+    boxShadow: '0 2px 14px rgba(0,0,0,.06)', overflow: 'hidden',
   },
-  sheet: {
-    background: '#fff', borderRadius: 14, width: 'min(920px, 96vw)', maxHeight: '92vh',
-    overflowY: 'auto', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,.3)',
+  breadcrumb: {
+    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+    padding: '14px 24px', borderBottom: '1px solid #f0f0f0', fontSize: 13,
   },
-  close: {
-    position: 'absolute', top: 12, right: 12, zIndex: 3, width: 34, height: 34, borderRadius: '50%',
-    border: 'none', background: '#f1f1f1', cursor: 'pointer', fontSize: 15, color: '#333',
+  backBtn: {
+    background: 'transparent', border: 'none', color: '#1a7f37', fontWeight: 700,
+    fontSize: 14, cursor: 'pointer', padding: 0,
   },
-  grid: { display: 'grid', gridTemplateColumns: 'minmax(0, 360px) 1fr', gap: 0 },
+  grid: { display: 'grid', gridTemplateColumns: 'minmax(0, 420px) 1fr', gap: 0 },
   imgCol: { padding: 24, borderRight: '1px solid #f0f0f0', position: 'sticky', top: 0, alignSelf: 'start' },
   imgWrap: {
     width: '100%', aspectRatio: '1/1', background: '#faf7f2', borderRadius: 12,
@@ -461,7 +478,7 @@ const ov = {
   actionsDesktop: { marginTop: 16 },
   infoCol: { padding: 24 },
   category: { color: '#1a7f37', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 },
-  title: { margin: '4px 0', fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.25 },
+  title: { margin: '4px 0', fontSize: 26, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.25 },
   badge: { background: '#eef7ee', color: '#1a7f37', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20 },
   sectionLabel: { fontSize: 13, fontWeight: 700, color: '#878787', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
   ratingSummary: { display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' },
