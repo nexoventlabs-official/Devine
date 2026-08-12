@@ -14,13 +14,30 @@ import ContactPage from './pages/ContactPage';
 import AdminPanel from './pages/AdminPanel';
 import Footer from './components/Footer';
 
+// Maps logical pages to URL paths (and back). Product detail uses /product/:id.
+const PAGE_PATHS = {
+  home: '/',
+  products: '/products',
+  about: '/about',
+  career: '/career',
+  contact: '/contact',
+  admin: '/admin',
+};
+
+function parseLocation() {
+  const path = window.location.pathname;
+  const productMatch = path.match(/^\/product\/([^/]+)\/?$/);
+  if (productMatch) return { page: 'products', productId: productMatch[1] };
+  if (path === '/admin' || window.location.hash === '#admin') return { page: 'admin', productId: null };
+  const found = Object.entries(PAGE_PATHS).find(([, p]) => p === path);
+  if (found) return { page: found[0], productId: null };
+  return { page: 'home', productId: null };
+}
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState(() => {
-    if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
-      return 'admin';
-    }
-    return 'home';
-  });
+  const initialLocation = parseLocation();
+  const [currentPage, setCurrentPage] = useState(initialLocation.page);
+  const [productId, setProductId] = useState(initialLocation.productId);
 
   const [cart, setCart] = useState([
     {
@@ -41,16 +58,44 @@ export default function App() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
-        setCurrentPage('admin');
-      }
+      const loc = parseLocation();
+      setCurrentPage(loc.page);
+      setProductId(loc.productId);
     };
     window.addEventListener('popstate', handleLocationChange);
     return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
 
+  // Navigate to a top-level page and reflect it in the URL.
+  const goToPage = (page) => {
+    if (page !== 'contact') setEnquiryProduct('');
+    window.history.pushState({}, '', PAGE_PATHS[page] || '/');
+    setProductId(null);
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Open a product detail page at /product/:id
+  const openProduct = (product) => {
+    if (!product?._id) return;
+    window.history.pushState({}, '', `/product/${product._id}`);
+    setProductId(product._id);
+    setCurrentPage('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Return from a product detail back to the product list.
+  const closeProduct = () => {
+    window.history.pushState({}, '', PAGE_PATHS.products);
+    setProductId(null);
+    setCurrentPage('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleOpenEnquiry = (productName) => {
     setEnquiryProduct(productName || 'General Enquiry');
+    window.history.pushState({}, '', PAGE_PATHS.contact);
+    setProductId(null);
     setCurrentPage('contact');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -77,32 +122,23 @@ export default function App() {
           onOpenCart={() => setIsCartOpen(true)}
           cartCount={cartTotalItems}
           currentPage={currentPage}
-          onNavigate={(page) => {
-            if (page !== 'contact') {
-              setEnquiryProduct('');
-            }
-            setCurrentPage(page);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onNavigate={goToPage}
         />
       )}
 
       {currentPage === 'products' && (
         <ProductsPage 
           onOpenEnquiry={handleOpenEnquiry}
-          onNavigateHome={() => {
-            setCurrentPage('home');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          productId={productId}
+          onOpenProduct={openProduct}
+          onCloseProduct={closeProduct}
+          onNavigateHome={() => goToPage('home')}
         />
       )}
 
       {currentPage === 'about' && (
         <AboutPage 
-          onNavigateProducts={() => {
-            setCurrentPage('products');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onNavigateProducts={() => goToPage('products')}
         />
       )}
 
@@ -116,10 +152,7 @@ export default function App() {
 
       {currentPage === 'admin' && (
         <AdminPanel 
-          onNavigateHome={() => {
-            setCurrentPage('home');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onNavigateHome={() => goToPage('home')}
         />
       )}
 
@@ -128,10 +161,7 @@ export default function App() {
           <HeroSection />
           <MarqueeTicker />
           <FlavorShowcase 
-            onNavigateProducts={() => {
-              setCurrentPage('products');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }} 
+            onNavigateProducts={() => goToPage('products')} 
           />
         </>
       )}
@@ -139,13 +169,7 @@ export default function App() {
       {currentPage !== 'admin' && (
         <Footer 
           onOpenSocial={() => setIsSocialOpen(true)} 
-          onNavigate={(page) => {
-            if (page !== 'contact') {
-              setEnquiryProduct('');
-            }
-            setCurrentPage(page);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onNavigate={goToPage}
           onOpenEnquiry={handleOpenEnquiry}
         />
       )}

@@ -37,7 +37,7 @@ function RatingChip({ value }) {
   );
 }
 
-export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
+export default function ProductsPage({ onOpenEnquiry, productId, onOpenProduct, onCloseProduct }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
@@ -45,7 +45,7 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Product detail overlay
+  // Product detail (URL-driven via productId prop)
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -71,37 +71,39 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
     };
   }, []);
 
-  async function openDetail(prod) {
-    setDetail({ ...prod, __partial: true });
-    setDetailLoading(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    try {
-      const res = await fetch(`${API_BASE_URL}/products/${prod._id}`);
-      const json = await res.json();
-      if (json.success && json.data) setDetail(json.data);
-    } catch (err) {
-      /* keep the partial data already shown */
-    } finally {
-      setDetailLoading(false);
+  // Load the detail whenever the URL productId changes.
+  useEffect(() => {
+    if (!productId) {
+      setDetail(null);
+      return;
     }
-  }
-
-  function closeDetail() {
-    setDetail(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    let active = true;
+    setDetail((prev) => (prev && prev._id === productId ? prev : null));
+    setDetailLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/products/${productId}`);
+        const json = await res.json();
+        if (active && json.success && json.data) setDetail(json.data);
+      } catch (err) {
+        /* leave detail null; page shows loading→empty */
+      } finally {
+        if (active) setDetailLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [productId]);
 
   // Full-page product detail view (replaces the list).
-  if (detail) {
+  if (productId) {
     return (
       <ProductDetailPage
         product={detail}
         loading={detailLoading}
-        onBack={closeDetail}
-        onEnquire={() => {
-          const name = detail.name;
-          onOpenEnquiry(name);
-        }}
+        onBack={onCloseProduct}
+        onEnquire={() => onOpenEnquiry(detail?.name)}
       />
     );
   }
@@ -188,7 +190,7 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
               <div
                 key={prod._id}
                 className="product-row-card"
-                onClick={() => openDetail(prod)}
+                onClick={() => onOpenProduct(prod)}
                 style={{ cursor: 'pointer' }}
               >
                 {/* Product Image Frame */}
@@ -246,7 +248,7 @@ export default function ProductsPage({ onOpenEnquiry, onNavigateHome }) {
                       className="enquire-product-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDetail(prod);
+                        onOpenProduct(prod);
                       }}
                       style={{ background: '#fff', color: '#1a7f37', border: '1.5px solid #1a7f37' }}
                     >
@@ -293,6 +295,22 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  // No product yet (fetching after a direct URL load, or not found)
+  if (!product) {
+    return (
+      <div style={ov.page}>
+        <div style={ov.inner}>
+          <div style={ov.breadcrumb}>
+            <button style={ov.backBtn} onClick={onBack}>← Back to Products</button>
+          </div>
+          <div style={{ padding: 48, textAlign: 'center', color: '#878787' }}>
+            {loading ? 'Loading product…' : 'Product not found.'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const ratingVal = product.avgRating || product.rating || 0;
   const ratingCount = product.totalRatings || product.reviewCount || 0;
