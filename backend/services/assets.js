@@ -32,6 +32,7 @@ export const ASSET_KEYS = {
   WELCOME_HEADER_B2C: 'welcome_header_b2c',
   WELCOME_BANNER_B2C: 'welcome_banner_b2c',
   ORDER_SUMMARY_HEADER: 'order_summary_header',
+  TALK_HEADER: 'talk_header',
   PAYMENT_LOGO_ONLINE: 'payment_logo_online',
   PAYMENT_LOGO_COD: 'payment_logo_cod',
   B2C_ICON_BROWSE: 'b2c_icon_browse',

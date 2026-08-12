@@ -195,8 +195,17 @@ async function routeService(phone, service, name) {
         'Track Order',
         `${FRONTEND()}/track`
       );
-    case 'talk':
-      return wa().sendCtaUrl(phone, "We're here to help! Tap below to chat or call us.", 'Call Us', supportLink());
+    case 'talk': {
+      const talkImg = await getAsset(ASSET_KEYS.TALK_HEADER);
+      return wa().sendCtaUrl(
+        phone,
+        "We're here to help! Tap below to chat or call us.",
+        'Call Us',
+        supportLink(),
+        talkImg ? 'Devine Natural Foods' : '',
+        talkImg || null
+      );
+    }
     default:
       return sendWelcome(phone, name);
   }

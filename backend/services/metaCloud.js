@@ -40,6 +40,8 @@ export function channelForPhoneNumberId(phoneNumberId) {
 
 const clean = (phone) => String(phone || '').replace('@c.us', '').replace(/\D/g, '');
 const squareUrl = (url) => cloudinaryService.getOptimizedUrl(url, '1:1');
+// Preserve the uploaded image's ratio (used for message/cta headers).
+const originalUrl = (url) => cloudinaryService.getOptimizedUrl(url, 'original');
 
 /**
  * Build a Meta client bound to one channel.
@@ -182,7 +184,7 @@ export function getClient(channel) {
           type: 'interactive',
           interactive: {
             type: 'cta_url',
-            ...(imageUrl ? { header: { type: 'image', image: { link: squareUrl(imageUrl) } } } : {}),
+            ...(imageUrl ? { header: { type: 'image', image: { link: originalUrl(imageUrl) } } } : {}),
             body: { text: body },
             ...(footer ? { footer: { text: footer } } : {}),
             action: { name: 'cta_url', parameters: { display_text: buttonText, url } }
