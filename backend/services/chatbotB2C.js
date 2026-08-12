@@ -136,7 +136,8 @@ async function startGifting(phone, name) {
     });
   }
   // Fallback if the B2C gifting flow isn't published yet.
-  return wa().sendCtaUrl(phone, intro, 'Talk to us', supportLink());
+  const giftImg = await getAsset(ASSET_KEYS.GIFTING_HEADER);
+  return wa().sendCtaUrl(phone, intro, 'Talk to us', supportLink(), giftImg ? 'Devine Natural Foods' : '', giftImg || null);
 }
 
 async function finishGifting(phone, resp, name) {
