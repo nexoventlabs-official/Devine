@@ -203,7 +203,11 @@ export function orderSummaryFlow() {
         data: {
           summary_items: { type: 'string', __example__: '2x Honey Amla - Rs.500' },
           summary_total: { type: 'string', __example__: 'Rs.500' },
-          customer_name: { type: 'string', __example__: 'Guest' }
+          customer_name: { type: 'string', __example__: 'Guest' },
+          payment_options: arrayDataWithImage([
+            { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
+            { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives' }
+          ])
         },
         layout: {
           type: 'SingleColumnLayout',
@@ -217,7 +221,7 @@ export function orderSummaryFlow() {
             {
               type: 'Footer',
               label: 'Continue',
-              'on-click-action': { name: 'navigate', next: { type: 'screen', name: 'PAYMENT_METHOD' }, payload: { name: '${form.name}' } }
+              'on-click-action': { name: 'navigate', next: { type: 'screen', name: 'PAYMENT_METHOD' }, payload: { name: '${form.name}', payment_options: '${data.payment_options}' } }
             }
           ]
         }
@@ -226,7 +230,13 @@ export function orderSummaryFlow() {
         id: 'PAYMENT_METHOD',
         title: 'Payment Method',
         terminal: true,
-        data: { name: { type: 'string', __example__: 'Guest' } },
+        data: {
+          name: { type: 'string', __example__: 'Guest' },
+          payment_options: arrayDataWithImage([
+            { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
+            { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives' }
+          ])
+        },
         layout: {
           type: 'SingleColumnLayout',
           children: [
@@ -235,10 +245,7 @@ export function orderSummaryFlow() {
               name: 'payment_method',
               label: 'How would you like to pay?',
               required: true,
-              'data-source': [
-                { id: 'online', title: 'Online Payment' },
-                { id: 'cod', title: 'Cash on Delivery' }
-              ]
+              'data-source': '${data.payment_options}'
             },
             {
               type: 'Footer',

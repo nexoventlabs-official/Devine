@@ -22,6 +22,8 @@ const FIELDS = [
       { key: 'welcome_header_b2c', label: 'Welcome Chat Message Header', type: 'image', defaultRatio: 'original' },
       { key: 'welcome_banner_b2c', label: 'Choose Service Flow Banner (8:1)', type: 'image', defaultRatio: '8:1', isBanner: true },
       { key: 'order_summary_header', label: 'Order Summary Header', type: 'image', defaultRatio: 'original' },
+      { key: 'payment_logo_online', label: 'Online Payment Logo (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'payment_logo_cod', label: 'Cash on Delivery Logo (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_browse', label: 'Browse Products Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_gifting', label: 'Corporate Gifting Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_track', label: 'Track Order Icon (1:1)', type: 'image', defaultRatio: '1:1' },

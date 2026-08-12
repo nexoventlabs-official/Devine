@@ -1,6 +1,7 @@
 // B2C WhatsApp conversation handler.
 import { getClient } from './metaCloud.js';
 import { getAsset, ASSET_KEYS } from './assets.js';
+import { urlToBase64 } from './imageBase64.js';
 import { flowId } from '../flows/flowKeys.js';
 import { getConversation, setStep, patchContext, resetConversation } from './conversationState.js';
 import Category from '../models/Category.js';
@@ -340,6 +341,27 @@ async function handleCatalogOrder(phone, order, name) {
   return openOrderSummary(phone);
 }
 
+// Build the payment-method options with optional 1:1 logo images (base64).
+// Logos are admin-managed via the Flow Images page.
+async function buildPaymentOptions() {
+  const base = [
+    { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card', key: ASSET_KEYS.PAYMENT_LOGO_ONLINE },
+    { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives', key: ASSET_KEYS.PAYMENT_LOGO_COD }
+  ];
+  return Promise.all(
+    base.map(async ({ key, ...opt }) => {
+      try {
+        const url = await getAsset(key);
+        if (url) {
+          const b64 = await urlToBase64(url, { width: 96, height: 96, crop: 'fill', quality: 40, format: 'jpg' });
+          if (b64) return { ...opt, image: b64 };
+        }
+      } catch (_) {}
+      return opt;
+    })
+  );
+}
+
 async function openOrderSummary(phone) {
   const convo = await getConversation(phone, CH);
   const cart = convo.context?.cart || [];
@@ -352,7 +374,10 @@ async function openOrderSummary(phone) {
   await setStep(phone, CH, 'order_summary');
 
   if (fId) {
-    const header = await getAsset(ASSET_KEYS.ORDER_SUMMARY_HEADER);
+    const [header, paymentOptions] = await Promise.all([
+      getAsset(ASSET_KEYS.ORDER_SUMMARY_HEADER),
+      buildPaymentOptions()
+    ]);
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Order Summary',
@@ -363,7 +388,8 @@ async function openOrderSummary(phone) {
       screenData: {
         summary_items: summaryItems,
         summary_total: `Rs.${total}`,
-        customer_name: convo.name || ''
+        customer_name: convo.name || '',
+        payment_options: paymentOptions
       },
       flowToken: `b2c_order_summary_${clean(phone)}`,
       flowAction: 'navigate'
