@@ -17,6 +17,7 @@ export default function ProductsAdminPage() {
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [scheduleFor, setScheduleFor] = useState(null); // product being scheduled
+  const [editing, setEditing] = useState(null); // product being edited
 
   async function load() {
     const [p, c] = await Promise.all([api.get('/products?all=1'), api.get('/catalog/categories?all=1')]);
@@ -107,6 +108,7 @@ export default function ProductsAdminPage() {
                   {p.soldOutSchedule?.enabled && <span style={{ fontSize: 11, color: '#888', marginLeft: 6 }}>⏱ scheduled</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                  <button onClick={() => setEditing(p)} style={{ ...miniBtn, background: '#111827' }}>Edit</button>
                   <button onClick={() => togglePaused(p)} style={{ ...miniBtn, background: p.isPaused ? '#1a7f37' : '#f59e0b' }}>
                     {p.isPaused ? 'Mark In Stock' : 'Mark Out of Stock'}
                   </button>
@@ -122,6 +124,90 @@ export default function ProductsAdminPage() {
       {scheduleFor && (
         <ScheduleModal product={scheduleFor} onClose={() => setScheduleFor(null)} onSaved={() => { setScheduleFor(null); load(); }} />
       )}
+
+      {editing && (
+        <ProductEditModal
+          product={editing}
+          categories={categories}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProductEditModal({ product, categories, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    name: product.name || '',
+    category: product.category || '',
+    shortDesc: product.shortDesc || '',
+    description: product.description || '',
+    price: product.price ?? '',
+    mrp: product.mrp ?? '',
+    dealerPrice: product.dealerPrice ?? '',
+    margin: product.margin || '',
+    moq: product.moq || '',
+    badges: (product.badges || []).join(', ')
+  });
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true);
+    setErr('');
+    try {
+      const fd = new FormData();
+      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      if (file) fd.append('image', file);
+      await api.putForm(`/products/${product._id}`, fd);
+      onSaved();
+    } catch (e2) {
+      setErr(e2.message || 'Update failed');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={overlay} onClick={onClose}>
+      <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
+        <h3 style={{ marginTop: 0 }}>Edit Product — {product.name}</h3>
+        {err && <div style={{ background: '#fdecec', color: '#c0392b', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 12 }}>
+          {(file || product.imageUrl) && (
+            <img
+              src={file ? URL.createObjectURL(file) : product.imageUrl}
+              alt=""
+              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+            />
+          )}
+          <label style={{ fontSize: 13, color: '#555' }}>
+            Replace image
+            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />
+          </label>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
+          <input required placeholder="Name" value={form.name} onChange={set('name')} style={input} />
+          <input list="edit-cats" required placeholder="Category" value={form.category} onChange={set('category')} style={input} />
+          <datalist id="edit-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
+          <input type="number" required placeholder="Price (MRP/B2C)" value={form.price} onChange={set('price')} style={input} />
+          <input type="number" placeholder="MRP" value={form.mrp} onChange={set('mrp')} style={input} />
+          <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
+          <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={set('margin')} style={input} />
+          <input placeholder="MOQ" value={form.moq} onChange={set('moq')} style={input} />
+          <input placeholder="Badges (comma separated)" value={form.badges} onChange={set('badges')} style={input} />
+        </div>
+        <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
+        <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={4} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical' }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
+          <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : 'Save Changes'}</button>
+        </div>
+      </form>
     </div>
   );
 }

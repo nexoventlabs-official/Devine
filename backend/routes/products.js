@@ -26,10 +26,52 @@ router.get('/meta/categories', async (_req, res) => {
   res.json({ success: true, data: categories.filter(Boolean).sort() });
 });
 
+// Public: single product detail with sanitized reviews + rating distribution.
+// Raw reviewer phone numbers are never exposed (masked to last 4 digits).
 router.get('/:id', async (req, res) => {
-  const p = await Product.findById(req.params.id);
+  const p = await Product.findById(req.params.id).lean();
   if (!p) return res.status(404).json({ success: false, message: 'Not found' });
-  res.json({ success: true, data: p });
+
+  const rawRatings = Array.isArray(p.ratings) ? p.ratings : [];
+  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  rawRatings.forEach((r) => {
+    const s = Math.round(r.rating || 0);
+    if (distribution[s] !== undefined) distribution[s] += 1;
+  });
+
+  const maskReviewer = (phone) => {
+    if (!phone) return 'Verified Buyer';
+    const digits = String(phone).replace(/\D/g, '');
+    return digits.length >= 4 ? `Customer ••••${digits.slice(-4)}` : 'Verified Buyer';
+  };
+
+  const reviews = rawRatings
+    .filter((r) => r.rating)
+    .map((r) => ({
+      rating: r.rating,
+      comment: r.comment || '',
+      reviewer: maskReviewer(r.phone),
+      date: r.createdAt || null
+    }))
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+  const totalRatings = p.totalRatings || reviews.length;
+  const avgRating = p.avgRating || p.rating || 0;
+
+  // Strip PII-bearing raw ratings before sending to the public client.
+  const { ratings, ...safe } = p;
+
+  res.json({
+    success: true,
+    data: {
+      ...safe,
+      avgRating: Math.round(avgRating * 10) / 10,
+      totalRatings,
+      reviewCount: p.reviewCount || totalRatings,
+      ratingDistribution: distribution,
+      reviews
+    }
+  });
 });
 
 // Admin: create product (uploads image, auto-pushes New Product Launch template)
