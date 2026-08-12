@@ -25,6 +25,16 @@ const cloudinaryService = {
             { width: 1000, height: 125, crop: 'fill', gravity: 'center' },
             { quality: 'auto:best', fetch_format: 'auto' }
           ];
+        } else if (aspectRatio === '3:2') {
+          options.transformation = [
+            { width: 1200, height: 800, crop: 'fill', gravity: 'center' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
+        } else if (aspectRatio === '2:1') {
+          options.transformation = [
+            { width: 1200, height: 600, crop: 'fill', gravity: 'center' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
         } else if (preserveAspect) {
           options.transformation = [
             { width: 1000, crop: 'scale' },
@@ -68,6 +78,7 @@ const cloudinaryService = {
     if (!imageUrl || imageUrl.startsWith('data:')) return imageUrl;
     let dims = { w: 800, h: 800 };
     if (aspectRatio === '8:1') dims = { w: 1000, h: 125 };
+    else if (aspectRatio === '3:2') dims = { w: 1200, h: 800 };
     else if (aspectRatio === '2:1') dims = { w: 1200, h: 600 };
     if (imageUrl.includes('cloudinary.com')) {
       const parts = imageUrl.split('/upload/');
