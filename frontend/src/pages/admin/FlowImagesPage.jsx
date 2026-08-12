@@ -53,7 +53,6 @@ export default function FlowImagesPage() {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all' | 'banners' | 'icons' | 'docs'
-  const [ratioSelections, setRatioSelections] = useState({});
 
   async function load() {
     try {
@@ -68,14 +67,10 @@ export default function FlowImagesPage() {
 
   useEffect(() => { load(); }, []);
 
-  function handleRatioChange(key, ratio) {
-    setRatioSelections((prev) => ({ ...prev, [key]: ratio }));
-  }
-
   async function uploadFile(field, file) {
     setBusy(field.key);
     try {
-      const targetRatio = ratioSelections[field.key] || field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
+      const targetRatio = field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
       const form = new FormData();
       form.append('key', field.key);
       form.append('label', field.label);
@@ -169,7 +164,7 @@ export default function FlowImagesPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
               {filteredItems.map((field) => {
                 const current = assets[field.key];
-                const activeRatio = ratioSelections[field.key] || field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
+                const activeRatio = field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
                 const isBannerView = activeRatio === '8:1';
                 // Derive the preview box shape from the target ratio so a 1:1 icon
                 // previews as a square and an 8:1 banner as a wide strip.
@@ -227,40 +222,6 @@ export default function FlowImagesPage() {
                         <a href={current.url} target="_blank" rel="noreferrer" style={{ color: '#15803d', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
                           📄 View Current PDF Document ↗
                         </a>
-                      </div>
-                    )}
-
-                    {/* RATIO SELECTION RADIO BUTTONS (For Image Uploads) */}
-                    {field.type === 'image' && (
-                      <div style={{ marginBottom: 12, padding: '8px 10px', background: '#f9fafb', borderRadius: 8, border: '1px solid #f3f4f6' }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 6 }}>
-                          Target Upload Aspect Ratio:
-                        </div>
-                        <div style={{ display: 'flex', gap: 14 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
-                            <input
-                              type="radio"
-                              name={`ratio_${field.key}`}
-                              value="8:1"
-                              checked={activeRatio === '8:1'}
-                              onChange={() => handleRatioChange(field.key, '8:1')}
-                              style={{ accentColor: '#1a7f37' }}
-                            />
-                            8:1 Banner (1000×125)
-                          </label>
-
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
-                            <input
-                              type="radio"
-                              name={`ratio_${field.key}`}
-                              value="1:1"
-                              checked={activeRatio === '1:1'}
-                              onChange={() => handleRatioChange(field.key, '1:1')}
-                              style={{ accentColor: '#1a7f37' }}
-                            />
-                            1:1 Icon (600×600)
-                          </label>
-                        </div>
                       </div>
                     )}
 
