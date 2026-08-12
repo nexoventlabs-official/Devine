@@ -171,6 +171,11 @@ export default function FlowImagesPage() {
                 const current = assets[field.key];
                 const activeRatio = ratioSelections[field.key] || field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
                 const isBannerView = activeRatio === '8:1';
+                // Derive the preview box shape from the target ratio so a 1:1 icon
+                // previews as a square and an 8:1 banner as a wide strip.
+                const [rW, rH] = activeRatio.split(':').map(Number);
+                const previewAspect = rW && rH ? `${rW} / ${rH}` : '1 / 1';
+                const isWidePreview = rW && rH ? rW / rH >= 2 : false;
 
                 return (
                   <div key={field.key} style={card}>
@@ -183,7 +188,7 @@ export default function FlowImagesPage() {
                       )}
                     </div>
 
-                    {/* IMAGE PREVIEW CONTAINER */}
+                    {/* IMAGE PREVIEW CONTAINER (matches the target aspect ratio) */}
                     {field.type === 'image' && (
                       <div style={{
                         background: '#f3f4f6',
@@ -195,7 +200,10 @@ export default function FlowImagesPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        height: isBannerView ? 80 : 160
+                        width: isWidePreview ? '100%' : 180,
+                        maxWidth: '100%',
+                        aspectRatio: previewAspect,
+                        margin: isWidePreview ? '0 0 12px' : '0 auto 12px'
                       }}>
                         {current?.url ? (
                           <img
@@ -204,10 +212,10 @@ export default function FlowImagesPage() {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
-                          <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>
+                          <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12, padding: 8 }}>
                             <div>No image uploaded</div>
                             <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                              {isBannerView ? '1000 × 125px (8:1 ratio)' : '600 × 600px (1:1 ratio)'}
+                              {isBannerView ? '1000 × 125px (8:1 ratio)' : `${activeRatio} ratio`}
                             </div>
                           </div>
                         )}
