@@ -203,7 +203,7 @@ export function orderSummaryFlow() {
         data: {
           order_table: {
             type: 'string',
-            __example__: '## Your Order\n\n| Item | Qty | Price |\n| --- | :---: | ---: |\n| Honey Amla | 1 | Rs.649 |\n| **Total** |  | **Rs.649** |'
+            __example__: '## Your Order\n\n| Item | Qty | Price |\n| --- | :---: | ---: |\n| Honey Amla | 1 | Rs.649 |\n| **Total** | **1** | **Rs.649** |'
           },
           wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([

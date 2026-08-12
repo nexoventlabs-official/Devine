@@ -348,6 +348,7 @@ async function handleCatalogOrder(phone, order, name) {
 // the cart: Item | Qty | Price, with a bold Total row at the bottom.
 function buildOrderTable(cart, total) {
   const esc = (s) => String(s).replace(/\|/g, '\\|');
+  const totalQty = cart.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
   const rows = [
     '## Your Order',
     '',
@@ -357,7 +358,7 @@ function buildOrderTable(cart, total) {
   for (const i of cart) {
     rows.push(`| ${esc(i.name)} | ${i.quantity} | Rs.${i.price * i.quantity} |`);
   }
-  rows.push(`| **Total** |  | **Rs.${total}** |`);
+  rows.push(`| **Total** | **${totalQty}** | **Rs.${total}** |`);
   return rows.join('\n');
 }
 
