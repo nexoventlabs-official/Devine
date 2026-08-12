@@ -20,7 +20,13 @@ const cloudinaryService = {
       const options = { folder, resource_type: resourceType };
       if (publicId) options.public_id = publicId;
       if (resourceType === 'image') {
-        if (aspectRatio === '8:1') {
+        if (aspectRatio === 'original') {
+          // Keep the uploaded image's exact aspect ratio (no crop); just cap width + optimize.
+          options.transformation = [
+            { width: 1600, crop: 'limit' },
+            { quality: 'auto:best', fetch_format: 'auto' }
+          ];
+        } else if (aspectRatio === '8:1') {
           options.transformation = [
             { width: 1000, height: 125, crop: 'fill', gravity: 'center' },
             { quality: 'auto:best', fetch_format: 'auto' }
@@ -76,6 +82,14 @@ const cloudinaryService = {
   /** Optimize an image URL to a fixed aspect ratio for WhatsApp display. */
   getOptimizedUrl(imageUrl, aspectRatio = '1:1') {
     if (!imageUrl || imageUrl.startsWith('data:')) return imageUrl;
+    // Preserve the original aspect ratio (no crop) — cap width + optimize only.
+    if (aspectRatio === 'original') {
+      if (imageUrl.includes('cloudinary.com')) {
+        const parts = imageUrl.split('/upload/');
+        if (parts.length === 2) return `${parts[0]}/upload/w_1600,c_limit,q_auto:best,f_auto/${parts[1]}`;
+      }
+      return imageUrl;
+    }
     let dims = { w: 800, h: 800 };
     if (aspectRatio === '8:1') dims = { w: 1000, h: 125 };
     else if (aspectRatio === '3:2') dims = { w: 1200, h: 800 };

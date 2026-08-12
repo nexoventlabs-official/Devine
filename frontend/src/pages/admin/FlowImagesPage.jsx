@@ -7,30 +7,30 @@ const FIELDS = [
     group: 'B2B',
     items: [
       { key: 'welcome_banner_b2b', label: 'Welcome Banner (B2B)', type: 'image', defaultRatio: '8:1', isBanner: true },
-      { key: 'dealer_header', label: 'Dealer Header Image', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'dealer_header', label: 'Dealer Header Image', type: 'image', defaultRatio: 'original' },
       { key: 'dealer_pdf', label: 'Dealer Info PDF', type: 'pdf' },
-      { key: 'bulk_header', label: 'Bulk Enquiry Header', type: 'image', defaultRatio: '1:1' },
-      { key: 'gifting_header', label: 'Corporate Gifting Header', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'bulk_header', label: 'Bulk Enquiry Header', type: 'image', defaultRatio: 'original' },
+      { key: 'gifting_header', label: 'Corporate Gifting Header', type: 'image', defaultRatio: 'original' },
       { key: 'gifting_pdf', label: 'Gifting Catalogue PDF', type: 'pdf' },
-      { key: 'export_header', label: 'Export Header Image', type: 'image', defaultRatio: '8:1', isBanner: true },
-      { key: 'lead_thanks_header', label: 'Lead Thank-You Header', type: 'image', defaultRatio: '1:1' }
+      { key: 'export_header', label: 'Export Header Image', type: 'image', defaultRatio: 'original' },
+      { key: 'lead_thanks_header', label: 'Lead Thank-You Header', type: 'image', defaultRatio: 'original' }
     ]
   },
   {
     group: 'B2C',
     items: [
-      { key: 'welcome_header_b2c', label: 'Welcome Chat Message Header (3:2)', type: 'image', defaultRatio: '3:2' },
+      { key: 'welcome_header_b2c', label: 'Welcome Chat Message Header', type: 'image', defaultRatio: 'original' },
       { key: 'welcome_banner_b2c', label: 'Choose Service Flow Banner (8:1)', type: 'image', defaultRatio: '8:1', isBanner: true },
       { key: 'b2c_icon_browse', label: 'Browse Products Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_gifting', label: 'Corporate Gifting Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_track', label: 'Track Order Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_talk', label: 'Talk to Us Icon (1:1)', type: 'image', defaultRatio: '1:1' },
-      { key: 'order_confirmed', label: 'Order Confirmed Image', type: 'image', defaultRatio: '1:1' },
-      { key: 'payment_header', label: 'Payment Header Image', type: 'image', defaultRatio: '8:1', isBanner: true },
-      { key: 'review_header', label: 'Review Request Header', type: 'image', defaultRatio: '1:1' },
-      { key: 'review_5star_header', label: '5-Star Thank-You Header', type: 'image', defaultRatio: '1:1' },
-      { key: 'review_issue_header', label: 'Low-Rating Header', type: 'image', defaultRatio: '1:1' },
-      { key: 'delivered_pdf_header', label: 'Delivered/Invoice Header', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'order_confirmed', label: 'Order Confirmed Image', type: 'image', defaultRatio: 'original' },
+      { key: 'payment_header', label: 'Payment Header Image', type: 'image', defaultRatio: 'original' },
+      { key: 'review_header', label: 'Review Request Header', type: 'image', defaultRatio: 'original' },
+      { key: 'review_5star_header', label: '5-Star Thank-You Header', type: 'image', defaultRatio: 'original' },
+      { key: 'review_issue_header', label: 'Low-Rating Header', type: 'image', defaultRatio: 'original' },
+      { key: 'delivered_pdf_header', label: 'Delivered/Invoice Header', type: 'image', defaultRatio: 'original' },
       { key: 'order_status_pending', label: 'Order Status: Pending (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'order_status_confirmed', label: 'Order Status: Confirmed (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'order_status_packed', label: 'Order Status: Packed (1:1)', type: 'image', defaultRatio: '1:1' },
@@ -165,10 +165,11 @@ export default function FlowImagesPage() {
               {filteredItems.map((field) => {
                 const current = assets[field.key];
                 const activeRatio = field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
+                const isOriginal = activeRatio === 'original';
                 const isBannerView = activeRatio === '8:1';
                 // Derive the preview box shape from the target ratio so a 1:1 icon
                 // previews as a square and an 8:1 banner as a wide strip.
-                const [rW, rH] = activeRatio.split(':').map(Number);
+                const [rW, rH] = isOriginal ? [] : activeRatio.split(':').map(Number);
                 const previewAspect = rW && rH ? `${rW} / ${rH}` : '1 / 1';
                 const isWidePreview = rW && rH ? rW / rH >= 2 : false;
 
@@ -177,8 +178,8 @@ export default function FlowImagesPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                       <div style={{ fontWeight: 600, color: '#111827', fontSize: 15 }}>{field.label}</div>
                       {field.type === 'image' && (
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 12, background: isBannerView ? '#dbeafe' : '#f3e8ff', color: isBannerView ? '#1e40af' : '#6b21a8' }}>
-                          {activeRatio} {isBannerView ? 'Banner' : 'Icon'}
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 12, background: isOriginal ? '#dcfce7' : isBannerView ? '#dbeafe' : '#f3e8ff', color: isOriginal ? '#15803d' : isBannerView ? '#1e40af' : '#6b21a8' }}>
+                          {isOriginal ? 'Original ratio' : `${activeRatio} ${isBannerView ? 'Banner' : 'Icon'}`}
                         </span>
                       )}
                     </div>
@@ -195,22 +196,28 @@ export default function FlowImagesPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: isWidePreview ? '100%' : 180,
+                        width: isOriginal ? '100%' : (isWidePreview ? '100%' : 180),
                         maxWidth: '100%',
-                        aspectRatio: previewAspect,
-                        margin: isWidePreview ? '0 0 12px' : '0 auto 12px'
+                        ...(isOriginal ? { minHeight: 120, maxHeight: 240, padding: 6 } : { aspectRatio: previewAspect }),
+                        margin: (isOriginal || isWidePreview) ? '0 0 12px' : '0 auto 12px'
                       }}>
                         {current?.url ? (
                           <img
                             src={current.url}
                             alt={field.label}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{
+                              width: isOriginal ? 'auto' : '100%',
+                              height: isOriginal ? 'auto' : '100%',
+                              maxWidth: '100%',
+                              maxHeight: isOriginal ? 228 : '100%',
+                              objectFit: isOriginal ? 'contain' : 'cover'
+                            }}
                           />
                         ) : (
                           <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12, padding: 8 }}>
                             <div>No image uploaded</div>
                             <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                              {isBannerView ? '1000 × 125px (8:1 ratio)' : `${activeRatio} ratio`}
+                              {isOriginal ? 'Any size — original ratio kept' : isBannerView ? '1000 × 125px (8:1 ratio)' : `${activeRatio} ratio`}
                             </div>
                           </div>
                         )}
