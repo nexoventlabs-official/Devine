@@ -204,7 +204,7 @@ export function orderSummaryFlow() {
           cart_items: arrayDataWithImage([
             { id: '0', title: '2x Honey Amla', description: 'Rs.500' }
           ]),
-          summary_total: { type: 'string', __example__: 'Rs.500' },
+          summary_total: { type: 'string', __example__: 'Total: Rs.500' },
           wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([
             { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
@@ -220,10 +220,9 @@ export function orderSummaryFlow() {
               name: 'cart_view',
               label: 'Items in your cart',
               required: false,
-              enabled: false,
               'data-source': '${data.cart_items}'
             },
-            { type: 'TextSubheading', text: 'Total: ${data.summary_total}' },
+            { type: 'TextSubheading', text: '${data.summary_total}' },
             {
               type: 'Footer',
               label: 'Continue',

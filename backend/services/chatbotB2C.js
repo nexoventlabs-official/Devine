@@ -411,7 +411,7 @@ async function openOrderSummary(phone) {
       screenName: 'ORDER_SUMMARY',
       screenData: {
         cart_items: cartItems,
-        summary_total: `Rs.${total}`,
+        summary_total: `Total: Rs.${total}`,
         wa_number: `+${clean(phone)}`,
         payment_options: paymentOptions
       },
