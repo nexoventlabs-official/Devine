@@ -352,11 +352,13 @@ async function openOrderSummary(phone) {
   await setStep(phone, CH, 'order_summary');
 
   if (fId) {
+    const header = await getAsset(ASSET_KEYS.ORDER_SUMMARY_HEADER);
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Order Summary',
       bodyText: 'Review your order and choose a payment method.',
-      headerText: 'Order Summary',
+      headerImageUrl: header || undefined,
+      headerText: header ? undefined : 'Order Summary',
       screenName: 'ORDER_SUMMARY',
       screenData: {
         summary_items: summaryItems,
