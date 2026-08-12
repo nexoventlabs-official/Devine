@@ -473,7 +473,7 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
 }
 
 const ov = {
-  page: { background: '#f6f6f6', minHeight: '70vh', padding: '20px 16px 60px' },
+  page: { background: '#f6f6f6', minHeight: '70vh', padding: '7rem 16px 60px' },
   inner: {
     background: '#fff', borderRadius: 14, width: 'min(1100px, 100%)', margin: '0 auto',
     boxShadow: '0 2px 14px rgba(0,0,0,.06)', overflow: 'hidden',
