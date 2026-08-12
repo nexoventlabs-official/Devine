@@ -24,17 +24,44 @@ const STATUS_LABEL = {
   delivered: 'Delivered'
 };
 
+// Parse "lat,lng" out of a plain string or a Google Maps URL (?q=.., @lat,lng, etc.)
+function parseLatLng(str) {
+  if (!str) return null;
+  const m = String(str).match(/(-?\d{1,3}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
+  if (!m) return null;
+  const latitude = parseFloat(m[1]);
+  const longitude = parseFloat(m[2]);
+  if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
+  return { latitude, longitude };
+}
+
+// Resolve the admin-configured office/dispatch location (used as the tracking origin).
+async function getOfficeLocation() {
+  try {
+    return parseLatLng(await getAsset(ASSET_KEYS.OFFICE_LOCATION));
+  } catch {
+    return null;
+  }
+}
+
 // Public: fetch an order for the tracking page.
 router.get('/track/:orderId', async (req, res) => {
   const key = req.params.orderId;
   const order = await Order.findOne({ $or: [{ trackId: key }, { orderId: key }] }).lean();
   if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+  // Use the admin-configured office location as the tracking origin (store marker).
+  const office = await getOfficeLocation();
+  if (office) order.storeLocation = office;
   res.json({ success: true, data: order });
 });
 
 // Public/latest order for a phone (used when opening /track without id)
 router.get('/latest/:phone', async (req, res) => {
   const order = await Order.findOne({ 'customer.phone': req.params.phone }).sort({ createdAt: -1 }).lean();
+  if (order) {
+    const office = await getOfficeLocation();
+    if (office) order.storeLocation = office;
+  }
   res.json({ success: true, data: order });
 });
 

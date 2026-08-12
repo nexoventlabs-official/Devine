@@ -48,7 +48,8 @@ const FIELDS = [
   {
     group: 'Links',
     items: [
-      { key: 'google_review_link', label: 'Google Review Link (URL)', type: 'link' }
+      { key: 'google_review_link', label: 'Google Review Link (URL)', type: 'link' },
+      { key: 'office_location', label: 'Office Location (Google Maps link or "lat,lng")', type: 'link' }
     ]
   }
 ];

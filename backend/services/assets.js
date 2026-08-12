@@ -54,8 +54,9 @@ export const ASSET_KEYS = {
   REVIEW_5STAR_HEADER: 'review_5star_header',
   REVIEW_ISSUE_HEADER: 'review_issue_header',
   DELIVERED_PDF_HEADER: 'delivered_pdf_header',
-  // Links
-  GOOGLE_REVIEW_LINK: 'google_review_link'
+  // Links / config
+  GOOGLE_REVIEW_LINK: 'google_review_link',
+  OFFICE_LOCATION: 'office_location'
 };
 
 export default { getAsset, getAssets, ASSET_KEYS };
