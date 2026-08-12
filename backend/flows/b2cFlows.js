@@ -195,15 +195,17 @@ export function serviceFlow() {
 export function orderSummaryFlow() {
   return {
     version: VERSION,
-    routing_model: { ORDER_SUMMARY: ['PAYMENT_METHOD'], PAYMENT_METHOD: [] },
+    routing_model: { ORDER_SUMMARY: ['CONTACT_DETAILS'], CONTACT_DETAILS: ['PAYMENT_METHOD'], PAYMENT_METHOD: [] },
     screens: [
       {
         id: 'ORDER_SUMMARY',
-        title: 'Order Summary',
+        title: 'Your Order',
         data: {
-          summary_items: { type: 'string', __example__: '2x Honey Amla - Rs.500' },
+          cart_items: arrayDataWithImage([
+            { id: '0', title: '2x Honey Amla', description: 'Rs.500' }
+          ]),
           summary_total: { type: 'string', __example__: 'Rs.500' },
-          customer_name: { type: 'string', __example__: 'Guest' },
+          wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([
             { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
             { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives' }
@@ -213,15 +215,66 @@ export function orderSummaryFlow() {
           type: 'SingleColumnLayout',
           children: [
             { type: 'TextHeading', text: 'Your Order' },
-            { type: 'TextSubheading', text: 'Items' },
-            { type: 'TextBody', text: '${data.summary_items}' },
-            { type: 'TextSubheading', text: 'Total' },
-            { type: 'TextBody', text: '${data.summary_total}' },
-            { type: 'TextInput', name: 'name', label: 'Your name', required: true, 'input-type': 'text' },
+            {
+              type: 'RadioButtonsGroup',
+              name: 'cart_view',
+              label: 'Items in your cart',
+              required: false,
+              enabled: false,
+              'data-source': '${data.cart_items}'
+            },
+            { type: 'TextSubheading', text: 'Total: ${data.summary_total}' },
             {
               type: 'Footer',
               label: 'Continue',
-              'on-click-action': { name: 'navigate', next: { type: 'screen', name: 'PAYMENT_METHOD' }, payload: { name: '${form.name}', payment_options: '${data.payment_options}' } }
+              'on-click-action': {
+                name: 'navigate',
+                next: { type: 'screen', name: 'CONTACT_DETAILS' },
+                payload: { summary_total: '${data.summary_total}', wa_number: '${data.wa_number}', payment_options: '${data.payment_options}' }
+              }
+            }
+          ]
+        }
+      },
+      {
+        id: 'CONTACT_DETAILS',
+        title: 'Your Details',
+        data: {
+          summary_total: { type: 'string', __example__: 'Rs.500' },
+          wa_number: { type: 'string', __example__: '+919876543210' },
+          payment_options: arrayDataWithImage([
+            { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
+            { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives' }
+          ])
+        },
+        layout: {
+          type: 'SingleColumnLayout',
+          children: [
+            { type: 'TextHeading', text: 'Delivery Contact' },
+            { type: 'TextInput', name: 'name', label: 'Your name', required: true, 'input-type': 'text' },
+            {
+              type: 'TextInput',
+              name: 'whatsapp_number',
+              label: 'WhatsApp number',
+              'input-type': 'phone',
+              enabled: false,
+              'init-value': '${data.wa_number}',
+              'helper-text': 'Linked to this chat'
+            },
+            { type: 'TextInput', name: 'contact_phone', label: 'Phone number', required: true, 'input-type': 'phone', 'helper-text': 'Alternate number for delivery' },
+            {
+              type: 'Footer',
+              label: 'Continue',
+              'on-click-action': {
+                name: 'navigate',
+                next: { type: 'screen', name: 'PAYMENT_METHOD' },
+                payload: {
+                  name: '${form.name}',
+                  contact_phone: '${form.contact_phone}',
+                  wa_number: '${data.wa_number}',
+                  payment_options: '${data.payment_options}'
+                }
+              }
             }
           ]
         }
@@ -232,6 +285,8 @@ export function orderSummaryFlow() {
         terminal: true,
         data: {
           name: { type: 'string', __example__: 'Guest' },
+          contact_phone: { type: 'string', __example__: '9876543210' },
+          wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([
             { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
             { id: 'cod', title: 'Cash on Delivery', description: 'Pay when your order arrives' }
@@ -252,7 +307,12 @@ export function orderSummaryFlow() {
               label: 'Confirm',
               'on-click-action': {
                 name: 'complete',
-                payload: { payment_method: '${form.payment_method}', name: '${data.name}' }
+                payload: {
+                  payment_method: '${form.payment_method}',
+                  name: '${data.name}',
+                  contact_phone: '${data.contact_phone}',
+                  wa_number: '${data.wa_number}'
+                }
               }
             }
           ]

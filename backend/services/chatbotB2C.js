@@ -95,8 +95,11 @@ async function handleFlowResponse(phone, resp, name) {
     if (resp.selected_service) return routeService(phone, resp.selected_service, name);
   }
   if (token.startsWith('b2c_order_summary_')) {
-    // Order summary flow completed -> payment method chosen
-    await patchContext(phone, CH, { customerName: resp.name || name || '' });
+    // Order summary flow completed -> name, alternate phone + payment method chosen
+    await patchContext(phone, CH, {
+      customerName: resp.name || name || '',
+      contactPhone: resp.contact_phone || ''
+    });
     return handlePaymentMethod(phone, resp.payment_method, resp.name || name);
   }
   if (token.startsWith('b2c_review_')) {
@@ -341,6 +344,26 @@ async function handleCatalogOrder(phone, order, name) {
   return openOrderSummary(phone);
 }
 
+// Build the cart line items with 1:1 product logos (base64) for the order summary screen.
+async function buildCartItems(cart) {
+  return Promise.all(
+    cart.map(async (i, idx) => {
+      const item = {
+        id: String(idx),
+        title: `${i.quantity}x ${i.name}`,
+        description: `Rs.${i.price * i.quantity}`
+      };
+      if (i.imageUrl) {
+        try {
+          const b64 = await urlToBase64(i.imageUrl, { width: 64, height: 64, crop: 'fill', quality: 35, format: 'jpg' });
+          if (b64) item.image = b64;
+        } catch (_) {}
+      }
+      return item;
+    })
+  );
+}
+
 // Build the payment-method options with optional 1:1 logo images (base64).
 // Logos are admin-managed via the Flow Images page.
 async function buildPaymentOptions() {
@@ -374,9 +397,10 @@ async function openOrderSummary(phone) {
   await setStep(phone, CH, 'order_summary');
 
   if (fId) {
-    const [header, paymentOptions] = await Promise.all([
+    const [header, paymentOptions, cartItems] = await Promise.all([
       getAsset(ASSET_KEYS.ORDER_SUMMARY_HEADER),
-      buildPaymentOptions()
+      buildPaymentOptions(),
+      buildCartItems(cart)
     ]);
     return wa().sendFlowMessage(phone, {
       flowId: fId,
@@ -386,9 +410,9 @@ async function openOrderSummary(phone) {
       headerText: header ? undefined : 'Order Summary',
       screenName: 'ORDER_SUMMARY',
       screenData: {
-        summary_items: summaryItems,
+        cart_items: cartItems,
         summary_total: `Rs.${total}`,
-        customer_name: convo.name || '',
+        wa_number: `+${clean(phone)}`,
         payment_options: paymentOptions
       },
       flowToken: `b2c_order_summary_${clean(phone)}`,
