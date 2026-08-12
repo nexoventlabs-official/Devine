@@ -7,6 +7,7 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import SocialModal from './components/SocialModal';
 import EnquiryModal from './components/EnquiryModal';
+import CategoryMarquee from './components/CategoryMarquee';
 import ProductsPage from './pages/ProductsPage';
 import AboutPage from './pages/AboutPage';
 import CareerPage from './pages/CareerPage';
@@ -38,6 +39,7 @@ export default function App() {
   const initialLocation = parseLocation();
   const [currentPage, setCurrentPage] = useState(initialLocation.page);
   const [productId, setProductId] = useState(initialLocation.productId);
+  const [productsCategory, setProductsCategory] = useState(null);
 
   const [cart, setCart] = useState([
     {
@@ -69,9 +71,19 @@ export default function App() {
   // Navigate to a top-level page and reflect it in the URL.
   const goToPage = (page) => {
     if (page !== 'contact') setEnquiryProduct('');
+    if (page !== 'products') setProductsCategory(null);
     window.history.pushState({}, '', PAGE_PATHS[page] || '/');
     setProductId(null);
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Open the Products page filtered to a specific category (from the home marquee).
+  const openCategory = (categoryName) => {
+    setProductsCategory(categoryName || null);
+    window.history.pushState({}, '', PAGE_PATHS.products);
+    setProductId(null);
+    setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -130,6 +142,7 @@ export default function App() {
         <ProductsPage 
           onOpenEnquiry={handleOpenEnquiry}
           productId={productId}
+          initialCategory={productsCategory}
           onOpenProduct={openProduct}
           onCloseProduct={closeProduct}
           onNavigateHome={() => goToPage('home')}
@@ -160,6 +173,7 @@ export default function App() {
         <>
           <HeroSection />
           <MarqueeTicker />
+          <CategoryMarquee onSelectCategory={openCategory} />
           <FlavorShowcase 
             onNavigateProducts={() => goToPage('products')} 
           />

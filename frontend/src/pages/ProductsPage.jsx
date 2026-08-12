@@ -37,8 +37,8 @@ function RatingChip({ value }) {
   );
 }
 
-export default function ProductsPage({ onOpenEnquiry, productId, onOpenProduct, onCloseProduct }) {
-  const [selectedCategory, setSelectedCategory] = useState('All');
+export default function ProductsPage({ onOpenEnquiry, productId, initialCategory, onOpenProduct, onCloseProduct }) {
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'All');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState(['All']);
@@ -48,6 +48,11 @@ export default function ProductsPage({ onOpenEnquiry, productId, onOpenProduct, 
   // Product detail (URL-driven via productId prop)
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Apply category coming from the home-page category marquee.
+  useEffect(() => {
+    if (initialCategory) setSelectedCategory(initialCategory);
+  }, [initialCategory]);
 
   useEffect(() => {
     let active = true;
