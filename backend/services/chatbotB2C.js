@@ -344,24 +344,21 @@ async function handleCatalogOrder(phone, order, name) {
   return openOrderSummary(phone);
 }
 
-// Build the cart line items with 1:1 product logos (base64) for the order summary screen.
-async function buildCartItems(cart) {
-  return Promise.all(
-    cart.map(async (i, idx) => {
-      const item = {
-        id: String(idx),
-        title: `${i.quantity}x ${i.name}`,
-        description: `Rs.${i.price * i.quantity}`
-      };
-      if (i.imageUrl) {
-        try {
-          const b64 = await urlToBase64(i.imageUrl, { width: 64, height: 64, crop: 'fill', quality: 35, format: 'jpg' });
-          if (b64) item.image = b64;
-        } catch (_) {}
-      }
-      return item;
-    })
-  );
+// Build a Markdown table (rendered by the flow's RichText component) itemizing
+// the cart: Item | Qty | Price, with a bold Total row at the bottom.
+function buildOrderTable(cart, total) {
+  const esc = (s) => String(s).replace(/\|/g, '\\|');
+  const rows = [
+    '## Your Order',
+    '',
+    '| Item | Qty | Price |',
+    '| --- | :---: | ---: |'
+  ];
+  for (const i of cart) {
+    rows.push(`| ${esc(i.name)} | ${i.quantity} | Rs.${i.price * i.quantity} |`);
+  }
+  rows.push(`| **Total** |  | **Rs.${total}** |`);
+  return rows.join('\n');
 }
 
 // Build the payment-method options with optional 1:1 logo images (base64).
@@ -397,10 +394,9 @@ async function openOrderSummary(phone) {
   await setStep(phone, CH, 'order_summary');
 
   if (fId) {
-    const [header, paymentOptions, cartItems] = await Promise.all([
+    const [header, paymentOptions] = await Promise.all([
       getAsset(ASSET_KEYS.ORDER_SUMMARY_HEADER),
-      buildPaymentOptions(),
-      buildCartItems(cart)
+      buildPaymentOptions()
     ]);
     return wa().sendFlowMessage(phone, {
       flowId: fId,
@@ -410,8 +406,7 @@ async function openOrderSummary(phone) {
       headerText: header ? undefined : 'Order Summary',
       screenName: 'ORDER_SUMMARY',
       screenData: {
-        cart_items: cartItems,
-        summary_total: `Total: Rs.${total}`,
+        order_table: buildOrderTable(cart, total),
         wa_number: `+${clean(phone)}`,
         payment_options: paymentOptions
       },

@@ -201,10 +201,10 @@ export function orderSummaryFlow() {
         id: 'ORDER_SUMMARY',
         title: 'Your Order',
         data: {
-          cart_items: arrayDataWithImage([
-            { id: '0', title: '2x Honey Amla', description: 'Rs.500' }
-          ]),
-          summary_total: { type: 'string', __example__: 'Total: Rs.500' },
+          order_table: {
+            type: 'string',
+            __example__: '## Your Order\n\n| Item | Qty | Price |\n| --- | :---: | ---: |\n| Honey Amla | 1 | Rs.649 |\n| **Total** |  | **Rs.649** |'
+          },
           wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([
             { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
@@ -214,22 +214,14 @@ export function orderSummaryFlow() {
         layout: {
           type: 'SingleColumnLayout',
           children: [
-            { type: 'TextHeading', text: 'Your Order' },
-            {
-              type: 'RadioButtonsGroup',
-              name: 'cart_view',
-              label: 'Items in your cart',
-              required: false,
-              'data-source': '${data.cart_items}'
-            },
-            { type: 'TextSubheading', text: '${data.summary_total}' },
+            { type: 'RichText', text: '${data.order_table}' },
             {
               type: 'Footer',
               label: 'Continue',
               'on-click-action': {
                 name: 'navigate',
                 next: { type: 'screen', name: 'CONTACT_DETAILS' },
-                payload: { summary_total: '${data.summary_total}', wa_number: '${data.wa_number}', payment_options: '${data.payment_options}' }
+                payload: { wa_number: '${data.wa_number}', payment_options: '${data.payment_options}' }
               }
             }
           ]
@@ -239,7 +231,6 @@ export function orderSummaryFlow() {
         id: 'CONTACT_DETAILS',
         title: 'Your Details',
         data: {
-          summary_total: { type: 'string', __example__: 'Rs.500' },
           wa_number: { type: 'string', __example__: '+919876543210' },
           payment_options: arrayDataWithImage([
             { id: 'online', title: 'Online Payment', description: 'Pay securely via UPI / Card' },
