@@ -33,13 +33,23 @@ router.post('/categories', auth, upload.single('image'), async (req, res) => {
 
 router.put('/categories/:id', auth, upload.single('image'), async (req, res) => {
   const update = { ...req.body };
-  if (req.file) update.imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/categories' });
+  let oldImageUrl = null;
+  if (req.file) {
+    const existing = await Category.findById(req.params.id).select('imageUrl').lean();
+    oldImageUrl = existing?.imageUrl || null;
+    update.imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/categories' });
+  }
   const cat = await Category.findByIdAndUpdate(req.params.id, update, { new: true });
   res.json({ success: true, data: cat });
+  // Remove the replaced tile image from Cloudinary.
+  if (oldImageUrl && oldImageUrl !== update.imageUrl) {
+    cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
+  }
 });
 
 router.delete('/categories/:id', auth, async (req, res) => {
-  await Category.findByIdAndDelete(req.params.id);
+  const cat = await Category.findByIdAndDelete(req.params.id);
+  if (cat) cloudinaryService.deleteByUrl(cat.imageUrl).catch(() => {});
   res.json({ success: true });
 });
 
@@ -54,6 +64,8 @@ router.post('/flow-assets', auth, upload.single('file'), async (req, res) => {
   try {
     const { key, label, type = 'image', group = 'general', aspectRatio } = req.body;
     if (!key) return res.status(400).json({ success: false, message: 'key required' });
+    const existing = await FlowAsset.findOne({ key }).select('url').lean();
+    const oldUrl = existing?.url || null;
     let url = req.body.url || '';
     if (req.file) {
       const isPdf = req.file.mimetype === 'application/pdf';
@@ -71,13 +83,18 @@ router.post('/flow-assets', auth, upload.single('file'), async (req, res) => {
       { new: true, upsert: true }
     );
     res.json({ success: true, data: asset });
+    // Remove the replaced asset from Cloudinary (image or PDF).
+    if (url && oldUrl && oldUrl !== url) {
+      cloudinaryService.deleteByUrl(oldUrl).catch(() => {});
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.delete('/flow-assets/:id', auth, async (req, res) => {
-  await FlowAsset.findByIdAndDelete(req.params.id);
+  const asset = await FlowAsset.findByIdAndDelete(req.params.id);
+  if (asset) cloudinaryService.deleteByUrl(asset.url).catch(() => {});
   res.json({ success: true });
 });
 

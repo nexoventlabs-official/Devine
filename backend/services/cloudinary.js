@@ -90,6 +90,25 @@ const cloudinaryService = {
     }
   },
 
+  /**
+   * Delete an asset given its stored (secure) URL. Resource type is inferred
+   * from the extension (PDFs are stored as `raw`). No-op for non-Cloudinary URLs.
+   * For `raw` assets the extension is part of the public_id and is preserved.
+   */
+  async deleteByUrl(url, resourceType) {
+    if (!url || !url.includes('cloudinary.com')) return null;
+    const rt = resourceType || (/\.pdf(\?|$)/i.test(url) ? 'raw' : 'image');
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return null;
+    const path = parts[1].split('?')[0];
+    // Drop version (v123456) and transformation (w_800, c_fill, ...) segments.
+    const segments = path.split('/').filter((s) => !/^v\d+$/.test(s) && !/^[a-z]+_/.test(s));
+    let publicId = segments.join('/');
+    if (rt !== 'raw') publicId = publicId.replace(/\.[^/.]+$/, ''); // images: drop extension
+    if (!publicId) return null;
+    return this.deleteByPublicId(publicId, rt);
+  },
+
   extractPublicId(url) {
     if (!url || !url.includes('cloudinary.com')) return null;
     const parts = url.split('/upload/');
