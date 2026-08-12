@@ -29,6 +29,7 @@ const FIELDS = [
       { key: 'b2c_icon_track', label: 'Track Order Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2c_icon_talk', label: 'Talk to Us Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'talk_header', label: 'Talk to Us Message Header', type: 'image', defaultRatio: 'original' },
+      { key: 'track_header', label: 'Track Order Message Header (fallback)', type: 'image', defaultRatio: 'original' },
       { key: 'order_confirmed', label: 'Order Confirmed Image', type: 'image', defaultRatio: 'original' },
       { key: 'payment_header', label: 'Payment Header Image', type: 'image', defaultRatio: 'original' },
       { key: 'review_header', label: 'Review Request Header', type: 'image', defaultRatio: 'original' },

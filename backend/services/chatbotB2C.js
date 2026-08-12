@@ -629,7 +629,8 @@ async function sendOrderTracking(phone, trackKey) {
   const order = await Order.findOne({ $or: [{ trackId: trackKey }, { orderId: trackKey }] }).lean();
   if (!order) return wa().sendText(phone, 'Sorry, we could not find that order. Type *menu* to start again.');
   const ui = ORDER_STATUS_UI[order.status] || ORDER_STATUS_UI.confirmed;
-  const logo = await getAsset(ui.key);
+  // Prefer the per-status logo; fall back to a generic Track Order header image.
+  const logo = (await getAsset(ui.key)) || (await getAsset(ASSET_KEYS.TRACK_HEADER));
   const itemsCount = (order.items || []).reduce((s, i) => s + (i.quantity || 1), 0);
   const eta = order.expectedDelivery ? new Date(order.expectedDelivery).toDateString() : 'TBA';
   const body =
