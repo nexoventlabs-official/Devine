@@ -18,6 +18,10 @@ export const ASSET_KEYS = {
   // B2B
   WELCOME_HEADER_B2B: 'welcome_header_b2b',
   WELCOME_BANNER_B2B: 'welcome_banner_b2b',
+  B2B_ICON_DEALER: 'b2b_icon_dealer',
+  B2B_ICON_BULK: 'b2b_icon_bulk',
+  B2B_ICON_GIFTING: 'b2b_icon_gifting',
+  B2B_ICON_EXPORT: 'b2b_icon_export',
   DEALER_PDF: 'dealer_pdf',
   DEALER_HEADER: 'dealer_header',
   DEALER_AGREEMENT_PDF: 'dealer_agreement_pdf',

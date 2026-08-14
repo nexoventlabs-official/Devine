@@ -39,6 +39,8 @@ export async function sendWelcome(phone, name = '') {
   await setStep(phone, CH, 'awaiting_service', { name });
 
   if (fId) {
+    // Endpoint-driven: INIT supplies the banner (8:1) + 1:1 service logos and,
+    // when "Become a Dealer" is picked, the registration screens run in this flow.
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Choose Service',
@@ -47,9 +49,8 @@ export async function sendWelcome(phone, name = '') {
       bodyText: body,
       footerText: 'Devine Natural Foods',
       screenName: 'CHOOSE_SERVICE',
-      screenData: { services },
       flowToken: `b2b_service_${clean(phone)}`,
-      flowAction: 'navigate'
+      flowAction: 'data_exchange'
     });
   }
   // Fallback to buttons/list if the flow isn't published yet
@@ -95,11 +96,18 @@ export async function handle(msg) {
 async function handleFlowResponse(phone, resp, name) {
   const token = resp.flow_token || '';
 
-  // Service selection flow completed
-  if (token.startsWith('b2b_service_') && resp.selected_service) {
-    return routeService(phone, resp.selected_service, name);
+  // Service flow completed. Dealer registration now runs INSIDE this flow, so a
+  // completion carrying business details means dealer signup finished; otherwise
+  // it's a plain service pick (bulk/gifting/export/already_dealer) to route.
+  if (token.startsWith('b2b_service_')) {
+    if (resp.confirmed || resp.summary_business || resp.business_name) {
+      return finishDealer(phone, resp, name);
+    }
+    if (resp.selected_service) {
+      return routeService(phone, resp.selected_service, name);
+    }
   }
-  // Dealer flow completed
+  // Standalone dealer flow (fallback path) completed
   if (token.startsWith('b2b_dealer_')) {
     return finishDealer(phone, resp, name);
   }

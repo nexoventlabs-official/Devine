@@ -19,7 +19,7 @@ const ENDPOINT_URI = `${PUBLIC}/api/whatsapp/flow-endpoint`;
 
 // key -> { channel, name, json, endpoint }
 const FLOWS = {
-  b2b_service: { channel: 'b2b', name: 'Devine B2B - Choose Service', json: b2b.serviceFlow() },
+  b2b_service: { channel: 'b2b', name: 'Devine B2B - Choose Service', json: b2b.serviceFlow(), endpoint: true },
   b2b_dealer: { channel: 'b2b', name: 'Devine B2B - Dealer Registration', json: b2b.dealerFlow(), endpoint: true },
   b2b_bulk: { channel: 'b2b', name: 'Devine B2B - Bulk Wholesale', json: b2b.bulkFlow() },
   b2b_gifting: { channel: 'b2b', name: 'Devine B2B - Corporate Gifting', json: b2b.giftingFlow() },

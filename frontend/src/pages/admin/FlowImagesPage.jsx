@@ -6,7 +6,11 @@ const FIELDS = [
   {
     group: 'B2B',
     items: [
-      { key: 'welcome_banner_b2b', label: 'Welcome Banner (B2B)', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'welcome_banner_b2b', label: 'Choose Service Banner (B2B, 8:1)', type: 'image', defaultRatio: '8:1', isBanner: true },
+      { key: 'b2b_icon_dealer', label: 'Dealer Service Icon (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'b2b_icon_bulk', label: 'Bulk/Wholesale Icon (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'b2b_icon_gifting', label: 'Corporate Gifting Icon (1:1)', type: 'image', defaultRatio: '1:1' },
+      { key: 'b2b_icon_export', label: 'Export Supply Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'dealer_header', label: 'Dealer Header Image', type: 'image', defaultRatio: 'original' },
       { key: 'dealer_pdf', label: 'Dealer Info PDF', type: 'pdf' },
       { key: 'bulk_header', label: 'Bulk Enquiry Header', type: 'image', defaultRatio: 'original' },

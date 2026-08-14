@@ -5,6 +5,7 @@ import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
 import Order from '../models/Order.js';
+import DealerProfile from '../models/DealerProfile.js';
 import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
 import { urlToBase64 } from '../services/imageBase64.js';
 import { DEFAULT_BANNER_B64, DEFAULT_ICON_B64 } from '../services/defaultFlowAssets.js';
@@ -36,6 +37,26 @@ router.post('/', async (req, res) => {
     if (action === 'INIT') {
       if (token.startsWith('b2b_export_')) {
         return sendEncrypted(res, { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } }, aesKeyBuffer, initialVectorBuffer);
+      }
+      // B2B service menu (banner + 1:1 service logos). Dealer status decides the first option.
+      if (token.startsWith('b2b_service_')) {
+        const phone = token.replace(/^b2b_service_/, '');
+        const { b64: banner, hasBanner } = await getB2bBannerB64();
+        return sendEncrypted(
+          res,
+          {
+            screen: 'CHOOSE_SERVICE',
+            data: {
+              welcome_banner: banner,
+              has_welcome_banner: hasBanner,
+              heading: 'How can we help your business?',
+              subheading: 'Select a service below to continue',
+              services: await b2bServiceOptions(phone)
+            }
+          },
+          aesKeyBuffer,
+          initialVectorBuffer
+        );
       }
       if (token.startsWith('b2b_dealer_') || token.startsWith('b2b_')) {
         return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
@@ -87,6 +108,51 @@ async function getWelcomeBannerB64() {
     }
   } catch (_) {}
   return { b64: '', hasBanner: false };
+}
+
+// B2B welcome banner (8:1) as base64 for the CHOOSE_SERVICE screen.
+async function getB2bBannerB64() {
+  try {
+    const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2B);
+    if (bannerUrl) {
+      const b64 = await urlToBase64(bannerUrl, { width: 350, height: 44, crop: 'fill', quality: 25, format: 'jpg' });
+      if (b64) return { b64, hasBanner: true };
+    }
+  } catch (_) {}
+  return { b64: '', hasBanner: false };
+}
+
+// Build the B2B service list with 1:1 logos. If the phone is already a dealer,
+// the first option becomes "Already a Dealer - Profile".
+async function b2bServiceOptions(phone) {
+  const isDealer = phone ? !!(await DealerProfile.findOne({ phone }).lean().catch(() => null)) : false;
+  const assets = await getAssets([
+    ASSET_KEYS.B2B_ICON_DEALER,
+    ASSET_KEYS.B2B_ICON_BULK,
+    ASSET_KEYS.B2B_ICON_GIFTING,
+    ASSET_KEYS.B2B_ICON_EXPORT
+  ]);
+
+  const items = [
+    isDealer
+      ? { id: 'already_dealer', title: 'Already a Dealer - Profile', description: 'View your dealer profile', rawUrl: assets[ASSET_KEYS.B2B_ICON_DEALER] || '' }
+      : { id: 'dealer', title: 'Become a Dealer / Distributor', description: 'Get dealer pricing & product catalogue', rawUrl: assets[ASSET_KEYS.B2B_ICON_DEALER] || '' },
+    { id: 'bulk', title: 'Bulk / Wholesale Enquiry', description: 'Volume orders at wholesale rates', rawUrl: assets[ASSET_KEYS.B2B_ICON_BULK] || '' },
+    { id: 'gifting', title: 'Corporate Gifting (B2B)', description: 'Custom premium gift hampers', rawUrl: assets[ASSET_KEYS.B2B_ICON_GIFTING] || '' },
+    { id: 'export', title: 'Export / International Supply', description: 'Ship Devine products worldwide', rawUrl: assets[ASSET_KEYS.B2B_ICON_EXPORT] || '' }
+  ];
+
+  return Promise.all(
+    items.map(async ({ rawUrl, ...rest }) => {
+      if (rawUrl) {
+        try {
+          const b64 = await urlToBase64(rawUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          if (b64) rest.image = b64;
+        } catch (_) {}
+      }
+      return rest;
+    })
+  );
 }
 
 // Build 1:1 ratio icon options for B2C service menu (raw base64 format required for Meta Flow)
@@ -234,6 +300,19 @@ async function categoryOptions() {
 
 async function handleDataExchange(screen, data, token = '') {
   switch (screen) {
+    // B2B service selection: dealer -> registration screens (same flow); others -> complete.
+    case 'CHOOSE_SERVICE': {
+      const service = data.selected_service;
+      if (service === 'dealer') {
+        return { screen: 'BUSINESS_NAME', data: {} };
+      }
+      // already_dealer / bulk / gifting / export -> finish flow; chatbot routes next.
+      return {
+        screen: 'SUCCESS',
+        data: { extension_message_response: { params: { flow_token: token, selected_service: service } } }
+      };
+    }
+
     // B2C service selection: browse -> show categories screen; else -> finish flow.
     case 'SERVICE_MENU': {
       const service = data.selected_service;
