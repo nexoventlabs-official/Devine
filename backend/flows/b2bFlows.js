@@ -485,7 +485,7 @@ function exportScreens() {
           {
             type: 'DocumentPicker',
             name: 'document',
-            label: 'Upload your document (optional)',
+            label: 'Upload your document',
             'max-file-size-kb': 10240,
             'allowed-mime-types': ['application/pdf', 'image/jpeg', 'image/png']
           },
