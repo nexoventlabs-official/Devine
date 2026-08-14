@@ -248,6 +248,16 @@ async function orderOptions(phone) {
   );
 }
 
+// Static bulk/wholesale product ranges (with MOQ) for the in-flow BULK_ORDER screen.
+function bulkRanges() {
+  return [
+    { id: 'honey', title: 'Honey Range - MOQ 50/variant' },
+    { id: 'gulkand', title: 'Gulkand Range - MOQ 50/variant' },
+    { id: 'dryfruits', title: 'Dry Fruits - MOQ 25 kg' },
+    { id: 'narumanam', title: 'Narumanam - MOQ 100/variant' }
+  ];
+}
+
 // Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
 async function countryOptions() {
   const list = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
@@ -300,13 +310,22 @@ async function categoryOptions() {
 
 async function handleDataExchange(screen, data, token = '') {
   switch (screen) {
-    // B2B service selection: dealer -> registration screens (same flow); others -> complete.
+    // B2B service selection: route to the chosen service's screens within the same flow.
     case 'CHOOSE_SERVICE': {
       const service = data.selected_service;
       if (service === 'dealer') {
         return { screen: 'BUSINESS_NAME', data: {} };
       }
-      // already_dealer / bulk / gifting / export -> finish flow; chatbot routes next.
+      if (service === 'bulk') {
+        return { screen: 'BULK_ORDER', data: { ranges: bulkRanges() } };
+      }
+      if (service === 'gifting') {
+        return { screen: 'GIFTING', data: {} };
+      }
+      if (service === 'export') {
+        return { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } };
+      }
+      // already_dealer (or anything else) -> finish flow; chatbot routes next.
       return {
         screen: 'SUCCESS',
         data: { extension_message_response: { params: { flow_token: token, selected_service: service } } }

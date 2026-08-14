@@ -100,35 +100,33 @@ async function handleFlowResponse(phone, resp, name) {
   // Service flow completed. Dealer registration now runs INSIDE this flow, so a
   // completion carrying business details means dealer signup finished; otherwise
   // it's a plain service pick (bulk/gifting/export/already_dealer) to route.
+  // Every B2B service now completes from the single Choose Service flow. Route by
+  // the payload we get back (each service tags its completion or carries unique fields).
   if (token.startsWith('b2b_service_')) {
+    // Dealer registration finished inside the flow
     if (resp.confirmed || resp.summary_business || resp.business_name) {
       return finishDealer(phone, resp, name);
     }
+    // Bulk: range + quantity captured -> ask for delivery location next
+    if (resp.service === 'bulk' || resp.product_range) {
+      await patchContext(phone, CH, { bulk_range: resp.product_range, bulk_qty: resp.quantity });
+      await setStep(phone, CH, 'bulk_awaiting_location', { bulk_range: resp.product_range, bulk_qty: resp.quantity });
+      const locImg = await getAsset(ASSET_KEYS.BULK_HEADER);
+      if (locImg) await wa().sendImage(phone, locImg, 'Great! One last step.').catch(() => {});
+      return wa().sendLocationRequest(phone, '📍 Please share your location so we can arrange dispatch and pricing.');
+    }
+    // Corporate gifting
+    if (resp.service === 'gifting' || resp.hampers) {
+      return finishGifting(phone, resp, name);
+    }
+    // Export / international
+    if (resp.service === 'export' || resp.products_required || resp.country_of_import) {
+      return finishExport(phone, resp, name);
+    }
+    // "Already a Dealer - Profile" or any plain service pick
     if (resp.selected_service) {
       return routeService(phone, resp.selected_service, name);
     }
-  }
-  // Bulk flow completed -> ask for location next
-  if (token.startsWith('b2b_bulk_')) {
-    await patchContext(phone, CH, {
-      bulk_range: resp.product_range,
-      bulk_qty: resp.quantity
-    });
-    await setStep(phone, CH, 'bulk_awaiting_location', {
-      bulk_range: resp.product_range,
-      bulk_qty: resp.quantity
-    });
-    const locImg = await getAsset(ASSET_KEYS.BULK_HEADER);
-    if (locImg) await wa().sendImage(phone, locImg, 'Great! One last step.').catch(() => {});
-    return wa().sendLocationRequest(phone, '📍 Please share your location so we can arrange dispatch and pricing.');
-  }
-  // Gifting flow completed
-  if (token.startsWith('b2b_gifting_')) {
-    return finishGifting(phone, resp, name);
-  }
-  // Export flow completed
-  if (token.startsWith('b2b_export_')) {
-    return finishExport(phone, resp, name);
   }
 
   return sendWelcome(phone, name);

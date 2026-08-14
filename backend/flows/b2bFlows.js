@@ -194,12 +194,16 @@ export function serviceFlow() {
     version: VERSION,
     data_api_version: DATA_API,
     routing_model: {
-      CHOOSE_SERVICE: ['BUSINESS_NAME'],
+      CHOOSE_SERVICE: ['BUSINESS_NAME', 'BULK_ORDER', 'GIFTING', 'COUNTRY_SELECT'],
       BUSINESS_NAME: ['STATE_SELECT'],
       STATE_SELECT: ['DISTRICT_CITY'],
       DISTRICT_CITY: ['BUSINESS_PROFILE'],
       BUSINESS_PROFILE: ['SUMMARY'],
-      SUMMARY: []
+      SUMMARY: [],
+      BULK_ORDER: [],
+      GIFTING: [],
+      COUNTRY_SELECT: ['EXPORT_DETAILS'],
+      EXPORT_DETAILS: []
     },
     screens: [
       {
@@ -249,182 +253,168 @@ export function serviceFlow() {
           ]
         }
       },
-      ...dealerScreens()
+      ...dealerScreens(),
+      ...bulkScreens(),
+      ...giftingScreens(),
+      ...exportScreens()
     ]
   };
 }
 
 // ---------------------------------------------------------------------------
-// 2) BULK / WHOLESALE FLOW (MOQ select -> quantity)
+// Screen helpers for the services merged into the Choose Service flow.
 // ---------------------------------------------------------------------------
-export function bulkFlow() {
-  return {
-    version: VERSION,
-    screens: [
-      {
-        id: 'BULK_ORDER',
-        title: 'Bulk / Wholesale',
-        terminal: true,
-        data: {
-          ranges: arrayData([{ id: 'honey', title: 'Honey Range - MOQ 50 units/variant' }])
-        },
-        layout: {
-          type: 'SingleColumnLayout',
-          children: [
-            { type: 'TextBody', text: 'For bulk orders, our minimum order quantities are:' },
-            {
-              type: 'RadioButtonsGroup',
-              name: 'product_range',
-              label: 'Select product range',
-              required: true,
-              'data-source': '${data.ranges}'
-            },
-            {
-              type: 'TextInput',
-              name: 'quantity',
-              label: 'Quantity required',
-              required: true,
-              'input-type': 'number'
-            },
-            {
-              type: 'Footer',
-              label: 'Confirm',
-              'on-click-action': {
-                name: 'complete',
-                payload: { product_range: '${form.product_range}', quantity: '${form.quantity}' }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  };
-}
 
-// ---------------------------------------------------------------------------
-// 4) CORPORATE GIFTING FLOW
-// ---------------------------------------------------------------------------
-export function giftingFlow() {
-  return {
-    version: VERSION,
-    screens: [
-      {
-        id: 'GIFTING',
-        title: 'Corporate Gifting',
-        terminal: true,
-        data: {},
-        layout: {
-          type: 'SingleColumnLayout',
-          children: [
-            { type: 'TextBody', text: 'Custom premium natural gift hampers. Hampers start from Rs.299/unit (MOQ 50).' },
-            { type: 'TextInput', name: 'hampers', label: 'Number of hampers required', required: true, 'input-type': 'number' },
-            { type: 'TextInput', name: 'budget', label: 'Budget per hamper', required: true, 'input-type': 'number' },
-            { type: 'TextInput', name: 'delivery_date', label: 'Delivery date required', required: true, 'input-type': 'text' },
-            { type: 'TextInput', name: 'company', label: 'Company name', required: true, 'input-type': 'text' },
-            {
-              type: 'Footer',
-              label: 'Confirm',
-              'on-click-action': {
-                name: 'complete',
-                payload: {
-                  hampers: '${form.hampers}',
-                  budget: '${form.budget}',
-                  delivery_date: '${form.delivery_date}',
-                  company: '${form.company}'
-                }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 5) EXPORT / INTERNATIONAL FLOW (country select incl. Enquiry -> details)
-// ---------------------------------------------------------------------------
-export function exportFlow() {
-  return {
-    version: VERSION,
-    data_api_version: DATA_API,
-    routing_model: { COUNTRY_SELECT: ['EXPORT_DETAILS'], EXPORT_DETAILS: [] },
-    screens: [
-      {
-        id: 'COUNTRY_SELECT',
-        title: 'Export / International',
-        data: {
-          countries: arrayData([{ id: 'enquiry', title: 'Enquiry' }])
-        },
-        layout: {
-          type: 'SingleColumnLayout',
-          children: [
-            { type: 'TextBody', text: 'Select a destination country or make a general enquiry.' },
-            {
-              type: 'Dropdown',
-              name: 'country',
-              label: 'Country',
-              required: true,
-              'data-source': '${data.countries}'
-            },
-            {
-              type: 'Footer',
-              label: 'Continue',
-              'on-click-action': {
-                name: 'data_exchange',
-                payload: { screen: 'COUNTRY_SELECT', country: '${form.country}' }
-              }
-            }
-          ]
-        }
+// Bulk / Wholesale: product range + quantity. Completion triggers a location ask.
+function bulkScreens() {
+  return [
+    {
+      id: 'BULK_ORDER',
+      title: 'Bulk / Wholesale',
+      terminal: true,
+      data: {
+        ranges: arrayData([{ id: 'honey', title: 'Honey Range - MOQ 50 units/variant' }])
       },
-      {
-        id: 'EXPORT_DETAILS',
-        title: 'Export Requirements',
-        terminal: true,
-        data: {
-          products: arrayData([{ id: 'honey', title: 'Honey' }]),
-          country_label: { type: 'string', __example__: 'Enquiry' },
-          country_of_import: { type: 'string', __example__: '' }
-        },
-        layout: {
-          type: 'SingleColumnLayout',
-          children: [
-            { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text', 'init-value': '${data.country_of_import}' },
-            {
-              type: 'CheckboxGroup',
-              name: 'products_required',
-              label: 'Products required',
-              required: true,
-              'data-source': '${data.products}'
-            },
-            { type: 'TextInput', name: 'monthly_volume', label: 'Estimated monthly volume', required: true, 'input-type': 'text' },
-            { type: 'TextInput', name: 'iec', label: 'Import license / IEC number', required: false, 'input-type': 'text' },
-            {
-              type: 'DocumentPicker',
-              name: 'document',
-              label: 'Upload your document (optional)',
-              'max-file-size-kb': 10240,
-              'allowed-mime-types': ['application/pdf', 'image/jpeg', 'image/png']
-            },
-            {
-              type: 'Footer',
-              label: 'Confirm',
-              'on-click-action': {
-                name: 'complete',
-                payload: {
-                  country_of_import: '${form.country_of_import}',
-                  products_required: '${form.products_required}',
-                  monthly_volume: '${form.monthly_volume}',
-                  iec: '${form.iec}'
-                }
-              }
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
+          { type: 'TextBody', text: 'For bulk orders, our minimum order quantities are:' },
+          {
+            type: 'RadioButtonsGroup',
+            name: 'product_range',
+            label: 'Select product range',
+            required: true,
+            'data-source': '${data.ranges}'
+          },
+          { type: 'TextInput', name: 'quantity', label: 'Quantity required', required: true, 'input-type': 'number' },
+          {
+            type: 'Footer',
+            label: 'Confirm',
+            'on-click-action': {
+              name: 'complete',
+              payload: { service: 'bulk', product_range: '${form.product_range}', quantity: '${form.quantity}' }
             }
-          ]
-        }
+          }
+        ]
       }
-    ]
-  };
+    }
+  ];
 }
 
-export default { serviceFlow, bulkFlow, giftingFlow, exportFlow };
+// Corporate Gifting: hampers / budget / date / company.
+function giftingScreens() {
+  return [
+    {
+      id: 'GIFTING',
+      title: 'Corporate Gifting',
+      terminal: true,
+      data: {},
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
+          { type: 'TextBody', text: 'Custom premium natural gift hampers. Hampers start from Rs.299/unit (MOQ 50).' },
+          { type: 'TextInput', name: 'hampers', label: 'Number of hampers required', required: true, 'input-type': 'number' },
+          { type: 'TextInput', name: 'budget', label: 'Budget per hamper', required: true, 'input-type': 'number' },
+          { type: 'TextInput', name: 'delivery_date', label: 'Delivery date required', required: true, 'input-type': 'text' },
+          { type: 'TextInput', name: 'company', label: 'Company name', required: true, 'input-type': 'text' },
+          {
+            type: 'Footer',
+            label: 'Confirm',
+            'on-click-action': {
+              name: 'complete',
+              payload: {
+                service: 'gifting',
+                hampers: '${form.hampers}',
+                budget: '${form.budget}',
+                delivery_date: '${form.delivery_date}',
+                company: '${form.company}'
+              }
+            }
+          }
+        ]
+      }
+    }
+  ];
+}
+
+// Export / International: country select (endpoint) -> requirements.
+function exportScreens() {
+  return [
+    {
+      id: 'COUNTRY_SELECT',
+      title: 'Export / International',
+      data: {
+        countries: arrayData([{ id: 'enquiry', title: 'Enquiry' }])
+      },
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
+          { type: 'TextBody', text: 'Select a destination country or make a general enquiry.' },
+          {
+            type: 'Dropdown',
+            name: 'country',
+            label: 'Country',
+            required: true,
+            'data-source': '${data.countries}'
+          },
+          {
+            type: 'Footer',
+            label: 'Continue',
+            'on-click-action': {
+              name: 'data_exchange',
+              payload: { screen: 'COUNTRY_SELECT', country: '${form.country}' }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'EXPORT_DETAILS',
+      title: 'Export Requirements',
+      terminal: true,
+      data: {
+        products: arrayData([{ id: 'honey', title: 'Honey' }]),
+        country_label: { type: 'string', __example__: 'Enquiry' },
+        country_of_import: { type: 'string', __example__: '' }
+      },
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
+          { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text', 'init-value': '${data.country_of_import}' },
+          {
+            type: 'CheckboxGroup',
+            name: 'products_required',
+            label: 'Products required',
+            required: true,
+            'data-source': '${data.products}'
+          },
+          { type: 'TextInput', name: 'monthly_volume', label: 'Estimated monthly volume', required: true, 'input-type': 'text' },
+          { type: 'TextInput', name: 'iec', label: 'Import license / IEC number', required: false, 'input-type': 'text' },
+          {
+            type: 'DocumentPicker',
+            name: 'document',
+            label: 'Upload your document (optional)',
+            'max-file-size-kb': 10240,
+            'allowed-mime-types': ['application/pdf', 'image/jpeg', 'image/png']
+          },
+          {
+            type: 'Footer',
+            label: 'Confirm',
+            'on-click-action': {
+              name: 'complete',
+              payload: {
+                service: 'export',
+                country_of_import: '${form.country_of_import}',
+                products_required: '${form.products_required}',
+                monthly_volume: '${form.monthly_volume}',
+                iec: '${form.iec}'
+              }
+            }
+          }
+        ]
+      }
+    }
+  ];
+}
+
+export default { serviceFlow };
