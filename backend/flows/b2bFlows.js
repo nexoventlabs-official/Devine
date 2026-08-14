@@ -348,22 +348,36 @@ function bulkScreens() {
   ];
 }
 
-// Corporate Gifting: hampers / budget / date / company.
+// Corporate Gifting: hampers / budget / delivery date (calendar) / company + contact details.
 function giftingScreens() {
   return [
     {
       id: 'GIFTING',
       title: 'Corporate Gifting',
       terminal: true,
-      data: {},
+      data: {
+        wa_number: { type: 'string', __example__: '+919876543210' }
+      },
       layout: {
         type: 'SingleColumnLayout',
         children: [
           { type: 'TextBody', text: 'Custom premium natural gift hampers. Hampers start from Rs.299/unit (MOQ 50).' },
           { type: 'TextInput', name: 'hampers', label: 'Number of hampers required', required: true, 'input-type': 'number' },
           { type: 'TextInput', name: 'budget', label: 'Budget per hamper', required: true, 'input-type': 'number' },
-          { type: 'TextInput', name: 'delivery_date', label: 'Delivery date required', required: true, 'input-type': 'text' },
+          { type: 'DatePicker', name: 'delivery_date', label: 'Delivery date required', required: true },
           { type: 'TextInput', name: 'company', label: 'Company name', required: true, 'input-type': 'text' },
+          { type: 'TextInput', name: 'name', label: 'Your name', required: true, 'input-type': 'text' },
+          {
+            type: 'TextInput',
+            name: 'whatsapp_number',
+            label: 'WhatsApp number',
+            'input-type': 'phone',
+            enabled: false,
+            'init-value': '${data.wa_number}',
+            'helper-text': 'Linked to this chat'
+          },
+          { type: 'TextInput', name: 'contact_phone', label: 'Phone number', required: true, 'input-type': 'phone' },
+          { type: 'TextInput', name: 'email', label: 'Email address', required: true, 'input-type': 'email' },
           {
             type: 'Footer',
             label: 'Confirm',
@@ -374,7 +388,11 @@ function giftingScreens() {
                 hampers: '${form.hampers}',
                 budget: '${form.budget}',
                 delivery_date: '${form.delivery_date}',
-                company: '${form.company}'
+                company: '${form.company}',
+                name: '${form.name}',
+                contact_phone: '${form.contact_phone}',
+                email: '${form.email}',
+                wa_number: '${data.wa_number}'
               }
             }
           }

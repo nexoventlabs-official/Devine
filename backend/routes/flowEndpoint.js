@@ -351,7 +351,8 @@ async function handleDataExchange(screen, data, token = '') {
         return { screen: 'BULK_ORDER', data: { ranges: await bulkRangeOptions() } };
       }
       if (service === 'gifting') {
-        return { screen: 'GIFTING', data: {} };
+        const phone = token.replace(/^b2b_service_/, '');
+        return { screen: 'GIFTING', data: { wa_number: `+${phone}` } };
       }
       if (service === 'export') {
         return { screen: 'COUNTRY_SELECT', data: { countries: await countryOptions() } };
