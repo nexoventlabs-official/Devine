@@ -438,14 +438,15 @@ function exportScreens() {
       title: 'Export Requirements',
       terminal: true,
       data: {
-        products: arrayData([{ id: 'honey', title: 'Honey' }]),
+        products: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Natural honey' }]),
         country_label: { type: 'string', __example__: 'Enquiry' },
-        country_of_import: { type: 'string', __example__: '' }
+        country_of_import: { type: 'string', __example__: '' },
+        country_editable: { type: 'boolean', __example__: false }
       },
       layout: {
         type: 'SingleColumnLayout',
         children: [
-          { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text', 'init-value': '${data.country_of_import}' },
+          { type: 'TextInput', name: 'country_of_import', label: 'Country of import', required: true, 'input-type': 'text', enabled: '${data.country_editable}', 'init-value': '${data.country_of_import}' },
           {
             type: 'CheckboxGroup',
             name: 'products_required',

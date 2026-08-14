@@ -476,12 +476,23 @@ async function handleDataExchange(screen, data, token = '') {
       };
     }
 
-    // Export flow: country chosen (or "enquiry") -> details screen with product list
+    // Export flow: country chosen (or "enquiry") -> details screen with product list (with 1:1 images)
     case 'COUNTRY_SELECT': {
-      const products = await Product.find({ active: true }).select('name retailerId').lean();
-      const productOptions = products.map((p) => ({ id: p.retailerId, title: p.name }));
+      const products = await Product.find({ active: true }).select('name retailerId imageUrl').lean();
+      const productOptions = await Promise.all(
+        products.map(async (p) => {
+          const item = { id: p.retailerId, title: p.name };
+          if (p.imageUrl) {
+            try {
+              const b64 = await urlToBase64(p.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+              if (b64) item.image = b64;
+            } catch (_) {}
+          }
+          return item;
+        })
+      );
       let countryLabel = 'Enquiry';
-      let prefillCountry = ''; // for a specific country we prefill so we don't re-ask
+      let prefillCountry = ''; // for a specific country we prefill (and lock) so we don't re-ask
       const isEnquiry = !data.country || data.country === 'enquiry';
       if (!isEnquiry) {
         const c = await SupplyCountry.findById(data.country).lean().catch(() => null);
@@ -494,7 +505,9 @@ async function handleDataExchange(screen, data, token = '') {
           products: productOptions.length ? productOptions : [{ id: 'general', title: 'General' }],
           country_label: countryLabel,
           country_of_import: prefillCountry,
-          is_enquiry: isEnquiry
+          is_enquiry: isEnquiry,
+          // Lock the field for a specific country; keep it editable for a general enquiry.
+          country_editable: isEnquiry
         }
       };
     }
