@@ -204,7 +204,8 @@ export function serviceFlow() {
       BULK_DETAILS: [],
       GIFTING: [],
       COUNTRY_SELECT: ['EXPORT_DETAILS'],
-      EXPORT_DETAILS: []
+      EXPORT_DETAILS: ['EXPORT_REQUIREMENTS'],
+      EXPORT_REQUIREMENTS: []
     },
     screens: [
       {
@@ -436,7 +437,6 @@ function exportScreens() {
     {
       id: 'EXPORT_DETAILS',
       title: 'Export Requirements',
-      terminal: true,
       data: {
         products: arrayDataWithImage([{ id: 'honey', title: 'Honey', description: 'Natural honey' }]),
         country_label: { type: 'string', __example__: 'Enquiry' },
@@ -454,6 +454,32 @@ function exportScreens() {
             required: true,
             'data-source': '${data.products}'
           },
+          {
+            type: 'Footer',
+            label: 'Continue',
+            'on-click-action': {
+              name: 'navigate',
+              next: { type: 'screen', name: 'EXPORT_REQUIREMENTS' },
+              payload: {
+                country_of_import: '${form.country_of_import}',
+                products_required: '${form.products_required}'
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'EXPORT_REQUIREMENTS',
+      title: 'Export Requirements',
+      terminal: true,
+      data: {
+        country_of_import: { type: 'string', __example__: 'USA' },
+        products_required: { type: 'array', items: { type: 'string' }, __example__: ['honey'] }
+      },
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
           { type: 'TextInput', name: 'monthly_volume', label: 'Estimated monthly volume', required: true, 'input-type': 'text' },
           { type: 'TextInput', name: 'iec', label: 'Import license / IEC number', required: false, 'input-type': 'text' },
           {
@@ -470,8 +496,8 @@ function exportScreens() {
               name: 'complete',
               payload: {
                 service: 'export',
-                country_of_import: '${form.country_of_import}',
-                products_required: '${form.products_required}',
+                country_of_import: '${data.country_of_import}',
+                products_required: '${data.products_required}',
                 monthly_volume: '${form.monthly_volume}',
                 iec: '${form.iec}'
               }
