@@ -200,7 +200,8 @@ export function serviceFlow() {
       DISTRICT_CITY: ['BUSINESS_PROFILE'],
       BUSINESS_PROFILE: ['SUMMARY'],
       SUMMARY: [],
-      BULK_ORDER: [],
+      BULK_ORDER: ['BULK_DETAILS'],
+      BULK_DETAILS: [],
       GIFTING: [],
       COUNTRY_SELECT: ['EXPORT_DETAILS'],
       EXPORT_DETAILS: []
@@ -265,20 +266,20 @@ export function serviceFlow() {
 // Screen helpers for the services merged into the Choose Service flow.
 // ---------------------------------------------------------------------------
 
-// Bulk / Wholesale: product range + quantity. Completion triggers a location ask.
+// Bulk / Wholesale: pick range (with 1:1 logos) -> quantity + contact details.
+// Completion triggers a location ask handled by the chatbot.
 function bulkScreens() {
   return [
     {
       id: 'BULK_ORDER',
       title: 'Bulk / Wholesale',
-      terminal: true,
       data: {
-        ranges: arrayData([{ id: 'honey', title: 'Honey Range - MOQ 50 units/variant' }])
+        ranges: arrayDataWithImage([{ id: 'honey', title: 'Honey Range', description: 'MOQ 50/variant' }])
       },
       layout: {
         type: 'SingleColumnLayout',
         children: [
-          { type: 'TextBody', text: 'For bulk orders, our minimum order quantities are:' },
+          { type: 'TextBody', text: 'For bulk orders, our minimum order quantities are shown below.' },
           {
             type: 'RadioButtonsGroup',
             name: 'product_range',
@@ -286,13 +287,54 @@ function bulkScreens() {
             required: true,
             'data-source': '${data.ranges}'
           },
+          {
+            type: 'Footer',
+            label: 'Continue',
+            'on-click-action': {
+              name: 'data_exchange',
+              payload: { screen: 'BULK_ORDER', product_range: '${form.product_range}' }
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'BULK_DETAILS',
+      title: 'Your Details',
+      terminal: true,
+      data: {
+        product_range: { type: 'string', __example__: 'honey' },
+        wa_number: { type: 'string', __example__: '+919876543210' }
+      },
+      layout: {
+        type: 'SingleColumnLayout',
+        children: [
+          { type: 'TextHeading', text: 'Order & Contact Details' },
           { type: 'TextInput', name: 'quantity', label: 'Quantity required', required: true, 'input-type': 'number' },
+          { type: 'TextInput', name: 'name', label: 'Your name', required: true, 'input-type': 'text' },
+          {
+            type: 'TextInput',
+            name: 'whatsapp_number',
+            label: 'WhatsApp number',
+            'input-type': 'phone',
+            enabled: false,
+            'init-value': '${data.wa_number}',
+            'helper-text': 'Linked to this chat'
+          },
+          { type: 'TextInput', name: 'contact_phone', label: 'Phone number', required: true, 'input-type': 'phone', 'helper-text': 'Alternate number for dispatch' },
           {
             type: 'Footer',
             label: 'Confirm',
             'on-click-action': {
               name: 'complete',
-              payload: { service: 'bulk', product_range: '${form.product_range}', quantity: '${form.quantity}' }
+              payload: {
+                service: 'bulk',
+                product_range: '${data.product_range}',
+                quantity: '${form.quantity}',
+                name: '${form.name}',
+                contact_phone: '${form.contact_phone}',
+                wa_number: '${data.wa_number}'
+              }
             }
           }
         ]

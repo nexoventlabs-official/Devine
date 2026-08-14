@@ -7,6 +7,8 @@ import DealerProfile from '../models/DealerProfile.js';
 import Lead from '../models/Lead.js';
 import Product from '../models/Product.js';
 import SupplyCountry from '../models/SupplyCountry.js';
+import BulkRange from '../models/BulkRange.js';
+import { resolveLocationAddress } from './geocode.js';
 import { emitLead } from './eventBus.js';
 import { genDealerId } from './ids.js';
 import logger from './logger.js';
@@ -109,8 +111,14 @@ async function handleFlowResponse(phone, resp, name) {
     }
     // Bulk: range + quantity captured -> ask for delivery location next
     if (resp.service === 'bulk' || resp.product_range) {
-      await patchContext(phone, CH, { bulk_range: resp.product_range, bulk_qty: resp.quantity });
-      await setStep(phone, CH, 'bulk_awaiting_location', { bulk_range: resp.product_range, bulk_qty: resp.quantity });
+      const ctx = {
+        bulk_range: resp.product_range,
+        bulk_qty: resp.quantity,
+        name: resp.name || name || '',
+        contactPhone: resp.contact_phone || ''
+      };
+      await patchContext(phone, CH, ctx);
+      await setStep(phone, CH, 'bulk_awaiting_location', ctx);
       const locImg = await getAsset(ASSET_KEYS.BULK_HEADER);
       if (locImg) await wa().sendImage(phone, locImg, 'Great! One last step.').catch(() => {});
       return wa().sendLocationRequest(phone, '📍 Please share your location so we can arrange dispatch and pricing.');
@@ -293,26 +301,42 @@ async function startBulk(phone, name) {
 async function finishBulk(phone, convo, location) {
   const range = convo.context?.bulk_range || '';
   const qty = convo.context?.bulk_qty || '';
+  const custName = convo.context?.name || '';
+  const contactPhone = convo.context?.contactPhone || '';
+  // Prefer WhatsApp's address; else reverse-geocode the shared coordinates.
+  const address = await resolveLocationAddress(location);
+  const rangeLabel = await bulkRangeLabel(range);
+
   const lead = await Lead.create({
     channel: CH,
     type: 'bulk',
-    name: convo.context?.name || '',
+    name: custName,
     phone,
-    details: { range, quantity: qty, location }
+    details: { range, rangeLabel, quantity: qty, contactPhone, location, address }
   });
   emitLead(lead);
 
   const header = await getAsset(ASSET_KEYS.BULK_HEADER);
   const body =
     '✅ *Bulk Enquiry Received*\n\n' +
-    `*Product:* ${labelRange(range)}\n` +
+    `*Product:* ${rangeLabel}\n` +
     `*Quantity:* ${qty}\n` +
-    `*Location:* ${location.address || `${location.latitude}, ${location.longitude}`}\n\n` +
+    (contactPhone ? `*Phone:* ${contactPhone}\n` : '') +
+    `*Location:* ${address}\n\n` +
     'Our team will contact you shortly with pricing and dispatch details.';
   await setStep(phone, CH, 'awaiting_service');
   const buttons = [{ id: 'menu', text: 'Choose Service' }];
   if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
   return wa().sendButtons(phone, body, buttons);
+}
+
+// Resolve a bulk range slug to a readable "Name - MOQ" label (admin-managed,
+// with a fallback to the legacy static labels).
+async function bulkRangeLabel(slug) {
+  if (!slug) return '';
+  const r = await BulkRange.findOne({ slug }).lean().catch(() => null);
+  if (r) return r.moq ? `${r.name} - ${r.moq}` : r.name;
+  return labelRange(slug);
 }
 
 // ---------- GIFTING ----------

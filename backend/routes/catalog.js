@@ -4,10 +4,55 @@ import upload from '../middleware/upload.js';
 import Category from '../models/Category.js';
 import FlowAsset from '../models/FlowAsset.js';
 import SupplyCountry from '../models/SupplyCountry.js';
+import BulkRange from '../models/BulkRange.js';
 import cloudinaryService from '../services/cloudinary.js';
 import { ASSET_KEYS } from '../services/assets.js';
 
 const router = express.Router();
+
+// ---------------- BULK / WHOLESALE RANGES ----------------
+router.get('/bulk-ranges', async (req, res) => {
+  const list = await BulkRange.find(req.query.all ? {} : { active: true }).sort({ order: 1, createdAt: 1 });
+  res.json({ success: true, data: list });
+});
+
+router.post('/bulk-ranges', auth, upload.single('image'), async (req, res) => {
+  try {
+    const b = req.body;
+    let imageUrl = b.imageUrl || '';
+    if (req.file) imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/bulk-ranges', aspectRatio: '1:1' });
+    const range = await BulkRange.create({
+      name: b.name,
+      moq: b.moq || '',
+      order: Number(b.order) || 0,
+      active: b.active !== 'false',
+      imageUrl
+    });
+    res.json({ success: true, data: range });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.put('/bulk-ranges/:id', auth, upload.single('image'), async (req, res) => {
+  const update = { ...req.body };
+  if (update.order !== undefined) update.order = Number(update.order);
+  let oldImageUrl = null;
+  if (req.file) {
+    const existing = await BulkRange.findById(req.params.id).select('imageUrl').lean();
+    oldImageUrl = existing?.imageUrl || null;
+    update.imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/bulk-ranges', aspectRatio: '1:1' });
+  }
+  const range = await BulkRange.findByIdAndUpdate(req.params.id, update, { new: true });
+  res.json({ success: true, data: range });
+  if (oldImageUrl && oldImageUrl !== update.imageUrl) cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
+});
+
+router.delete('/bulk-ranges/:id', auth, async (req, res) => {
+  const range = await BulkRange.findByIdAndDelete(req.params.id);
+  if (range) cloudinaryService.deleteByUrl(range.imageUrl).catch(() => {});
+  res.json({ success: true });
+});
 
 // ---------------- CATEGORIES ----------------
 router.get('/categories', async (req, res) => {

@@ -6,6 +6,7 @@ import SupplyCountry from '../models/SupplyCountry.js';
 import Category from '../models/Category.js';
 import Order from '../models/Order.js';
 import DealerProfile from '../models/DealerProfile.js';
+import BulkRange from '../models/BulkRange.js';
 import { getAsset, getAssets, ASSET_KEYS } from '../services/assets.js';
 import { urlToBase64 } from '../services/imageBase64.js';
 import { DEFAULT_BANNER_B64, DEFAULT_ICON_B64 } from '../services/defaultFlowAssets.js';
@@ -248,14 +249,30 @@ async function orderOptions(phone) {
   );
 }
 
-// Static bulk/wholesale product ranges (with MOQ) for the in-flow BULK_ORDER screen.
-function bulkRanges() {
-  return [
-    { id: 'honey', title: 'Honey Range - MOQ 50/variant' },
-    { id: 'gulkand', title: 'Gulkand Range - MOQ 50/variant' },
-    { id: 'dryfruits', title: 'Dry Fruits - MOQ 25 kg' },
-    { id: 'narumanam', title: 'Narumanam - MOQ 100/variant' }
-  ];
+// Bulk/wholesale product ranges (admin-managed) with 1:1 base64 logos for the flow.
+async function bulkRangeOptions() {
+  const ranges = await BulkRange.find({ active: true }).sort({ order: 1, createdAt: 1 }).lean();
+  if (!ranges.length) {
+    // Sensible defaults if the admin hasn't configured any ranges yet.
+    return [
+      { id: 'honey', title: 'Honey Range', description: 'MOQ 50/variant' },
+      { id: 'gulkand', title: 'Gulkand Range', description: 'MOQ 50/variant' },
+      { id: 'dryfruits', title: 'Dry Fruits', description: 'MOQ 25 kg' },
+      { id: 'narumanam', title: 'Narumanam', description: 'MOQ 100/variant' }
+    ];
+  }
+  return Promise.all(
+    ranges.map(async (r) => {
+      const item = { id: r.slug || String(r._id), title: r.name, description: r.moq || '' };
+      if (r.imageUrl) {
+        try {
+          const b64 = await urlToBase64(r.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          if (b64) item.image = b64;
+        } catch (_) {}
+      }
+      return item;
+    })
+  );
 }
 
 // Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
@@ -317,7 +334,7 @@ async function handleDataExchange(screen, data, token = '') {
         return { screen: 'BUSINESS_NAME', data: {} };
       }
       if (service === 'bulk') {
-        return { screen: 'BULK_ORDER', data: { ranges: bulkRanges() } };
+        return { screen: 'BULK_ORDER', data: { ranges: await bulkRangeOptions() } };
       }
       if (service === 'gifting') {
         return { screen: 'GIFTING', data: {} };
@@ -330,6 +347,12 @@ async function handleDataExchange(screen, data, token = '') {
         screen: 'SUCCESS',
         data: { extension_message_response: { params: { flow_token: token, selected_service: service } } }
       };
+    }
+
+    // Bulk: range chosen -> quantity + contact details (WhatsApp number prefilled).
+    case 'BULK_ORDER': {
+      const phone = token.replace(/^b2b_service_/, '');
+      return { screen: 'BULK_DETAILS', data: { product_range: data.product_range || '', wa_number: `+${phone}` } };
     }
 
     // B2C service selection: browse -> show categories screen; else -> finish flow.
