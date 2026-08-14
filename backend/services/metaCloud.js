@@ -372,8 +372,10 @@ export function getClient(channel) {
             parameters: {
               reference_id: referenceId,
               type: 'physical-goods',
+              // Provider type is env-driven: 'razorpay'/'payu'/... for a gateway config,
+              // or 'upi_vpa' for a direct UPI VPA configuration.
               payment_settings: [
-                { type: 'payment_gateway', payment_gateway: { type: 'razorpay', configuration_name: paymentConfig } }
+                { type: 'payment_gateway', payment_gateway: { type: process.env.WHATSAPP_PAYMENT_GATEWAY_TYPE || 'razorpay', configuration_name: paymentConfig } }
               ],
               currency: 'INR',
               total_amount: { value: toPaise(totalAmount), offset: 100 },
