@@ -82,6 +82,8 @@ async function handleFlowResponse(phone, resp, name) {
   const token = resp.flow_token || '';
 
   if (token.startsWith('b2c_service_')) {
+    // Corporate / bulk gifting details captured within the same flow.
+    if (resp.service === 'gifting' || resp.hampers) return finishGifting(phone, resp, name);
     // Category chosen inside the flow -> send the catalog message for it.
     if (resp.selected_category) return showCategoryProducts(phone, resp.selected_category);
     // Track Order: an order was picked in the flow -> send its tracking message.
@@ -141,19 +143,25 @@ async function startGifting(phone, name) {
 }
 
 async function finishGifting(phone, resp, name) {
+  const custName = resp.name || name || '';
+  const email = resp.email || '';
+  const contactPhone = resp.contact_phone || '';
+  const deliveryDate = formatFlowDate(resp.delivery_date);
   const lead = await Lead.create({
     channel: CH,
     type: 'gifting',
-    name: name || resp.company || '',
+    name: custName || resp.company || '',
     phone,
+    email,
     businessName: resp.company || '',
-    details: resp
+    details: { ...resp, delivery_date: deliveryDate, contactPhone, email }
   });
   emitLead(lead);
   const header = await getAsset(ASSET_KEYS.GIFTING_HEADER);
   const body =
-    `Thank you! We've received your gifting request for *${resp.hampers}* hampers.\n\n` +
-    'Our gifting specialist will share a custom catalogue and quote shortly.';
+    `Thank you${custName ? ' ' + custName : ''}! We've received your gifting request for *${resp.hampers}* hampers` +
+    (deliveryDate ? ` (delivery by ${deliveryDate})` : '') +
+    '.\n\nOur gifting specialist will share a custom catalogue and quote shortly.';
   await setStep(phone, CH, 'awaiting_service');
   const buttons = [{ id: 'menu', text: 'Choose Service' }];
   if (header) return wa().sendImageWithButtons(phone, header, body, buttons);
@@ -653,6 +661,20 @@ function supportLink() {
 }
 function clean(phone) {
   return String(phone || '').replace(/\D/g, '');
+}
+
+// WhatsApp DatePicker returns a Unix timestamp (ms) string; format for display.
+function formatFlowDate(v) {
+  if (!v) return '';
+  const s = String(v);
+  let ms = null;
+  if (/^\d{13}$/.test(s)) ms = Number(s);
+  else if (/^\d{10}$/.test(s)) ms = Number(s) * 1000;
+  if (ms != null) {
+    const d = new Date(ms);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  return s;
 }
 
 export default { sendWelcome, handle, startReview, confirmPaidOrder, failPaidOrder };

@@ -400,6 +400,11 @@ async function handleDataExchange(screen, data, token = '') {
           }
         };
       }
+      if (service === 'gifting') {
+        // Corporate / bulk gifting details captured within the same flow.
+        const phone = token.replace(/^b2c_service_/, '');
+        return { screen: 'GIFTING', data: { wa_number: `+${phone}` } };
+      }
       if (service === 'track') {
         // Phone is embedded in the flow token: b2c_service_<phone>
         const phone = token.replace(/^b2c_service_/, '');
