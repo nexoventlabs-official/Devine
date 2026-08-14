@@ -113,9 +113,11 @@ async function handleFlowResponse(phone, resp, name) {
     if (resp.service === 'bulk' || resp.product_range) {
       const ctx = {
         bulk_range: resp.product_range,
+        bulk_label: resp.product_label || '',
         bulk_qty: resp.quantity,
         name: resp.name || name || '',
-        contactPhone: resp.contact_phone || ''
+        contactPhone: resp.contact_phone || '',
+        email: resp.email || ''
       };
       await patchContext(phone, CH, ctx);
       await setStep(phone, CH, 'bulk_awaiting_location', ctx);
@@ -303,16 +305,18 @@ async function finishBulk(phone, convo, location) {
   const qty = convo.context?.bulk_qty || '';
   const custName = convo.context?.name || '';
   const contactPhone = convo.context?.contactPhone || '';
+  const email = convo.context?.email || '';
   // Prefer WhatsApp's address; else reverse-geocode the shared coordinates.
   const address = await resolveLocationAddress(location);
-  const rangeLabel = await bulkRangeLabel(range);
+  const rangeLabel = convo.context?.bulk_label || (await bulkRangeLabel(range));
 
   const lead = await Lead.create({
     channel: CH,
     type: 'bulk',
     name: custName,
     phone,
-    details: { range, rangeLabel, quantity: qty, contactPhone, location, address }
+    email,
+    details: { range, rangeLabel, quantity: qty, contactPhone, email, location, address }
   });
   emitLead(lead);
 
@@ -322,6 +326,7 @@ async function finishBulk(phone, convo, location) {
     `*Product:* ${rangeLabel}\n` +
     `*Quantity:* ${qty}\n` +
     (contactPhone ? `*Phone:* ${contactPhone}\n` : '') +
+    (email ? `*Email:* ${email}\n` : '') +
     `*Location:* ${address}\n\n` +
     'Our team will contact you shortly with pricing and dispatch details.';
   await setStep(phone, CH, 'awaiting_service');

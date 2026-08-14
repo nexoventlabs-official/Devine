@@ -304,12 +304,14 @@ function bulkScreens() {
       terminal: true,
       data: {
         product_range: { type: 'string', __example__: 'honey' },
+        product_label: { type: 'string', __example__: 'Honey Range - MOQ 50/variant' },
         wa_number: { type: 'string', __example__: '+919876543210' }
       },
       layout: {
         type: 'SingleColumnLayout',
         children: [
-          { type: 'TextHeading', text: 'Order & Contact Details' },
+          { type: 'TextSubheading', text: 'Selected product' },
+          { type: 'TextBody', text: '${data.product_label}' },
           { type: 'TextInput', name: 'quantity', label: 'Quantity required', required: true, 'input-type': 'number' },
           { type: 'TextInput', name: 'name', label: 'Your name', required: true, 'input-type': 'text' },
           {
@@ -322,6 +324,7 @@ function bulkScreens() {
             'helper-text': 'Linked to this chat'
           },
           { type: 'TextInput', name: 'contact_phone', label: 'Phone number', required: true, 'input-type': 'phone', 'helper-text': 'Alternate number for dispatch' },
+          { type: 'TextInput', name: 'email', label: 'Email address', required: true, 'input-type': 'email' },
           {
             type: 'Footer',
             label: 'Confirm',
@@ -330,9 +333,11 @@ function bulkScreens() {
               payload: {
                 service: 'bulk',
                 product_range: '${data.product_range}',
+                product_label: '${data.product_label}',
                 quantity: '${form.quantity}',
                 name: '${form.name}',
                 contact_phone: '${form.contact_phone}',
+                email: '${form.email}',
                 wa_number: '${data.wa_number}'
               }
             }

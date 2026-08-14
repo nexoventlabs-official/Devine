@@ -12,6 +12,7 @@ const LeadSchema = new mongoose.Schema(
     },
     name: { type: String, default: '' },
     phone: { type: String, required: true, index: true },
+    email: { type: String, default: '' },
     businessName: { type: String, default: '' },
     businessType: { type: String, default: '' },
     state: { type: String, default: '' },

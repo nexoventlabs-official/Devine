@@ -249,6 +249,20 @@ async function orderOptions(phone) {
   );
 }
 
+// Readable "Name - MOQ" label for a bulk range slug (admin-managed, with defaults).
+async function bulkRangeLabelFor(slug) {
+  if (!slug) return '';
+  const r = await BulkRange.findOne({ slug }).lean().catch(() => null);
+  if (r) return r.moq ? `${r.name} - ${r.moq}` : r.name;
+  const defaults = {
+    honey: 'Honey Range - MOQ 50/variant',
+    gulkand: 'Gulkand Range - MOQ 50/variant',
+    dryfruits: 'Dry Fruits - MOQ 25 kg',
+    narumanam: 'Narumanam - MOQ 100/variant'
+  };
+  return defaults[slug] || slug;
+}
+
 // Bulk/wholesale product ranges (admin-managed) with 1:1 base64 logos for the flow.
 async function bulkRangeOptions() {
   const ranges = await BulkRange.find({ active: true }).sort({ order: 1, createdAt: 1 }).lean();
@@ -352,7 +366,8 @@ async function handleDataExchange(screen, data, token = '') {
     // Bulk: range chosen -> quantity + contact details (WhatsApp number prefilled).
     case 'BULK_ORDER': {
       const phone = token.replace(/^b2b_service_/, '');
-      return { screen: 'BULK_DETAILS', data: { product_range: data.product_range || '', wa_number: `+${phone}` } };
+      const product_label = await bulkRangeLabelFor(data.product_range || '');
+      return { screen: 'BULK_DETAILS', data: { product_range: data.product_range || '', product_label, wa_number: `+${phone}` } };
     }
 
     // B2C service selection: browse -> show categories screen; else -> finish flow.
