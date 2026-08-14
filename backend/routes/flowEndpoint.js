@@ -289,10 +289,23 @@ async function bulkRangeOptions() {
   );
 }
 
-// Build the export country dropdown: an "Enquiry" option first, then admin-managed countries.
+// Build the export country dropdown: an "Enquiry" option first, then admin-managed
+// countries — each with its 1:1 logo (raw base64) so the Dropdown renders thumbnails.
 async function countryOptions() {
   const list = await SupplyCountry.find({ active: true }).sort({ order: 1 }).lean();
-  return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...list.map((c) => ({ id: String(c._id), title: c.name }))];
+  const items = await Promise.all(
+    list.map(async (c) => {
+      const item = { id: String(c._id), title: c.name };
+      if (c.logoUrl) {
+        try {
+          const b64 = await urlToBase64(c.logoUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          if (b64) item.image = b64;
+        } catch (_) {}
+      }
+      return item;
+    })
+  );
+  return [{ id: 'enquiry', title: 'Enquiry (General)' }, ...items];
 }
 
 // Categories for the B2C browse flow with 1:1 image thumbnails in raw base64

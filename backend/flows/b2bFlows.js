@@ -409,7 +409,7 @@ function exportScreens() {
       id: 'COUNTRY_SELECT',
       title: 'Export / International',
       data: {
-        countries: arrayData([{ id: 'enquiry', title: 'Enquiry' }])
+        countries: arrayDataWithImage([{ id: 'enquiry', title: 'Enquiry', description: 'General enquiry' }])
       },
       layout: {
         type: 'SingleColumnLayout',
