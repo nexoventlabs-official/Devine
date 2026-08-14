@@ -6,6 +6,7 @@ const FIELDS = [
   {
     group: 'B2B',
     items: [
+      { key: 'welcome_header_b2b', label: 'Welcome Message Header (B2B)', type: 'image', defaultRatio: 'original' },
       { key: 'welcome_banner_b2b', label: 'Choose Service Banner (B2B, 8:1)', type: 'image', defaultRatio: '8:1', isBanner: true },
       { key: 'b2b_icon_dealer', label: 'Dealer Service Icon (1:1)', type: 'image', defaultRatio: '1:1' },
       { key: 'b2b_icon_bulk', label: 'Bulk/Wholesale Icon (1:1)', type: 'image', defaultRatio: '1:1' },

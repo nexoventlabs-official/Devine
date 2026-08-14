@@ -18,7 +18,8 @@ const GREETING = /^(hi|hello|hey|start|menu|hai|vanakkam|namaskaram)/i;
 
 // ---- Welcome: image header + body + "Choose Service" flow CTA ----
 export async function sendWelcome(phone, name = '') {
-  const banner = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2B);
+  // Message header image (original ratio) shown on the welcome chat bubble.
+  const welcomeHeader = await getAsset(ASSET_KEYS.WELCOME_HEADER_B2B);
   const dealer = await DealerProfile.findOne({ phone });
 
   const services = [
@@ -44,8 +45,8 @@ export async function sendWelcome(phone, name = '') {
     return wa().sendFlowMessage(phone, {
       flowId: fId,
       flowCta: 'Choose Service',
-      headerImageUrl: banner || undefined,
-      headerText: banner ? undefined : 'Devine Business',
+      headerImageUrl: welcomeHeader || undefined,
+      headerText: welcomeHeader ? undefined : 'Devine Business',
       bodyText: body,
       footerText: 'Devine Natural Foods',
       screenName: 'CHOOSE_SERVICE',
