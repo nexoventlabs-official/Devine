@@ -104,7 +104,7 @@ async function getWelcomeBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
     if (bannerUrl) {
-      const b64 = await urlToBase64(bannerUrl, { width: 350, height: 44, crop: 'fill', quality: 25, format: 'jpg' });
+      const b64 = await urlToBase64(bannerUrl, { width: 1200, height: 150, crop: 'fill', quality: 80, format: 'jpg' });
       if (b64) return { b64, hasBanner: true };
     }
   } catch (_) {}
@@ -116,7 +116,7 @@ async function getB2bBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2B);
     if (bannerUrl) {
-      const b64 = await urlToBase64(bannerUrl, { width: 350, height: 44, crop: 'fill', quality: 25, format: 'jpg' });
+      const b64 = await urlToBase64(bannerUrl, { width: 1200, height: 150, crop: 'fill', quality: 80, format: 'jpg' });
       if (b64) return { b64, hasBanner: true };
     }
   } catch (_) {}
