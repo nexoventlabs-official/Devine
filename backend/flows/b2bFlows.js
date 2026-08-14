@@ -255,27 +255,7 @@ export function serviceFlow() {
 }
 
 // ---------------------------------------------------------------------------
-// 2) STANDALONE DEALER / DISTRIBUTOR SIGNUP FLOW (endpoint-driven fallback)
-//    Kept for the non-flow fallback path; the primary path is merged into
-//    serviceFlow() above.
-// ---------------------------------------------------------------------------
-export function dealerFlow() {
-  return {
-    version: VERSION,
-    data_api_version: DATA_API,
-    routing_model: {
-      BUSINESS_NAME: ['STATE_SELECT'],
-      STATE_SELECT: ['DISTRICT_CITY'],
-      DISTRICT_CITY: ['BUSINESS_PROFILE'],
-      BUSINESS_PROFILE: ['SUMMARY'],
-      SUMMARY: []
-    },
-    screens: dealerScreens()
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 3) BULK / WHOLESALE FLOW (MOQ select -> quantity)
+// 2) BULK / WHOLESALE FLOW (MOQ select -> quantity)
 // ---------------------------------------------------------------------------
 export function bulkFlow() {
   return {
@@ -447,4 +427,4 @@ export function exportFlow() {
   };
 }
 
-export default { serviceFlow, dealerFlow, bulkFlow, giftingFlow, exportFlow };
+export default { serviceFlow, bulkFlow, giftingFlow, exportFlow };

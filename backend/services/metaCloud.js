@@ -447,6 +447,12 @@ export function getClient(channel) {
       return data;
     },
 
+    // Deprecate a PUBLISHED flow (published flows cannot be hard-deleted).
+    async deprecateFlow(flowId) {
+      const { data } = await api.post(`${GRAPH()}/${flowId}/deprecate`, {}, { headers: authHeaders });
+      return data;
+    },
+
     // Set/update a flow's data-exchange endpoint URI (e.g. when converting a
     // navigate flow to an endpoint flow). Applies to the draft; publish after.
     async updateFlowEndpoint(flowId, endpointUri) {

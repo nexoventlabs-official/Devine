@@ -108,10 +108,6 @@ async function handleFlowResponse(phone, resp, name) {
       return routeService(phone, resp.selected_service, name);
     }
   }
-  // Standalone dealer flow (fallback path) completed
-  if (token.startsWith('b2b_dealer_')) {
-    return finishDealer(phone, resp, name);
-  }
   // Bulk flow completed -> ask for location next
   if (token.startsWith('b2b_bulk_')) {
     await patchContext(phone, CH, {
@@ -156,21 +152,25 @@ async function routeService(phone, service, name) {
 }
 
 // ---------- DEALER ----------
+// Dealer registration runs INSIDE the Choose Service flow. This handler is only
+// reached via the non-flow list fallback, so we capture interest and point the
+// user back to Choose Service.
 async function startDealer(phone, name) {
-  const fId = flowId('b2b_dealer');
-  await setStep(phone, CH, 'dealer_flow', { name });
-  if (!fId) {
-    return wa().sendText(phone, 'Dealer registration is being set up. Please try again shortly.');
-  }
-  return wa().sendFlowMessage(phone, {
-    flowId: fId,
-    flowCta: 'Start Registration',
-    bodyText: 'Great! To share our dealer pricing and product catalogue, we need a few quick details.',
-    headerText: 'Dealer Registration',
-    screenName: 'BUSINESS_NAME',
-    flowToken: `b2b_dealer_${clean(phone)}`,
-    flowAction: 'data_exchange'
+  await setStep(phone, CH, 'awaiting_service', { name });
+  const lead = await Lead.create({
+    channel: CH,
+    type: 'dealer',
+    name: name || '',
+    phone,
+    details: { via: 'fallback_interest' }
   });
+  emitLead(lead);
+  return wa().sendCtaUrl(
+    phone,
+    'Thanks for your interest in becoming a Devine dealer! 🌿\n\nTap *Choose Service* → *Become a Dealer* to complete a quick registration. Our team will also reach out shortly.',
+    'Choose Service',
+    serviceDeepLink()
+  );
 }
 
 async function finishDealer(phone, resp, name) {
