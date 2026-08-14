@@ -185,10 +185,56 @@ async function handleSelection(phone, selectedId, name) {
   if (selectedId === 'view_summary') {
     return openOrderSummary(phone);
   }
+  if (['pay_online', 'pay_cod', 'retry_payment'].includes(selectedId)) {
+    return handlePaymentButton(phone, selectedId, name);
+  }
   if (selectedId === 'menu') {
     return sendWelcome(phone, name);
   }
   return sendWelcome(phone, name);
+}
+
+// Handles the payment reply buttons in both cases:
+//  A) choosing a method in the order-summary fallback (cart still present, no order yet)
+//  B) an order already exists and is awaiting payment (retry / switch to COD)
+async function handlePaymentButton(phone, selectedId, name) {
+  const convo = await getConversation(phone, CH);
+  const cart = convo.context?.cart || [];
+
+  if (cart.length) {
+    const method = selectedId === 'pay_cod' ? 'cod' : 'online';
+    await patchContext(phone, CH, { paymentMethod: method });
+    await setStep(phone, CH, 'awaiting_location', { paymentMethod: method });
+    return wa().sendLocationRequest(phone, '📍 Please share your delivery location to continue.');
+  }
+
+  const order = await Order.findOne({ 'customer.phone': phone, paymentStatus: { $ne: 'paid' } }).sort({ createdAt: -1 });
+  if (!order) return sendWelcome(phone, name);
+
+  if (selectedId === 'pay_cod') {
+    order.paymentMethod = 'cod';
+    order.status = 'confirmed';
+    order.trackingUpdates.push({ status: 'confirmed', message: 'Order confirmed (COD)', timestamp: new Date() });
+    await order.save();
+    emitOrder(order);
+    const confirmImg = await getAsset(ASSET_KEYS.ORDER_CONFIRMED);
+    const trackUrl = `${FRONTEND()}/track?order=${order.trackId || order.orderId}`;
+    const body =
+      `✅ *Order Confirmed — Cash on Delivery!*\n\n` +
+      `*Order ID:* ${order.orderId}\n` +
+      `*Total:* Rs.${order.totalAmount}\n\n` +
+      "We'll send you tracking details once dispatched.";
+    if (confirmImg) return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl, 'Devine Natural Foods', confirmImg);
+    return wa().sendCtaUrl(phone, body, 'Track Order', trackUrl);
+  }
+
+  // retry_payment / pay_online -> re-send the native payment message
+  try {
+    await wa().sendOrderDetails(phone, order.orderId, order.items, order.totalAmount, { shipping: order.deliveryCharge });
+    return true;
+  } catch (e) {
+    return wa().sendText(phone, 'Payment could not be started right now. Please type *menu* to try again.');
+  }
 }
 
 async function routeService(phone, service, name) {
@@ -447,8 +493,6 @@ async function openOrderSummary(phone) {
 async function handlePaymentMethod(phone, method, name) {
   await patchContext(phone, CH, { paymentMethod: method === 'online' ? 'online' : 'cod', customerName: name || '' });
   await setStep(phone, CH, 'awaiting_location', { paymentMethod: method === 'online' ? 'online' : 'cod', customerName: name || '' });
-  const img = await getAsset(ASSET_KEYS.PAYMENT_HEADER);
-  if (img) await wa().sendImage(phone, img, 'Almost there!').catch(() => {});
   return wa().sendLocationRequest(phone, '📍 Please share your delivery location to continue.');
 }
 
@@ -461,6 +505,11 @@ async function finishOrder(phone, convo, location) {
   const trackId = genOrderId('TRK');
   const expected = new Date(Date.now() + 3 * 24 * 3600 * 1000);
 
+  // Online payment is only truly "confirmed" once the payment webhook fires.
+  // Until then the order stays PENDING so we never confirm an unpaid order.
+  const wantsOnline = (convo.context?.paymentMethod || 'cod') === 'online';
+  const canTakeOnline = wantsOnline && !!process.env.WHATSAPP_PAYMENT_CONFIG;
+
   const order = await Order.create({
     orderId,
     trackId,
@@ -472,31 +521,40 @@ async function finishOrder(phone, convo, location) {
     totalAmount: itemsTotal + deliveryCharge,
     paymentMethod: convo.context?.paymentMethod || 'cod',
     paymentStatus: 'pending',
-    status: 'confirmed',
+    status: canTakeOnline ? 'pending' : 'confirmed',
     deliveryLocation: {
       latitude: location.latitude,
       longitude: location.longitude,
       address: location.address || ''
     },
     expectedDelivery: expected,
-    trackingUpdates: [{ status: 'confirmed', message: 'Order confirmed', timestamp: new Date() }]
+    trackingUpdates: canTakeOnline
+      ? [{ status: 'pending', message: 'Awaiting payment', timestamp: new Date() }]
+      : [{ status: 'confirmed', message: 'Order confirmed', timestamp: new Date() }]
   });
   emitOrder(order);
 
   await patchContext(phone, CH, { cart: [] });
   await setStep(phone, CH, 'ordered');
 
-  // Online payment -> trigger WhatsApp native Pay (Review & Pay -> UPI).
-  if (order.paymentMethod === 'online' && process.env.WHATSAPP_PAYMENT_CONFIG) {
+  // Online payment -> trigger WhatsApp native Pay (Review & Pay -> UPI). The order
+  // is confirmed ONLY by the payment webhook (confirmPaidOrder); nothing here.
+  if (canTakeOnline) {
     try {
-      const payImg = await getAsset(ASSET_KEYS.PAYMENT_HEADER);
       await wa().sendOrderDetails(phone, orderId, order.items, order.totalAmount, {
-        shipping: order.deliveryCharge,
-        headerImageUrl: payImg || null
+        shipping: order.deliveryCharge
       });
       return true; // payment webhook will confirm + send tracking
     } catch (err) {
-      logger.warn('Native payment send failed, falling back to confirmation', { error: err.message });
+      logger.warn('Native payment send failed', { error: err.message });
+      return wa().sendButtons(
+        phone,
+        '⚠️ We could not start the online payment for your order. Please retry, or choose Cash on Delivery.',
+        [
+          { id: 'retry_payment', text: 'Retry Payment' },
+          { id: 'pay_cod', text: 'Cash on Delivery' }
+        ]
+      );
     }
   }
 
