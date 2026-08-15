@@ -104,7 +104,7 @@ async function getWelcomeBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2C);
     if (bannerUrl) {
-      const b64 = await urlToBase64(bannerUrl, { width: 1200, height: 150, crop: 'fill', quality: 80, format: 'jpg' });
+      const b64 = await urlToBase64(bannerUrl, { width: 1600, height: 200, crop: 'fill', quality: 85, format: 'jpg' });
       if (b64) return { b64, hasBanner: true };
     }
   } catch (_) {}
@@ -116,7 +116,7 @@ async function getB2bBannerB64() {
   try {
     const bannerUrl = await getAsset(ASSET_KEYS.WELCOME_BANNER_B2B);
     if (bannerUrl) {
-      const b64 = await urlToBase64(bannerUrl, { width: 1200, height: 150, crop: 'fill', quality: 80, format: 'jpg' });
+      const b64 = await urlToBase64(bannerUrl, { width: 1600, height: 200, crop: 'fill', quality: 85, format: 'jpg' });
       if (b64) return { b64, hasBanner: true };
     }
   } catch (_) {}
@@ -147,7 +147,7 @@ async function b2bServiceOptions(phone) {
     items.map(async ({ rawUrl, ...rest }) => {
       if (rawUrl) {
         try {
-          const b64 = await urlToBase64(rawUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          const b64 = await urlToBase64(rawUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) rest.image = b64;
         } catch (_) {}
       }
@@ -197,7 +197,7 @@ async function serviceOptions() {
       const { rawUrl, ...rest } = item;
       if (rawUrl) {
         try {
-          const b64 = await urlToBase64(rawUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          const b64 = await urlToBase64(rawUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) rest.image = b64;
         } catch (_) {}
       }
@@ -225,7 +225,7 @@ async function statusLogoB64(status) {
   let b64 = '';
   try {
     const url = await getAsset(meta.key);
-    if (url) b64 = await urlToBase64(url, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+    if (url) b64 = await urlToBase64(url, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
   } catch (_) {}
   _statusLogoCache[status] = { b64, at: Date.now() };
   return b64;
@@ -280,7 +280,7 @@ async function bulkRangeOptions() {
       const item = { id: r.slug || String(r._id), title: r.name, description: r.moq || '' };
       if (r.imageUrl) {
         try {
-          const b64 = await urlToBase64(r.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          const b64 = await urlToBase64(r.imageUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) item.image = b64;
         } catch (_) {}
       }
@@ -298,7 +298,7 @@ async function countryOptions() {
       const item = { id: String(c._id), title: c.name };
       if (c.logoUrl) {
         try {
-          const b64 = await urlToBase64(c.logoUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          const b64 = await urlToBase64(c.logoUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) item.image = b64;
         } catch (_) {}
       }
@@ -343,7 +343,7 @@ async function categoryOptions() {
       };
       if (c.imageUrl) {
         try {
-          const b64 = await urlToBase64(c.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+          const b64 = await urlToBase64(c.imageUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) item.image = b64;
         } catch (_) {}
       }
@@ -484,7 +484,7 @@ async function handleDataExchange(screen, data, token = '') {
           const item = { id: p.retailerId, title: p.name };
           if (p.imageUrl) {
             try {
-              const b64 = await urlToBase64(p.imageUrl, { width: 60, height: 60, crop: 'fill', quality: 25, format: 'jpg' });
+              const b64 = await urlToBase64(p.imageUrl, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
               if (b64) item.image = b64;
             } catch (_) {}
           }

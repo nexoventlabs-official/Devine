@@ -438,7 +438,7 @@ async function buildPaymentOptions() {
       try {
         const url = await getAsset(key);
         if (url) {
-          const b64 = await urlToBase64(url, { width: 96, height: 96, crop: 'fill', quality: 40, format: 'jpg' });
+          const b64 = await urlToBase64(url, { width: 180, height: 180, crop: 'fill', quality: 80, format: 'jpg' });
           if (b64) return { ...opt, image: b64 };
         }
       } catch (_) {}
