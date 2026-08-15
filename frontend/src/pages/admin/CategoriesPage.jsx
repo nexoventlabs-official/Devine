@@ -43,7 +43,7 @@ export default function CategoriesPage() {
             <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#ffffff' }}>
               {c.imageUrl ? (
                 <img src={c.imageUrl} alt={c.name}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 12, boxSizing: 'border-box' }}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
                 />
               ) : null}

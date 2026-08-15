@@ -111,7 +111,7 @@ export default function ProductsAdminPage() {
               <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#ffffff' }}>
                 {p.imageUrl ? (
                   <img src={p.imageUrl} alt={p.name}
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 12, boxSizing: 'border-box', opacity: outOfStock ? 0.55 : 1 }}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: outOfStock ? 0.55 : 1 }}
                     onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
                   />
                 ) : null}
