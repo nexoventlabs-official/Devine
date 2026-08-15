@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
 
-// B2C browse categories (name + tile image shown in the WhatsApp category list
-// and in the website home-page category marquee).
+// B2C browse categories (name + tile image)
 export default function CategoriesPage() {
   const [list, setList] = useState([]);
-  const [name, setName] = useState('');
-  const [file, setFile] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(null); // category being edited
+  const [editing, setEditing] = useState(null); // category being edited (null = new)
+  const [formOpen, setFormOpen] = useState(false);
 
   async function load() {
     const res = await api.get('/catalog/categories?all=1');
@@ -16,61 +13,70 @@ export default function CategoriesPage() {
   }
   useEffect(() => { load(); }, []);
 
-  async function add(e) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append('name', name);
-      if (file) fd.append('image', file);
-      await api.postForm('/catalog/categories', fd);
-      setName(''); setFile(null);
-      await load();
-    } finally { setBusy(false); }
-  }
-
   async function remove(id) {
     if (!confirm('Delete category?')) return;
     await api.del(`/catalog/categories/${id}`);
     await load();
   }
 
+  const openNew = () => { setEditing(null); setFormOpen(true); };
+  const openEdit = (c) => { setEditing(c); setFormOpen(true); };
+
   return (
-    <div style={{ padding: 24, fontFamily: 'Inter, sans-serif' }}>
-      <h1 style={{ marginTop: 0 }}>Categories</h1>
-      <p style={{ color: '#666' }}>Upload a category name + tile image. Used in the B2C "Browse products" flow and the website category strip.</p>
-      <form onSubmit={add} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: '#fafafa', padding: 16, borderRadius: 12, marginBottom: 20 }}>
-        <input required placeholder="Category name" value={name} onChange={(e) => setName(e.target.value)} style={input} />
-        <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
-        <button disabled={busy} style={btn}>Add</button>
-      </form>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
+    <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Categories</h1>
+          <p style={{ margin: '4px 0 0', color: '#b3b3b3', fontSize: 14 }}>Upload category name & tile image used across the storefront and WhatsApp catalog.</p>
+        </div>
+        <button onClick={openNew} style={btn}>+ Add Category</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 18, marginTop: 10 }}>
         {list.map((c) => (
-          <div key={c._id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 14, textAlign: 'center' }}>
-            {c.imageUrl && <img src={c.imageUrl} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8 }} />}
-            <div style={{ fontWeight: 600, marginTop: 8 }}>{c.name}</div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'center' }}>
-              <button onClick={() => setEditing(c)} style={{ ...btn, background: '#111827', padding: '7px 12px' }}>Edit</button>
-              <button onClick={() => remove(c._id)} style={{ ...btn, background: '#c0392b', padding: '7px 12px' }}>Delete</button>
+          <div key={c._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 14, textAlign: 'center', opacity: c.active === false ? 0.6 : 1, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px', transition: 'transform 0.2s ease, background 0.2s ease' }}>
+            <div style={{ width: '100%', height: 140, background: '#ffffff', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, position: 'relative', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+              {c.imageUrl ? (
+                <img
+                  src={c.imageUrl}
+                  alt={c.name}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div style={{ display: c.imageUrl ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>
+                <span>No Image</span>
+              </div>
+            </div>
+            <div style={{ fontWeight: 700, marginTop: 12, fontSize: 15, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+            {c.active === false && <div style={{ fontSize: 11, color: '#f3727f', marginTop: 2, fontWeight: 600 }}>Inactive</div>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'center' }}>
+              <button onClick={() => openEdit(c)} style={{ ...miniBtn, background: '#282828', color: '#ffffff', flex: 1 }}>Edit</button>
+              <button onClick={() => remove(c._id)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)', flex: 1 }}>Delete</button>
             </div>
           </div>
         ))}
+        {list.length === 0 && <div style={{ color: '#b3b3b3', fontSize: 14 }}>No categories yet. Click "+ Add Category" above.</div>}
       </div>
 
-      {editing && (
-        <CategoryEditModal
+      {formOpen && (
+        <CategoryModal
           category={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); load(); }}
+          onClose={() => setFormOpen(false)}
+          onSaved={() => { setFormOpen(false); load(); }}
         />
       )}
     </div>
   );
 }
 
-function CategoryEditModal({ category, onClose, onSaved }) {
-  const [name, setName] = useState(category.name || '');
-  const [active, setActive] = useState(category.active !== false);
+function CategoryModal({ category, onClose, onSaved }) {
+  const isEdit = !!category;
+  const [name, setName] = useState(category?.name || '');
+  const [active, setActive] = useState(category?.active !== false);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -84,10 +90,11 @@ function CategoryEditModal({ category, onClose, onSaved }) {
       fd.append('name', name);
       fd.append('active', active ? 'true' : 'false');
       if (file) fd.append('image', file);
-      await api.putForm(`/catalog/categories/${category._id}`, fd);
+      if (isEdit) await api.putForm(`/catalog/categories/${category._id}`, fd);
+      else await api.postForm('/catalog/categories', fd);
       onSaved();
     } catch (e2) {
-      setErr(e2.message || 'Update failed');
+      setErr(e2.message || 'Save failed');
       setSaving(false);
     }
   }
@@ -95,41 +102,74 @@ function CategoryEditModal({ category, onClose, onSaved }) {
   return (
     <div style={overlay} onClick={onClose}>
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
-        <h3 style={{ marginTop: 0 }}>Edit Category</h3>
-        {err && <div style={{ background: '#fdecec', color: '#c0392b', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? 'Edit Category' : 'Add New Category'}</h3>
+          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+        </div>
+        {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{err}</div>}
 
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 14 }}>
-          {(file || category.imageUrl) && (
-            <img
-              src={file ? URL.createObjectURL(file) : category.imageUrl}
-              alt=""
-              style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 10, border: '1px solid #eee' }}
-            />
-          )}
-          <label style={{ fontSize: 13, color: '#555' }}>
-            Replace image
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />
-          </label>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>Category Tile Image</div>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            {(file || category?.imageUrl) ? (
+              <img
+                src={file ? URL.createObjectURL(file) : category.imageUrl}
+                alt=""
+                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #333' }}
+              />
+            ) : (
+              <div style={{ width: 72, height: 72, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#7c7c7c' }}>
+                No Image
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 16px',
+                background: '#282828',
+                color: '#ffffff',
+                border: '1px solid #4d4d4d',
+                borderRadius: 500,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                width: 'fit-content'
+              }}>
+                <span>{file ? 'Change File' : (category?.imageUrl ? 'Replace Image' : 'Choose Image')}</span>
+                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'none' }} />
+              </label>
+              <span style={{ fontSize: 12, color: file ? '#1ed760' : '#7c7c7c' }}>
+                {file ? file.name : 'PNG, JPG, WebP up to 10MB'}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <label style={lbl}>Name
-          <input required value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+        <label style={lbl}>Category Name *
+          <input required placeholder="e.g. Organic Honey" value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6 }} />
         </label>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '10px 0' }}>
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (visible on site & flow)
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0 6px', color: '#ffffff', fontWeight: 600, fontSize: 13 }}>
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (visible on site & catalog)
         </label>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
-          <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : 'Save Changes'}</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
+          <button type="button" onClick={onClose} style={{ ...btn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Cancel</button>
+          <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Category')}</button>
         </div>
       </form>
     </div>
   );
 }
 
-const input = { padding: 9, border: '1px solid #ddd', borderRadius: 6 };
-const lbl = { display: 'block', fontSize: 13, color: '#555', marginBottom: 10 };
-const btn = { background: '#1a7f37', color: '#fff', border: 0, borderRadius: 6, padding: '9px 14px', cursor: 'pointer' };
-const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
-const modal = { background: '#fff', borderRadius: 12, padding: 24, width: 'min(480px, 92vw)', maxHeight: '86vh', overflowY: 'auto' };
+const input = { padding: '9px 14px', background: '#1f1f1f', border: '1px solid #333', borderRadius: 500, color: '#ffffff', fontSize: 13, outline: 'none' };
+const lbl = { display: 'block', fontSize: 13, color: '#b3b3b3', fontWeight: 600, marginBottom: 10 };
+const btn = { background: '#1ed760', color: '#000000', border: 0, borderRadius: 9999, padding: '10px 18px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '1.4px', cursor: 'pointer' };
+const miniBtn = { border: 0, borderRadius: 9999, padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' };
+const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 };
+const modal = { background: '#1f1f1f', border: '1px solid #282828', borderRadius: 12, padding: 24, width: 'min(480px, 92vw)', maxHeight: '86vh', overflowY: 'auto', color: '#ffffff', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 24px' };
+
+

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
 
-// Admin offers: pick products, set a B2C and/or B2B discount. The discounted price
-// shows as the current price with the original struck through (site + WhatsApp catalog).
+// Admin offers: pick products, set a B2C and/or B2B discount.
 export default function OffersPage() {
   const [offers, setOffers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -25,36 +24,60 @@ export default function OffersPage() {
   const fmtRule = (r) => (r?.enabled ? (r.type === 'flat' ? `₹${r.value} off` : `${r.value}% off`) : '—');
 
   return (
-    <div style={{ padding: 24, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ marginTop: 0 }}>Offers</h1>
+    <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Offers & Discounts</h1>
+          <p style={{ margin: 0, color: '#b3b3b3', fontSize: 14 }}>Create B2C & B2B promotional discounts across products.</p>
+        </div>
         <button onClick={() => setCreating(true)} style={btn}>+ Create Offer</button>
       </div>
-      <p style={{ color: '#666' }}>Apply a discount to selected products. B2C offers update the website + WhatsApp catalog (original price struck through). B2B offers apply to dealer pricing.</p>
 
-      <div style={{ display: 'grid', gap: 12 }}>
-        {offers.map((o) => (
-          <div key={o._id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>
-                  {o.title} {o.active ? <span style={pill('#dcfce7', '#15803d')}>Active</span> : <span style={pill('#fee2e2', '#b91c1c')}>Off</span>}
+      <div style={{ display: 'grid', gap: 14 }}>
+        {offers.map((o) => {
+          const prods = (o.productIds || []).map(p => (typeof p === 'object' ? p : products.find(x => x._id === p))).filter(Boolean);
+          return (
+            <div key={o._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 18, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 260 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: '#ffffff' }}>
+                    {o.title} {o.active ? <span style={pill('rgba(30, 215, 96, 0.15)', '#1ed760', 'rgba(30, 215, 96, 0.3)')}>Active</span> : <span style={pill('rgba(243, 114, 127, 0.15)', '#f3727f', 'rgba(243, 114, 127, 0.3)')}>Off</span>}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#b3b3b3', marginTop: 4 }}>
+                    B2C: <strong style={{ color: '#1ed760' }}>{fmtRule(o.b2c)}</strong> · B2B: <strong style={{ color: '#539df5' }}>{fmtRule(o.b2b)}</strong> · {prods.length} product(s)
+                  </div>
+                  
+                  {/* Product Thumbnails Row */}
+                  {prods.length > 0 && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {prods.slice(0, 6).map((p) => (
+                        <div key={p._id} title={p.name} style={{ width: 44, height: 44, background: '#ffffff', borderRadius: 6, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3, border: '1px solid #333' }}>
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                          ) : (
+                            <span style={{ fontSize: 9, color: '#7c7c7c' }}>Item</span>
+                          )}
+                        </div>
+                      ))}
+                      {prods.length > 6 && (
+                        <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600 }}>+{prods.length - 6} more</div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: '#7c7c7c', marginTop: 6 }}>
+                    {prods.map((p) => p.name).join(', ') || 'No products selected'}
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
-                  B2C: {fmtRule(o.b2c)} · B2B: {fmtRule(o.b2b)} · {o.productIds?.length || 0} product(s)
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setEditing(o)} style={{ ...miniBtn, background: '#282828', color: '#ffffff' }}>Edit</button>
+                  <button onClick={() => remove(o._id)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Delete</button>
                 </div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                  {(o.productIds || []).map((p) => p.name).join(', ') || 'No products'}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setEditing(o)} style={{ ...btn, background: '#111827', padding: '7px 12px' }}>Edit</button>
-                <button onClick={() => remove(o._id)} style={{ ...btn, background: '#c0392b', padding: '7px 12px' }}>Delete</button>
               </div>
             </div>
-          </div>
-        ))}
-        {offers.length === 0 && <div style={{ color: '#888' }}>No offers yet. Create one above.</div>}
+          );
+        })}
+        {offers.length === 0 && <div style={{ color: '#b3b3b3', fontSize: 14 }}>No offers yet. Create one above.</div>}
       </div>
 
       {(creating || editing) && (
@@ -104,32 +127,35 @@ function OfferModal({ offer, products, onClose, onSaved }) {
   return (
     <div style={overlay} onClick={onClose}>
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
-        <h3 style={{ marginTop: 0 }}>{isEdit ? 'Edit Offer' : 'Create Offer'}</h3>
-        {err && <div style={{ background: '#fdecec', color: '#c0392b', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? 'Edit Offer' : 'Create Offer'}</h3>
+          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+        </div>
+        {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13 }}>{err}</div>}
 
-        <input required placeholder="Offer title (e.g. Diwali Sale)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '10px 0' }}>
+        <input required placeholder="Offer title (e.g. Festive Sale)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '12px 0', color: '#ffffff', fontWeight: 600, fontSize: 13 }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active
         </label>
 
         <DiscountRow label="B2C discount (website + catalog)" rule={b2c} setRule={setB2c} />
         <DiscountRow label="B2B discount (dealer price)" rule={b2b} setRule={setB2b} />
 
-        <div style={{ fontWeight: 600, fontSize: 13, margin: '14px 0 6px' }}>Products ({selected.size} selected)</div>
-        <input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 8 }} />
-        <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #eee', borderRadius: 8 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Products ({selected.size} selected)</div>
+        <input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 10 }} />
+        <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #282828', borderRadius: 8, background: '#181818' }}>
           {filtered.map((p) => (
-            <label key={p._id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px', borderBottom: '1px solid #f4f4f4', cursor: 'pointer' }}>
+            <label key={p._id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #252525', cursor: 'pointer', color: '#ffffff', fontSize: 13 }}>
               <input type="checkbox" checked={selected.has(p._id)} onChange={() => toggle(p._id)} />
-              <span style={{ flex: 1 }}>{p.name}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
+              <span style={{ flex: 1, fontWeight: 600 }}>{p.name}</span>
+              <span style={{ color: '#b3b3b3', fontSize: 12 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
             </label>
           ))}
-          {filtered.length === 0 && <div style={{ padding: 10, color: '#888', fontSize: 13 }}>No products found.</div>}
+          {filtered.length === 0 && <div style={{ padding: 12, color: '#b3b3b3', fontSize: 13 }}>No products found.</div>}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-          <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <button type="button" onClick={onClose} style={{ ...btn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Cancel</button>
           <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : (isEdit ? 'Save Offer' : 'Create Offer')}</button>
         </div>
       </form>
@@ -139,10 +165,10 @@ function OfferModal({ offer, products, onClose, onSaved }) {
 
 function DiscountRow({ label, rule, setRule }) {
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', margin: '8px 0' }}>
-      <label style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 240 }}>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', margin: '10px 0' }}>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 230, color: '#ffffff', fontSize: 13, fontWeight: 600 }}>
         <input type="checkbox" checked={rule.enabled} onChange={(e) => setRule({ ...rule, enabled: e.target.checked })} />
-        <span style={{ fontSize: 13, color: '#374151' }}>{label}</span>
+        <span>{label}</span>
       </label>
       <select value={rule.type} onChange={(e) => setRule({ ...rule, type: e.target.value })} style={{ ...input, width: 110 }} disabled={!rule.enabled}>
         <option value="percent">% off</option>
@@ -153,8 +179,10 @@ function DiscountRow({ label, rule, setRule }) {
   );
 }
 
-const pill = (bg, color) => ({ background: bg, color, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, marginLeft: 6 });
-const input = { padding: 9, border: '1px solid #ddd', borderRadius: 6 };
-const btn = { background: '#1a7f37', color: '#fff', border: 0, borderRadius: 6, padding: '9px 14px', cursor: 'pointer' };
-const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
-const modal = { background: '#fff', borderRadius: 12, padding: 24, width: 'min(560px, 94vw)', maxHeight: '90vh', overflowY: 'auto' };
+const pill = (bg, color, border) => ({ background: bg, color, border: `1px solid ${border}`, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 9999, marginLeft: 8, textTransform: 'uppercase', letterSpacing: '1px' });
+const input = { padding: '9px 14px', background: '#1f1f1f', border: '1px solid #333', borderRadius: 500, color: '#ffffff', fontSize: 13, outline: 'none' };
+const btn = { background: '#1ed760', color: '#000000', border: 0, borderRadius: 9999, padding: '10px 18px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '1.4px', cursor: 'pointer' };
+const miniBtn = { border: 0, borderRadius: 9999, padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' };
+const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 };
+const modal = { background: '#1f1f1f', border: '1px solid #282828', borderRadius: 12, padding: 24, width: 'min(560px, 94vw)', maxHeight: '90vh', overflowY: 'auto', color: '#ffffff', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 24px' };
+

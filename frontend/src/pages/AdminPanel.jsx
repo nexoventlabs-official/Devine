@@ -293,7 +293,7 @@ export default function AdminPanel({ onNavigateHome }) {
       <div className="admin-login-container">
         <div className="admin-login-card">
           <div className="admin-login-header">
-            <img src="/assets/logo.svg" alt="Devine Logo" style={{ height: '52px', marginBottom: '1.2rem' }} />
+            <img src="/assets/logo.svg" alt="Devine Logo" style={{ height: '48px', marginBottom: '1.2rem' }} />
             <br />
             <span className="admin-badge">ADMINISTRATION PORTAL</span>
             <h2>Devine Control Panel</h2>
@@ -303,7 +303,7 @@ export default function AdminPanel({ onNavigateHome }) {
           <form onSubmit={handleLogin} className="admin-login-form">
             {loginError && (
               <div className="admin-error-alert">
-                ⚠️ {loginError}
+                {loginError}
               </div>
             )}
 
@@ -331,8 +331,8 @@ export default function AdminPanel({ onNavigateHome }) {
               />
             </div>
 
-            <button type="submit" disabled={isLoggingIn} className="btn-pill btn-pill-lime admin-submit-btn">
-              {isLoggingIn ? 'LOGGING IN...' : 'LOGIN TO ADMIN PANEL 🔐'}
+            <button type="submit" disabled={isLoggingIn} className="admin-submit-btn">
+              {isLoggingIn ? 'LOGGING IN...' : 'LOGIN TO ADMIN PANEL'}
             </button>
           </form>
         </div>
@@ -345,10 +345,11 @@ export default function AdminPanel({ onNavigateHome }) {
   // ==========================================
   return (
     <div className="admin-dashboard-container">
-      {/* Top Admin Navbar (Removed LIVE MONGODB CONNECTED badge) */}
+      {/* Top Admin Navbar */}
       <header className="admin-header-bar">
         <div className="admin-brand">
-          <img src="/assets/logo.svg" alt="Devine Logo" style={{ height: '40px' }} />
+          <img src="/assets/logo.svg" alt="Devine Logo" style={{ height: '36px' }} />
+          <span style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '1.5px', color: '#1ed760', textTransform: 'uppercase' }}>ADMIN PANEL</span>
         </div>
 
         <nav className="admin-tab-nav">
@@ -362,13 +363,13 @@ export default function AdminPanel({ onNavigateHome }) {
             className={`admin-nav-btn ${activeTab === 'enquiries' ? 'active' : ''}`}
             onClick={() => setActiveTab('enquiries')}
           >
-            Enquiry Requests ({enquiries.length})
+            Enquiries ({enquiries.length})
           </button>
           <button 
             className={`admin-nav-btn ${activeTab === 'careers' ? 'active' : ''}`}
             onClick={() => setActiveTab('careers')}
           >
-            Career Applications ({careers.length})
+            Careers ({careers.length})
           </button>
           <button
             className={`admin-nav-btn ${activeTab === 'products' ? 'active' : ''}`}
@@ -387,20 +388,20 @@ export default function AdminPanel({ onNavigateHome }) {
 
       {/* Main Content Area */}
       <main className="admin-main-body">
-        {/* TAB 1: DASHBOARD OVERVIEW (Clean UI & UX) */}
+        {/* TAB 1: DASHBOARD OVERVIEW */}
         {activeTab === 'dashboard' && (
           <div className="dashboard-view-wrap">
             <div className="dashboard-welcome-banner">
               <div>
-                <h2>Devine Executive Dashboard 🍃</h2>
+                <h2>Executive Dashboard</h2>
                 <p>Overview of customer product demand, pending inquiries, and career job applications.</p>
               </div>
             </div>
 
-            {/* Clean Metrics Grid */}
+            {/* Metrics Grid */}
             <div className="admin-metrics-grid">
               <div className="metric-card">
-                <div className="metric-icon-wrap icon-green">📦</div>
+                <div className="metric-icon-wrap icon-green">E</div>
                 <div className="metric-data">
                   <span className="metric-num">{stats ? stats.totalEnquiries : enquiries.length}</span>
                   <span className="metric-label">Total Product Enquiries</span>
@@ -408,7 +409,7 @@ export default function AdminPanel({ onNavigateHome }) {
               </div>
 
               <div className="metric-card">
-                <div className="metric-icon-wrap icon-amber">⏳</div>
+                <div className="metric-icon-wrap icon-amber">P</div>
                 <div className="metric-data">
                   <span className="metric-num">
                     {stats ? stats.pendingEnquiries : enquiries.filter(i => i.status === 'Pending').length}
@@ -418,7 +419,7 @@ export default function AdminPanel({ onNavigateHome }) {
               </div>
 
               <div className="metric-card">
-                <div className="metric-icon-wrap icon-blue">💼</div>
+                <div className="metric-icon-wrap icon-blue">C</div>
                 <div className="metric-data">
                   <span className="metric-num">{stats ? stats.totalCareers : careers.length}</span>
                   <span className="metric-label">Job Applications</span>
@@ -426,7 +427,7 @@ export default function AdminPanel({ onNavigateHome }) {
               </div>
 
               <div className="metric-card">
-                <div className="metric-icon-wrap icon-purple">🏆</div>
+                <div className="metric-icon-wrap icon-purple">T</div>
                 <div className="metric-data">
                   <span className="metric-num text-product">
                     {stats?.productBreakdown?.[0]?._id || 'Honey Fig'}
@@ -440,7 +441,7 @@ export default function AdminPanel({ onNavigateHome }) {
             <div className="dashboard-charts-row">
               {/* Product Demand Card */}
               <div className="admin-section-card">
-                <h3>🔥 Product Demand Breakdown</h3>
+                <h3>Product Demand Breakdown</h3>
                 <div className="product-demand-list">
                   {stats?.productBreakdown && stats.productBreakdown.length > 0 ? (
                     stats.productBreakdown.map((item, idx) => (
@@ -510,14 +511,14 @@ export default function AdminPanel({ onNavigateHome }) {
           <div className="admin-table-view">
             <div className="table-toolbar">
               <div>
-                <h2>Customer Enquiry Requests & Business Details</h2>
-                <p>Manage all product enquiries submitted by visitors with duplicate prevention.</p>
+                <h2>Customer Enquiry Requests</h2>
+                <p>Manage product enquiries submitted by site visitors.</p>
               </div>
 
               <div className="toolbar-controls">
                 <input 
                   type="text"
-                  placeholder="Search by name, phone, email, product..."
+                  placeholder="Search name, phone, email..."
                   value={enquirySearch}
                   onChange={(e) => setEnquirySearch(e.target.value)}
                   className="admin-search-input"
@@ -534,7 +535,7 @@ export default function AdminPanel({ onNavigateHome }) {
                   <option value="Completed">Completed</option>
                 </select>
 
-                <button onClick={fetchAdminData} className="refresh-btn">🔄 Refresh</button>
+                <button onClick={fetchAdminData} className="refresh-btn">Refresh</button>
               </div>
             </div>
 
@@ -547,7 +548,7 @@ export default function AdminPanel({ onNavigateHome }) {
                       <th>Customer Details</th>
                       <th>Contact Info</th>
                       <th>Product Inquired</th>
-                      <th>Inquiry Type & Message</th>
+                      <th>Type & Message</th>
                       <th>Date Received</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -560,18 +561,18 @@ export default function AdminPanel({ onNavigateHome }) {
                           <div className="cust-name"><strong>{item.name}</strong></div>
                         </td>
                         <td>
-                          <div>📞 <strong>{item.phone}</strong></div>
-                          <div>✉️ {item.email}</div>
+                          <div><strong>{item.phone}</strong></div>
+                          <div className="text-muted">{item.email}</div>
                         </td>
                         <td>
                           <span className="product-tag">{item.productInquired}</span>
                         </td>
                         <td>
-                          <div className="inquiry-type-text">🏷️ {item.inquiryType}</div>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1ed760', marginBottom: 4 }}>{item.inquiryType}</div>
                           <div className="message-box">{item.message}</div>
                         </td>
                         <td>
-                          <small>{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</small>
+                          <small className="text-muted">{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</small>
                         </td>
                         <td>
                           <span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span>
@@ -583,7 +584,7 @@ export default function AdminPanel({ onNavigateHome }) {
                                 onClick={() => handleUpdateEnquiryStatus(item._id, 'Contacted')}
                                 className="action-btn btn-contacted"
                               >
-                                Mark Contacted
+                                Contacted
                               </button>
                             )}
                             {item.status !== 'Completed' && (
@@ -591,7 +592,7 @@ export default function AdminPanel({ onNavigateHome }) {
                                 onClick={() => handleUpdateEnquiryStatus(item._id, 'Completed')}
                                 className="action-btn btn-completed"
                               >
-                                Mark Completed
+                                Completed
                               </button>
                             )}
                             <button 
@@ -627,7 +628,7 @@ export default function AdminPanel({ onNavigateHome }) {
               <div className="toolbar-controls">
                 <input 
                   type="text"
-                  placeholder="Search applicant name, role, phone..."
+                  placeholder="Search applicant, role, phone..."
                   value={careerSearch}
                   onChange={(e) => setCareerSearch(e.target.value)}
                   className="admin-search-input"
@@ -645,7 +646,7 @@ export default function AdminPanel({ onNavigateHome }) {
                   <option value="Rejected">Rejected</option>
                 </select>
 
-                <button onClick={fetchAdminData} className="refresh-btn">🔄 Refresh</button>
+                <button onClick={fetchAdminData} className="refresh-btn">Refresh</button>
               </div>
             </div>
 
@@ -658,7 +659,7 @@ export default function AdminPanel({ onNavigateHome }) {
                       <th>Applicant Name</th>
                       <th>Contact Information</th>
                       <th>Role Applied For</th>
-                      <th>Experience Level</th>
+                      <th>Experience</th>
                       <th>Cover Note / Pitch</th>
                       <th>Date Applied</th>
                       <th>Status</th>
@@ -670,14 +671,14 @@ export default function AdminPanel({ onNavigateHome }) {
                       <tr key={item._id}>
                         <td><strong>{item.fullName}</strong></td>
                         <td>
-                          <div>📞 <strong>{item.phone}</strong></div>
-                          <div>✉️ {item.email}</div>
+                          <div><strong>{item.phone}</strong></div>
+                          <div className="text-muted">{item.email}</div>
                         </td>
                         <td><span className="role-tag">{item.roleApplied}</span></td>
                         <td><strong>{item.experience}</strong></td>
                         <td><div className="message-box">{item.coverNote}</div></td>
                         <td>
-                          <small>{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+                          <small className="text-muted">{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
                         </td>
                         <td>
                           <span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span>
@@ -721,19 +722,19 @@ export default function AdminPanel({ onNavigateHome }) {
             <div className="table-toolbar">
               <div>
                 <h2>Product Catalog Management</h2>
-                <p>Add, edit and remove products. Images are uploaded to Cloudinary and shown live on the website.</p>
+                <p>Add, edit and remove products. Images are shown live on the website.</p>
               </div>
 
               <div className="toolbar-controls">
                 <input
                   type="text"
-                  placeholder="Search products by name or category..."
+                  placeholder="Search products..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="admin-search-input"
                 />
-                <button onClick={fetchAdminData} className="refresh-btn">🔄 Refresh</button>
-                <button onClick={openNewProduct} className="btn-pill btn-pill-lime" style={{ padding: '0.5rem 1.2rem' }}>
+                <button onClick={fetchAdminData} className="refresh-btn">Refresh</button>
+                <button onClick={openNewProduct} className="action-btn btn-completed" style={{ padding: '0.65rem 1.4rem' }}>
                   + Add Product
                 </button>
               </div>
@@ -756,11 +757,13 @@ export default function AdminPanel({ onNavigateHome }) {
                     {filteredProducts.map((p) => (
                       <tr key={p._id}>
                         <td>
-                          {p.imageUrl ? (
-                            <img src={p.imageUrl} alt={p.name} style={{ width: '54px', height: '54px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #e5e7eb' }} />
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
+                          <div style={{ width: '48px', height: '48px', background: '#ffffff', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', border: '1px solid #333' }}>
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                            ) : (
+                              <span className="text-muted" style={{ fontSize: '10px' }}>—</span>
+                            )}
+                          </div>
                         </td>
                         <td>
                           <strong>{p.name}</strong>
@@ -806,7 +809,7 @@ export default function AdminPanel({ onNavigateHome }) {
             </div>
 
             <form onSubmit={handleSaveProduct} className="admin-product-form">
-              {productError && <div className="admin-error-alert">⚠️ {productError}</div>}
+              {productError && <div className="admin-error-alert">{productError}</div>}
 
               <div className="form-grid-2">
                 <div className="form-group">
@@ -826,19 +829,19 @@ export default function AdminPanel({ onNavigateHome }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label>Short Description</label>
                 <input className="form-input" value={productForm.shortDesc}
                   onChange={(e) => setProductForm({ ...productForm, shortDesc: e.target.value })} />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label>Full Description</label>
-                <textarea className="form-input" rows={3} value={productForm.description}
+                <textarea className="form-input" rows={3} style={{ borderRadius: '12px' }} value={productForm.description}
                   onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} />
               </div>
 
-              <div className="form-grid-3">
+              <div className="form-grid-3" style={{ marginTop: '1rem' }}>
                 <div className="form-group">
                   <label>Price (₹) *</label>
                   <input className="form-input" type="number" required value={productForm.price}
@@ -856,7 +859,7 @@ export default function AdminPanel({ onNavigateHome }) {
                 </div>
               </div>
 
-              <div className="form-grid-3">
+              <div className="form-grid-3" style={{ marginTop: '1rem' }}>
                 <div className="form-group">
                   <label>Margin</label>
                   <input className="form-input" placeholder="20-35%" value={productForm.margin}
@@ -874,22 +877,56 @@ export default function AdminPanel({ onNavigateHome }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label>Badges / Labels (comma separated)</label>
                 <input className="form-input" placeholder="100% Natural, Immunity booster" value={productForm.badges}
                   onChange={(e) => setProductForm({ ...productForm, badges: e.target.value })} />
               </div>
 
-              <div className="form-group">
-                <label>Product Image {editingProduct ? '(leave empty to keep current)' : ''}</label>
-                <input className="form-input" type="file" accept="image/*"
-                  onChange={(e) => setProductForm({ ...productForm, imageFile: e.target.files?.[0] || null })} />
-                {productForm.imageUrl && !productForm.imageFile && (
-                  <img src={productForm.imageUrl} alt="current" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', marginTop: '0.5rem' }} />
-                )}
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label style={{ display: 'block', fontSize: 13, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>
+                  Product Image {editingProduct ? '(leave empty to keep current)' : ''}
+                </label>
+                <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                  {(productForm.imageFile || productForm.imageUrl) ? (
+                    <img
+                      src={productForm.imageFile ? URL.createObjectURL(productForm.imageFile) : productForm.imageUrl}
+                      alt="preview"
+                      style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '8px', border: '1px solid #333' }}
+                    />
+                  ) : (
+                    <div style={{ width: 72, height: 72, borderRadius: '8px', background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#7c7c7c' }}>
+                      No Image
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '8px 16px',
+                      background: '#282828',
+                      color: '#ffffff',
+                      border: '1px solid #4d4d4d',
+                      borderRadius: 500,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      width: 'fit-content'
+                    }}>
+                      <span>{productForm.imageFile ? 'Change File' : (productForm.imageUrl ? 'Replace Image' : 'Choose Image')}</span>
+                      <input type="file" accept="image/*" onChange={(e) => setProductForm({ ...productForm, imageFile: e.target.files?.[0] || null })} style={{ display: 'none' }} />
+                    </label>
+                    <span style={{ fontSize: 12, color: productForm.imageFile ? '#1ed760' : '#7c7c7c' }}>
+                      {productForm.imageFile ? productForm.imageFile.name : 'PNG, JPG, WebP up to 10MB'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="form-grid-2">
+              <div className="form-grid-2" style={{ marginTop: '1rem' }}>
                 <label className="admin-checkbox">
                   <input type="checkbox" checked={productForm.featured}
                     onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })} />
@@ -904,7 +941,7 @@ export default function AdminPanel({ onNavigateHome }) {
 
               <div className="admin-modal-actions">
                 <button type="button" className="action-btn btn-delete" onClick={() => setShowProductForm(false)}>Cancel</button>
-                <button type="submit" disabled={savingProduct} className="btn-pill btn-pill-lime">
+                <button type="submit" disabled={savingProduct} className="action-btn btn-completed">
                   {savingProduct ? 'Saving…' : editingProduct ? 'Update Product' : 'Create Product'}
                 </button>
               </div>

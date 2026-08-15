@@ -114,40 +114,40 @@ export default function FlowImagesPage() {
   }
 
   return (
-    <div style={{ padding: 28, fontFamily: "'Inter', sans-serif", maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', maxWidth: 1200, margin: '0 auto', color: '#ffffff' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ marginTop: 0, marginBottom: 6, fontSize: 26, color: '#111827' }}>Flow Images & Assets</h1>
-        <p style={{ color: '#6b7280', margin: 0, fontSize: 14 }}>
+        <h1 style={{ marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Flow Images & Assets</h1>
+        <p style={{ color: '#b3b3b3', margin: 0, fontSize: 14 }}>
           Manage WhatsApp Flow images, welcome banners (8:1 ratio), service icons, PDFs, and links.
         </p>
       </div>
 
       {msg && (
-        <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontWeight: 500 }}>
+        <div style={{ background: 'rgba(30, 215, 96, 0.15)', border: '1px solid rgba(30, 215, 96, 0.3)', color: '#1ed760', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontWeight: 600 }}>
           {msg}
         </div>
       )}
 
       {/* FILTER RADIO BUTTONS GROUP */}
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, marginBottom: 28 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-          Filter Asset Category (Select Option)
+      <div style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 18, marginBottom: 28, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#b3b3b3', textTransform: 'uppercase', letterSpacing: '1.4px', marginBottom: 12 }}>
+          Filter Asset Category
         </div>
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           {[
             { id: 'all', label: 'All Flow Assets' },
-            { id: 'banners', label: 'Banners (8:1 Aspect Ratio)' },
-            { id: 'icons', label: 'Service Icons (1:1 Aspect Ratio)' },
+            { id: 'banners', label: 'Banners (8:1)' },
+            { id: 'icons', label: 'Service Icons (1:1)' },
             { id: 'docs', label: 'PDF Documents & Links' }
           ].map((option) => (
-            <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: filterType === option.id ? 600 : 400, color: filterType === option.id ? '#1a7f37' : '#4b5563' }}>
+            <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: filterType === option.id ? 700 : 400, color: filterType === option.id ? '#1ed760' : '#b3b3b3' }}>
               <input
                 type="radio"
                 name="filter_asset_type"
                 value={option.id}
                 checked={filterType === option.id}
                 onChange={() => setFilterType(option.id)}
-                style={{ accentColor: '#1a7f37', width: 16, height: 16, cursor: 'pointer' }}
+                style={{ accentColor: '#1ed760', width: 16, height: 16, cursor: 'pointer' }}
               />
               {option.label}
             </label>
@@ -168,7 +168,7 @@ export default function FlowImagesPage() {
 
         return (
           <div key={section.group} style={{ marginBottom: 32 }}>
-            <h3 style={{ borderBottom: '2px solid #e5e7eb', paddingBottom: 8, marginTop: 0, marginBottom: 18, color: '#111827', fontSize: 18 }}>
+            <h3 style={{ borderBottom: '1px solid #282828', paddingBottom: 10, marginTop: 0, marginBottom: 18, color: '#ffffff', fontSize: 18, fontWeight: 700 }}>
               {section.group} Assets
             </h3>
 
@@ -178,39 +178,37 @@ export default function FlowImagesPage() {
                 const activeRatio = field.defaultRatio || (field.isBanner ? '8:1' : '1:1');
                 const isOriginal = activeRatio === 'original';
                 const isBannerView = activeRatio === '8:1';
-                // Derive the preview box shape from the target ratio so a 1:1 icon
-                // previews as a square and an 8:1 banner as a wide strip.
                 const [rW, rH] = isOriginal ? [] : activeRatio.split(':').map(Number);
                 const previewAspect = rW && rH ? `${rW} / ${rH}` : '1 / 1';
                 const isWidePreview = rW && rH ? rW / rH >= 2 : false;
 
                 return (
                   <div key={field.key} style={card}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ fontWeight: 600, color: '#111827', fontSize: 15 }}>{field.label}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>{field.label}</div>
                       {field.type === 'image' && (
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 12, background: isOriginal ? '#dcfce7' : isBannerView ? '#dbeafe' : '#f3e8ff', color: isOriginal ? '#15803d' : isBannerView ? '#1e40af' : '#6b21a8' }}>
-                          {isOriginal ? 'Original ratio' : `${activeRatio} ${isBannerView ? 'Banner' : 'Icon'}`}
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: '#252525', color: '#1ed760', border: '1px solid rgba(30,215,96,0.3)', textTransform: 'uppercase' }}>
+                          {isOriginal ? 'Original' : activeRatio}
                         </span>
                       )}
                     </div>
 
-                    {/* IMAGE PREVIEW CONTAINER (matches the target aspect ratio) */}
+                    {/* IMAGE PREVIEW CONTAINER */}
                     {field.type === 'image' && (
                       <div style={{
-                        background: '#f3f4f6',
-                        borderRadius: 10,
+                        background: '#1f1f1f',
+                        borderRadius: 8,
                         overflow: 'hidden',
-                        marginBottom: 12,
+                        marginBottom: 14,
                         position: 'relative',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid #333333',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         width: isOriginal ? '100%' : (isWidePreview ? '100%' : 180),
                         maxWidth: '100%',
                         ...(isOriginal ? { minHeight: 120, maxHeight: 240, padding: 6 } : { aspectRatio: previewAspect }),
-                        margin: (isOriginal || isWidePreview) ? '0 0 12px' : '0 auto 12px'
+                        margin: (isOriginal || isWidePreview) ? '0 0 14px' : '0 auto 14px'
                       }}>
                         {current?.url ? (
                           <img
@@ -225,10 +223,10 @@ export default function FlowImagesPage() {
                             }}
                           />
                         ) : (
-                          <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12, padding: 8 }}>
+                          <div style={{ textAlign: 'center', color: '#7c7c7c', fontSize: 12, padding: 8 }}>
                             <div>No image uploaded</div>
-                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                              {isOriginal ? 'Any size — original ratio kept' : isBannerView ? '1000 × 125px (8:1 ratio)' : `${activeRatio} ratio`}
+                            <div style={{ fontSize: 11, color: '#b3b3b3', marginTop: 2 }}>
+                              {isOriginal ? 'Original ratio kept' : `${activeRatio} ratio`}
                             </div>
                           </div>
                         )}
@@ -236,9 +234,9 @@ export default function FlowImagesPage() {
                     )}
 
                     {current?.url && field.type === 'pdf' && (
-                      <div style={{ marginBottom: 12, padding: 10, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                        <a href={current.url} target="_blank" rel="noreferrer" style={{ color: '#15803d', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
-                          📄 View Current PDF Document ↗
+                      <div style={{ marginBottom: 14, padding: 12, background: 'rgba(30, 215, 96, 0.1)', borderRadius: 6, border: '1px solid rgba(30, 215, 96, 0.3)' }}>
+                        <a href={current.url} target="_blank" rel="noreferrer" style={{ color: '#1ed760', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                          View Current PDF Document ↗
                         </a>
                       </div>
                     )}
@@ -288,13 +286,13 @@ export default function FlowImagesPage() {
       })}
 
       {/* GUIDELINES INFO CARD */}
-      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: 18, marginTop: 30 }}>
-        <h4 style={{ margin: '0 0 8px 0', color: '#1e40af', fontSize: 15 }}>Flow Image Ratio & Upload Guidelines</h4>
-        <ul style={{ margin: 0, paddingLeft: 20, color: '#1e3a8a', fontSize: 13, lineHeight: '1.6' }}>
-          <li><strong>Welcome Banners:</strong> Recommended 1000 × 125px (8:1 landscape ratio) — automatically cropped and centered on upload.</li>
+      <div style={{ background: '#181818', border: '1px solid #1ed760', borderRadius: 8, padding: 20, marginTop: 30, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1ed760', fontSize: 15, fontWeight: 700 }}>Flow Image Ratio & Upload Guidelines</h4>
+        <ul style={{ margin: 0, paddingLeft: 20, color: '#b3b3b3', fontSize: 13, lineHeight: '1.6' }}>
+          <li><strong>Welcome Banners:</strong> Recommended 1000 × 125px (8:1 landscape ratio).</li>
           <li><strong>Service Icons & Flow Cards:</strong> Recommended 600 × 600px (1:1 square ratio).</li>
           <li><strong>PDF Documents:</strong> Maximum file size 10MB (application/pdf).</li>
-          <li><strong>Optimization:</strong> Uploaded images are scaled and served via Cloudinary CDN for instant WhatsApp delivery.</li>
+          <li><strong>Optimization:</strong> Uploaded images are scaled and served via Cloudinary CDN.</li>
         </ul>
       </div>
     </div>
@@ -302,32 +300,38 @@ export default function FlowImagesPage() {
 }
 
 const card = {
-  border: '1px solid #e5e7eb',
-  borderRadius: 14,
-  padding: 16,
-  background: '#ffffff',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+  border: '1px solid #282828',
+  borderRadius: 8,
+  padding: 18,
+  background: '#181818',
+  boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px',
   display: 'flex',
   flexDirection: 'column',
-  justify: 'space-between'
+  justifyContent: 'space-between'
 };
 
 const input = {
   flex: 1,
-  padding: '9px 12px',
-  border: '1px solid #d1d5db',
-  borderRadius: 8,
-  fontSize: 13
+  padding: '9px 14px',
+  background: '#1f1f1f',
+  border: '1px solid #333',
+  borderRadius: 500,
+  color: '#ffffff',
+  fontSize: 13,
+  outline: 'none'
 };
 
 const btn = {
-  background: '#1a7f37',
-  color: '#ffffff',
+  background: '#1ed760',
+  color: '#000000',
   border: 0,
-  borderRadius: 8,
-  padding: '9px 16px',
-  fontWeight: 600,
-  fontSize: 13,
+  borderRadius: 9999,
+  padding: '10px 18px',
+  fontWeight: 700,
+  fontSize: 12,
+  textTransform: 'uppercase',
+  letterSpacing: '1.4px',
   cursor: 'pointer'
 };
+
 

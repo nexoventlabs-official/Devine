@@ -10,20 +10,20 @@ function VariantsEditor({ variants, setVariants }) {
   const upd = (i, k, v) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; setVariants(n); };
   const del = (i) => setVariants(variants.filter((_, idx) => idx !== i));
   return (
-    <div style={{ border: '1px dashed #cbd5e1', borderRadius: 10, padding: 12, background: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Size / Quantity variants (optional)</div>
-        <button type="button" onClick={add} style={{ ...miniBtn, background: '#1a7f37' }}>+ Add size</button>
+    <div style={{ border: '1px solid #282828', borderRadius: 8, padding: 14, background: '#181818' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px' }}>Size / Quantity variants</div>
+        <button type="button" onClick={add} style={{ ...miniBtn, background: '#1ed760', color: '#000' }}>+ Add size</button>
       </div>
       {variants.length === 0 && (
-        <div style={{ fontSize: 12, color: '#999' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price and image.</div>
+        <div style={{ fontSize: 12, color: '#b3b3b3' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price and image.</div>
       )}
       {variants.map((v, i) => (
-        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {(v.imageFile || v.imageUrl) ? (
-            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }} />
+            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #333' }} />
           ) : (
-            <div style={{ width: 40, height: 40, borderRadius: 6, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>img</div>
+            <div style={{ width: 38, height: 38, borderRadius: 6, background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c' }}>img</div>
           )}
           <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
           <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
@@ -31,11 +31,11 @@ function VariantsEditor({ variants, setVariants }) {
           </select>
           <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
           <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
-          <label style={{ ...miniBtn, background: '#2563eb', cursor: 'pointer' }}>
+          <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
             {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
           </label>
-          <button type="button" onClick={() => del(i)} style={{ ...miniBtn, background: '#c0392b' }}>✕</button>
+          <button type="button" onClick={() => del(i)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>✕</button>
         </div>
       ))}
     </div>
@@ -59,7 +59,7 @@ export default function ProductsAdminPage() {
   useEffect(() => { load(); }, []);
 
   async function remove(id) {
-    if (!confirm('Delete this product? It will also be removed from the WhatsApp catalog.')) return;
+    if (!confirm('Delete this product? It will also be removed from the catalog.')) return;
     await api.del(`/products/${id}`);
     await load();
   }
@@ -83,49 +83,69 @@ export default function ProductsAdminPage() {
   const openEdit = (p) => { setEditing(p); setFormOpen(true); };
 
   return (
-    <div style={{ padding: 24, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ marginTop: 0 }}>Products</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Products</h1>
+          <p style={{ margin: 0, color: '#b3b3b3', fontSize: 14 }}>Manage product catalog, pricing, variants, and stock schedules.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={openNew} style={btn}>+ Add Product</button>
-          <button onClick={syncCatalog} disabled={syncing} style={{ ...btn, background: '#0b5' }}>
-            {syncing ? 'Syncing…' : '↻ Sync WhatsApp Catalog'}
+          <button onClick={syncCatalog} disabled={syncing} style={{ ...btn, background: '#1f1f1f', color: '#ffffff', border: '1px solid #4d4d4d' }}>
+            {syncing ? 'Syncing…' : 'Sync WhatsApp Catalog'}
           </button>
         </div>
       </div>
-      {msg && <div style={{ background: '#e8f7ec', color: '#1a7f37', padding: 10, borderRadius: 8, margin: '16px 0' }}>{msg}</div>}
+      {msg && <div style={{ background: 'rgba(30, 215, 96, 0.15)', color: '#1ed760', border: '1px solid rgba(30, 215, 96, 0.3)', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 14 }}>{msg}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 16, marginTop: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 18, marginTop: 16 }}>
         {products.map((p) => {
           const outOfStock = p.isPaused || p.inStock === false || p.active === false;
           return (
-            <div key={p._id} style={{ border: '1px solid #eee', borderRadius: 12, overflow: 'hidden', opacity: outOfStock ? 0.7 : 1 }}>
-              {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '100%', height: 140, objectFit: 'cover' }} />}
-              <div style={{ padding: 12 }}>
-                <div style={{ fontWeight: 700 }}>{p.name}</div>
-                <div style={{ color: '#666', fontSize: 13 }}>{p.category}</div>
-                <div style={{ marginTop: 6 }}>Rs.{p.price} {p.dealerPrice ? `| Dealer Rs.${p.dealerPrice}` : ''}</div>
+            <div key={p._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 12, opacity: outOfStock ? 0.65 : 1, transition: 'background 0.2s ease', boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
+              <div style={{ width: '100%', height: 160, background: '#ffffff', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, position: 'relative', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+                {p.imageUrl ? (
+                  <img
+                    src={p.imageUrl}
+                    alt={p.name}
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div style={{ display: p.imageUrl ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>
+                  <span>No Image</span>
+                </div>
+              </div>
+              <div style={{ padding: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#ffffff' }}>{p.name}</div>
+                <div style={{ color: '#b3b3b3', fontSize: 13, marginTop: 2 }}>{p.category}</div>
+                <div style={{ marginTop: 8, fontWeight: 700, fontSize: 15, color: '#1ed760' }}>
+                  ₹{p.price} {p.dealerPrice ? <span style={{ color: '#b3b3b3', fontSize: 12, fontWeight: 400 }}>| Dealer ₹{p.dealerPrice}</span> : ''}
+                </div>
                 {p.variants?.length > 0 && (
-                  <div style={{ fontSize: 12, color: '#2563eb', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: '#539df5', marginTop: 4 }}>
                     {p.variants.map((v) => v.label || `${v.quantity}${v.unit}`).join(' · ')}
                   </div>
                 )}
-                <div style={{ marginTop: 4, fontSize: 13, color: '#f59e0b' }}>
-                  ⭐ {(p.avgRating || p.rating || 0).toFixed ? (p.avgRating || p.rating || 0).toFixed(1) : (p.avgRating || p.rating || 0)} ({p.totalRatings || p.reviewCount || 0})
+                <div style={{ marginTop: 6, fontSize: 12, color: '#ffa42b' }}>
+                  Rating: {(p.avgRating || p.rating || 0).toFixed ? (p.avgRating || p.rating || 0).toFixed(1) : (p.avgRating || p.rating || 0)} ({p.totalRatings || p.reviewCount || 0})
                 </div>
-                <div style={{ marginTop: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: outOfStock ? '#c0392b' : '#1a7f37' }}>
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, textTransform: 'uppercase', letterSpacing: '1px', background: outOfStock ? 'rgba(243, 114, 127, 0.15)' : 'rgba(30, 215, 96, 0.15)', color: outOfStock ? '#f3727f' : '#1ed760', border: outOfStock ? '1px solid rgba(243, 114, 127, 0.3)' : '1px solid rgba(30, 215, 96, 0.3)' }}>
                     {outOfStock ? 'OUT OF STOCK' : 'IN STOCK'}
                   </span>
-                  {p.soldOutSchedule?.enabled && <span style={{ fontSize: 11, color: '#888', marginLeft: 6 }}>⏱ scheduled</span>}
+                  {p.soldOutSchedule?.enabled && <span style={{ fontSize: 11, color: '#b3b3b3' }}>Scheduled</span>}
                 </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                  <button onClick={() => openEdit(p)} style={{ ...miniBtn, background: '#111827' }}>Edit</button>
-                  <button onClick={() => togglePaused(p)} style={{ ...miniBtn, background: p.isPaused ? '#1a7f37' : '#f59e0b' }}>
-                    {p.isPaused ? 'Mark In Stock' : 'Mark Out of Stock'}
+                <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+                  <button onClick={() => openEdit(p)} style={{ ...miniBtn, background: '#282828', color: '#ffffff' }}>Edit</button>
+                  <button onClick={() => togglePaused(p)} style={{ ...miniBtn, background: p.isPaused ? '#1ed760' : '#ffa42b', color: p.isPaused ? '#000' : '#000' }}>
+                    {p.isPaused ? 'In Stock' : 'Out of Stock'}
                   </button>
-                  <button onClick={() => setScheduleFor(p)} style={{ ...miniBtn, background: '#2563eb' }}>Schedule</button>
-                  <button onClick={() => remove(p._id)} style={{ ...miniBtn, background: '#c0392b' }}>Delete</button>
+                  <button onClick={() => setScheduleFor(p)} style={{ ...miniBtn, background: '#1f1f1f', color: '#539df5', border: '1px solid rgba(83,157,245,0.4)' }}>Schedule</button>
+                  <button onClick={() => remove(p._id)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Delete</button>
                 </div>
               </div>
             </div>
@@ -184,7 +204,6 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      // Variant metadata (keep existing imageUrl; drop the File object)
       const variantsPayload = variants.map(({ imageFile, ...v }) => v);
       fd.append('variants', JSON.stringify(variantsPayload));
       variants.forEach((v, i) => { if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile); });
@@ -201,40 +220,72 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
   return (
     <div style={overlay} onClick={onClose}>
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
-        <h3 style={{ marginTop: 0 }}>{isEdit ? `Edit Product — ${product.name}` : 'Add Product'}</h3>
-        {err && <div style={{ background: '#fdecec', color: '#c0392b', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? `Edit Product — ${product.name}` : 'Add Product'}</h3>
+          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+        </div>
+        {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{err}</div>}
 
-        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 12 }}>
-          {(file || product?.imageUrl) && (
-            <img
-              src={file ? URL.createObjectURL(file) : product.imageUrl}
-              alt=""
-              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-            />
-          )}
-          <label style={{ fontSize: 13, color: '#555' }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>
             {isEdit ? 'Replace main image' : 'Main product image'}
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />
-          </label>
+          </div>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            {(file || product?.imageUrl) ? (
+              <img
+                src={file ? URL.createObjectURL(file) : product.imageUrl}
+                alt=""
+                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #333' }}
+              />
+            ) : (
+              <div style={{ width: 72, height: 72, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#7c7c7c' }}>
+                No Image
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 16px',
+                background: '#282828',
+                color: '#ffffff',
+                border: '1px solid #4d4d4d',
+                borderRadius: 500,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                width: 'fit-content'
+              }}>
+                <span>{file ? 'Change File' : (product?.imageUrl ? 'Replace Image' : 'Choose Image')}</span>
+                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'none' }} />
+              </label>
+              <span style={{ fontSize: 12, color: file ? '#1ed760' : '#7c7c7c' }}>
+                {file ? file.name : 'PNG, JPG, WebP up to 10MB'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
-          <input required placeholder="Name" value={form.name} onChange={set('name')} style={input} />
-          <input list="prod-cats" required placeholder="Category" value={form.category} onChange={set('category')} style={input} />
+          <input required placeholder="Name *" value={form.name} onChange={set('name')} style={input} />
+          <input list="prod-cats" required placeholder="Category *" value={form.category} onChange={set('category')} style={input} />
           <datalist id="prod-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
-          <input type="number" required placeholder="B2C price" value={form.price} onChange={set('price')} style={input} />
+          <input type="number" required placeholder="B2C price *" value={form.price} onChange={set('price')} style={input} />
           <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
           <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={set('margin')} style={input} />
           <input placeholder="MOQ" value={form.moq} onChange={set('moq')} style={input} />
           <input placeholder="Badges (comma separated)" value={form.badges} onChange={set('badges')} style={input} />
         </div>
         <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
-        <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={4} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical' }} />
-        <div style={{ marginTop: 10 }}>
+        <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={3} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} />
+        <div style={{ marginTop: 14 }}>
           <VariantsEditor variants={variants} setVariants={setVariants} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-          <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <button type="button" onClick={onClose} style={{ ...btn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Cancel</button>
           <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Add Product')}</button>
         </div>
       </form>
@@ -267,29 +318,32 @@ function ScheduleModal({ product, onClose, onSaved }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>Availability Schedule — {product.name}</h3>
-        <p style={{ color: '#666', fontSize: 13 }}>
-          Defines the window when the product is <b>available</b>. Outside the window it auto-switches to out of stock (checked every minute; syncs to WhatsApp).
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>Availability Schedule — {product.name}</h3>
+          <button onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+        </div>
+        <p style={{ color: '#b3b3b3', fontSize: 13, marginBottom: 16 }}>
+          Defines the window when the product is <b>available</b>. Outside the window it auto-switches to out of stock.
         </p>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, color: '#ffffff', fontWeight: 600, fontSize: 14 }}>
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Enable schedule
         </label>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16, color: '#ffffff' }}>
           <label><input type="radio" checked={type === 'daily'} onChange={() => setType('daily')} /> Daily</label>
           <label><input type="radio" checked={type === 'custom'} onChange={() => setType('custom')} /> Per-day</label>
         </div>
 
         {type === 'daily' ? (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', color: '#ffffff' }}>
             <span>Available</span>
             <input type="time" value={dailyStart} onChange={(e) => setDailyStart(e.target.value)} style={input} />
             <span>to</span>
             <input type="time" value={dailyEnd} onChange={(e) => setDailyEnd(e.target.value)} style={input} />
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 6 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
             {days.map((d, i) => (
-              <div key={d.day} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div key={d.day} style={{ display: 'flex', gap: 10, alignItems: 'center', color: '#ffffff' }}>
                 <label style={{ width: 90 }}>
                   <input type="checkbox" checked={d.enabled} onChange={(e) => {
                     const nd = [...days]; nd[i] = { ...d, enabled: e.target.checked }; setDays(nd);
@@ -303,8 +357,8 @@ function ScheduleModal({ product, onClose, onSaved }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-          <button onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ ...btn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Cancel</button>
           <button onClick={save} disabled={saving} style={btn}>{saving ? 'Saving…' : 'Save Schedule'}</button>
         </div>
       </div>
@@ -312,8 +366,9 @@ function ScheduleModal({ product, onClose, onSaved }) {
   );
 }
 
-const input = { padding: 9, border: '1px solid #ddd', borderRadius: 6 };
-const btn = { background: '#1a7f37', color: '#fff', border: 0, borderRadius: 6, padding: '9px 14px', cursor: 'pointer' };
-const miniBtn = { color: '#fff', border: 0, borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 12 };
-const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
-const modal = { background: '#fff', borderRadius: 12, padding: 24, width: 'min(640px, 94vw)', maxHeight: '90vh', overflowY: 'auto' };
+const input = { padding: '9px 12px', background: '#1f1f1f', border: '1px solid #333', borderRadius: 500, color: '#ffffff', fontSize: 13, outline: 'none' };
+const btn = { background: '#1ed760', color: '#000000', border: 0, borderRadius: 9999, padding: '10px 18px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '1.4px', cursor: 'pointer' };
+const miniBtn = { border: 0, borderRadius: 9999, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' };
+const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 };
+const modal = { background: '#1f1f1f', border: '1px solid #282828', borderRadius: 12, padding: 24, width: 'min(640px, 94vw)', maxHeight: '90vh', overflowY: 'auto', color: '#ffffff', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 24px' };
+
