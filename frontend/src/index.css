@@ -2462,6 +2462,31 @@ body {
   color: #7c7c7c;
 }
 
+/* Public contact/career pages sit on white cards -> use light inputs (not the dark admin theme). */
+.contact-form-card .form-input,
+.career-form-card .form-input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #1a1a1a;
+}
+
+.contact-form-card .form-input:focus,
+.career-form-card .form-input:focus {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 2px rgba(26, 127, 55, 0.15);
+}
+
+.contact-form-card .form-input::placeholder,
+.career-form-card .form-input::placeholder {
+  color: #9ca3af;
+}
+
+.contact-form-card .read-only-input,
+.career-form-card .read-only-input {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 .admin-error-alert {
   background: rgba(243, 114, 127, 0.15);
   border: 1px solid #f3727f;
