@@ -4,6 +4,7 @@ import Message from '../models/Message.js';
 import Template from '../models/Template.js';
 import DealerProfile from '../models/DealerProfile.js';
 import Conversation from '../models/Conversation.js';
+import Product from '../models/Product.js';
 import { getClient } from '../services/metaCloud.js';
 import { emitMessage } from '../services/eventBus.js';
 import { renderTemplate } from '../services/templates.js';
@@ -32,12 +33,94 @@ router.get('/threads', auth, async (req, res) => {
   res.json({ success: true, data: threads });
 });
 
-// ---- Messages for a phone ----
+// ---- Messages for a phone (enriched with rich order/location/flow data) ----
 router.get('/messages/:phone', auth, async (req, res) => {
   const channel = req.query.channel || 'b2b';
-  const msgs = await Message.find({ channel, phone: req.params.phone }).sort({ createdAt: 1 }).limit(500);
-  res.json({ success: true, data: msgs });
+  const msgs = await Message.find({ channel, phone: req.params.phone }).sort({ createdAt: 1 }).limit(500).lean();
+
+  // Resolve product names/images for any order messages in this thread.
+  const baseIds = new Set();
+  for (const m of msgs) {
+    const items = m?.raw?.order?.product_items || [];
+    for (const it of items) {
+      const base = String(it.product_retailer_id || '').split('__v')[0];
+      if (base) baseIds.add(base);
+    }
+  }
+  let prodMap = {};
+  if (baseIds.size) {
+    const prods = await Product.find({ retailerId: { $in: [...baseIds] } })
+      .select('name imageUrl retailerId variants unit')
+      .lean();
+    prodMap = Object.fromEntries(prods.map((p) => [p.retailerId, p]));
+  }
+
+  const data = msgs.map((m) => ({ ...m, rich: buildRich(m, prodMap) }));
+  res.json({ success: true, data });
 });
+
+// Build a structured "rich" payload from the raw WhatsApp message so the CRM
+// can render orders, locations and flow responses instead of flat labels.
+function buildRich(m, prodMap = {}) {
+  const raw = m.raw || {};
+
+  if (m.type === 'order' && raw.order) {
+    const order = raw.order;
+    const items = (order.product_items || []).map((it) => {
+      const rid = String(it.product_retailer_id || '');
+      const base = rid.split('__v')[0];
+      const p = prodMap[base];
+      let name = p?.name || rid;
+      let image = p?.imageUrl || '';
+      let variantLabel = '';
+      const vm = /__v(\d+)$/.exec(rid);
+      if (p && vm) {
+        const v = (p.variants || [])[Number(vm[1])];
+        if (v) {
+          variantLabel = v.label || (v.quantity ? `${v.quantity} ${v.unit || ''}`.trim() : '');
+          if (v.imageUrl) image = v.imageUrl;
+        }
+      }
+      const qty = Number(it.quantity || 1);
+      const price = Number(it.item_price || 0);
+      return { retailerId: rid, name, variantLabel, image, qty, price, currency: it.currency || 'INR', lineTotal: qty * price };
+    });
+    const total = items.reduce((s, i) => s + i.lineTotal, 0);
+    const currency = items[0]?.currency || 'INR';
+    return { kind: 'order', items, total, currency, note: order.text || '', catalogId: order.catalog_id || '' };
+  }
+
+  if (m.type === 'location' && raw.location) {
+    const { latitude, longitude, name, address } = raw.location;
+    const mapUrl = latitude != null && longitude != null
+      ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+      : '';
+    return { kind: 'location', latitude, longitude, name: name || '', address: address || '', mapUrl };
+  }
+
+  if (m.type === 'flow') {
+    let resp = {};
+    try {
+      const rj = raw?.interactive?.nfm_reply?.response_json;
+      resp = typeof rj === 'string' ? JSON.parse(rj) : (rj || {});
+    } catch { resp = {}; }
+    const HIDE = /^(flow_token|_.*|.*token.*|.*version.*)$/i;
+    const fields = Object.entries(resp)
+      .filter(([k, v]) => !HIDE.test(k) && v != null && v !== '' && typeof v !== 'object')
+      .map(([k, v]) => ({ label: prettyKey(k), value: String(v) }));
+    return { kind: 'flow', fields };
+  }
+
+  return null;
+}
+
+function prettyKey(k) {
+  return String(k)
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
 
 // ---- Send a free-form message (within 24h window) ----
 router.post('/send', auth, async (req, res) => {
