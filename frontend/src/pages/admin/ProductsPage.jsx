@@ -7,6 +7,37 @@ const empty = {
 };
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
+
+// Reusable editor for size/quantity variants (250g, 500g, 1kg...) each with its own price.
+function VariantsEditor({ variants, setVariants }) {
+  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', mrp: '', dealerPrice: '' }]);
+  const upd = (i, k, v) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; setVariants(n); };
+  const del = (i) => setVariants(variants.filter((_, idx) => idx !== i));
+  return (
+    <div style={{ gridColumn: '1 / -1', border: '1px dashed #cbd5e1', borderRadius: 10, padding: 12, background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Size / Quantity variants (optional)</div>
+        <button type="button" onClick={add} style={{ ...miniBtn, background: '#1a7f37' }}>+ Add size</button>
+      </div>
+      {variants.length === 0 && (
+        <div style={{ fontSize: 12, color: '#999' }}>No variants — the base price above is used. Add sizes like 250 g, 500 g, 1 kg (each with its own price).</div>
+      )}
+      {variants.map((v, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 76 }} />
+          <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 96 }}>
+            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+          <input type="number" placeholder="Price ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 96 }} />
+          <input type="number" placeholder="MRP" value={v.mrp} onChange={(e) => upd(i, 'mrp', e.target.value)} style={{ ...input, width: 84 }} />
+          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 96 }} />
+          <button type="button" onClick={() => del(i)} style={{ ...miniBtn, background: '#c0392b' }}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function ProductsAdminPage() {
   const [products, setProducts] = useState([]);
@@ -18,6 +49,7 @@ export default function ProductsAdminPage() {
   const [syncing, setSyncing] = useState(false);
   const [scheduleFor, setScheduleFor] = useState(null); // product being scheduled
   const [editing, setEditing] = useState(null); // product being edited
+  const [variants, setVariants] = useState([]); // size/quantity variants for the new product
 
   async function load() {
     const [p, c] = await Promise.all([api.get('/products?all=1'), api.get('/catalog/categories?all=1')]);
@@ -32,11 +64,13 @@ export default function ProductsAdminPage() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      fd.append('variants', JSON.stringify(variants));
       if (file) fd.append('image', file);
       await api.postForm('/products', fd);
       setMsg('Product added & synced to catalog');
       setForm(empty);
       setFile(null);
+      setVariants([]);
       await load();
     } catch (e) { setMsg(e.message); }
     setBusy(false);
@@ -84,6 +118,7 @@ export default function ProductsAdminPage() {
         <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={(e) => setForm({ ...form, dealerPrice: e.target.value })} style={input} />
         <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={(e) => setForm({ ...form, margin: e.target.value })} style={input} />
         <input placeholder="MOQ" value={form.moq} onChange={(e) => setForm({ ...form, moq: e.target.value })} style={input} />
+        <VariantsEditor variants={variants} setVariants={setVariants} />
         <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
         <button disabled={busy} style={btn}>{busy ? 'Saving…' : 'Add Product'}</button>
       </form>
@@ -98,6 +133,11 @@ export default function ProductsAdminPage() {
                 <div style={{ fontWeight: 700 }}>{p.name}</div>
                 <div style={{ color: '#666', fontSize: 13 }}>{p.category}</div>
                 <div style={{ marginTop: 6 }}>Rs.{p.price} {p.dealerPrice ? `| Dealer Rs.${p.dealerPrice}` : ''}</div>
+                {p.variants?.length > 0 && (
+                  <div style={{ fontSize: 12, color: '#2563eb', marginTop: 2 }}>
+                    {p.variants.map((v) => v.label || `${v.quantity}${v.unit}`).join(' · ')}
+                  </div>
+                )}
                 <div style={{ marginTop: 4, fontSize: 13, color: '#f59e0b' }}>
                   ⭐ {(p.avgRating || p.rating || 0).toFixed ? (p.avgRating || p.rating || 0).toFixed(1) : (p.avgRating || p.rating || 0)} ({p.totalRatings || p.reviewCount || 0})
                 </div>
@@ -150,6 +190,15 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
     moq: product.moq || '',
     badges: (product.badges || []).join(', ')
   });
+  const [variants, setVariants] = useState(
+    (product.variants || []).map((v) => ({
+      quantity: v.quantity ?? '',
+      unit: v.unit || 'g',
+      price: v.price ?? '',
+      mrp: v.mrp ?? '',
+      dealerPrice: v.dealerPrice ?? ''
+    }))
+  );
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -163,6 +212,7 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      fd.append('variants', JSON.stringify(variants));
       if (file) fd.append('image', file);
       await api.putForm(`/products/${product._id}`, fd);
       onSaved();
@@ -203,6 +253,9 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
         </div>
         <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
         <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={4} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical' }} />
+        <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+          <VariantsEditor variants={variants} setVariants={setVariants} />
+        </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
           <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : 'Save Changes'}</button>

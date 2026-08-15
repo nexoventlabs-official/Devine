@@ -11,6 +11,32 @@ import logger from '../services/logger.js';
 
 const router = express.Router();
 
+// Normalize incoming variants (JSON string from multipart form, or array) into
+// clean [{ label, quantity, unit, price, mrp, dealerPrice }]. Skips empty rows.
+function parseVariants(raw) {
+  let arr = raw;
+  if (typeof raw === 'string') {
+    try { arr = JSON.parse(raw); } catch { return []; }
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((v) => {
+      const quantity = Number(v.quantity) || 0;
+      const unit = (v.unit || '').trim();
+      const price = Number(v.price) || 0;
+      const label = (v.label || '').trim() || (quantity && unit ? `${quantity} ${unit}` : unit || (quantity ? String(quantity) : ''));
+      return {
+        label,
+        quantity,
+        unit: unit || 'unit',
+        price,
+        mrp: Number(v.mrp) || 0,
+        dealerPrice: Number(v.dealerPrice) || 0
+      };
+    })
+    .filter((v) => v.price > 0 || v.quantity > 0);
+}
+
 // Public: list active products (used by B2C site + flows)
 router.get('/', async (req, res) => {
   const filter = { active: true };
@@ -95,6 +121,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       margin: b.margin || '',
       moq: b.moq || '',
       unit: b.unit || 'unit',
+      variants: parseVariants(b.variants),
       imageUrl,
       rating: Number(b.rating) || 4.5,
       badges: b.badges ? String(b.badges).split(',').map((s) => s.trim()) : [],
@@ -135,6 +162,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
     ['price', 'mrp', 'dealerPrice', 'rating'].forEach((k) => {
       if (update[k] !== undefined) update[k] = Number(update[k]);
     });
+    if (update.variants !== undefined) update.variants = parseVariants(update.variants);
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
     // Keep the Meta catalog in sync (price/availability/description).

@@ -38,6 +38,15 @@ export function buildProductDescription(p, { includeRatings = true } = {}) {
   }
 
   if (p.badges && p.badges.length) parts.push(p.badges.map((b) => `#${String(b).replace(/\s+/g, '')}`).join(' '));
+
+  // Size/quantity variants with per-size pricing.
+  if (Array.isArray(p.variants) && p.variants.length) {
+    const sizes = p.variants
+      .map((v) => `${v.label || `${v.quantity} ${v.unit}`.trim()} - Rs.${v.price}`)
+      .join('\n');
+    parts.push(`Available sizes:\n${sizes}`);
+  }
+
   parts.push(p.description || p.shortDesc || p.name);
   return parts.join('\n\n').substring(0, 5000);
 }

@@ -16,6 +16,11 @@ function Stars({ value = 0, size = 14 }) {
   );
 }
 
+// Display text for a size/quantity variant, e.g. "500 g"
+function variantText(v) {
+  return (v.label || `${v.quantity || ''} ${v.unit || ''}`).trim();
+}
+
 // Small green rating chip (Flipkart-style) e.g. "4.5 ★"
 function RatingChip({ value }) {
   return (
@@ -238,6 +243,13 @@ export default function ProductsPage({ onOpenEnquiry, productId, initialCategory
                     </div>
                   ) : null}
 
+                  {/* Size variants */}
+                  {prod.variants?.length > 0 && (
+                    <div style={{ fontSize: 13, color: '#555', margin: '2px 0 4px' }}>
+                      <strong style={{ color: '#1a1a1a' }}>Sizes:</strong> {prod.variants.map(variantText).join(', ')}
+                    </div>
+                  )}
+
                   {/* Pill Labels */}
                   <div className="product-labels-group">
                     {(prod.badges || []).map((lbl, idx) => (
@@ -383,6 +395,32 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
                 )}
               </div>
             ) : null}
+
+            {/* Size variants */}
+            {product.variants?.length > 0 && (
+              <div style={{ margin: '12px 0' }}>
+                <div style={ov.sectionLabel}>Available Sizes</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {product.variants.map((v, i) => {
+                    const vDisc = v.mrp && v.price && v.mrp > v.price ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : 0;
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #eee', borderRadius: 8, padding: '8px 12px' }}>
+                        <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{variantText(v)}</span>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <span style={{ fontWeight: 800, color: '#1a1a1a' }}>₹{v.price}</span>
+                          {vDisc > 0 && (
+                            <>
+                              <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 13 }}>₹{v.mrp}</span>
+                              <span style={{ color: '#388e3c', fontWeight: 700, fontSize: 13 }}>{vDisc}% off</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Badges */}
             {(product.badges || []).length > 0 && (

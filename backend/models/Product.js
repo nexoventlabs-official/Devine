@@ -14,6 +14,17 @@ const ProductSchema = new mongoose.Schema(
     margin: { type: String, default: '' }, // e.g. "20-35%"
     moq: { type: String, default: '' },
     unit: { type: String, default: 'unit' },
+    // ---- Size/quantity variants (e.g. 250g, 500g, 1kg) each with its own price ----
+    variants: [
+      {
+        label: { type: String, default: '' }, // display label e.g. "500 g" (auto-built if empty)
+        quantity: { type: Number, default: 0 }, // numeric size e.g. 500
+        unit: { type: String, default: 'g' }, // g | kg | ml | litre | piece | pack | ...
+        price: { type: Number, default: 0 }, // B2C price for this size
+        mrp: { type: Number, default: 0 },
+        dealerPrice: { type: Number, default: 0 }
+      }
+    ],
     imageUrl: { type: String, default: '' },
     waveImageUrl: { type: String, default: '' }, // decorative bg for homepage featured card
     featured: { type: Boolean, default: false },
