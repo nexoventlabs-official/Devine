@@ -31,11 +31,28 @@ function parseVariants(raw) {
         unit: unit || 'unit',
         price,
         mrp: Number(v.mrp) || 0,
-        dealerPrice: Number(v.dealerPrice) || 0
+        dealerPrice: Number(v.dealerPrice) || 0,
+        imageUrl: v.imageUrl || '' // preserved existing image; overridden if a new file is uploaded
       };
     })
     .filter((v) => v.price > 0 || v.quantity > 0);
 }
+
+// Parse variants + upload any per-variant image files (field `variant_image_<i>`).
+async function buildVariants(rawVariants, files) {
+  const variants = parseVariants(rawVariants);
+  for (let i = 0; i < variants.length; i++) {
+    const f = (files || []).find((x) => x.fieldname === `variant_image_${i}`);
+    if (f) {
+      try {
+        variants[i].imageUrl = await cloudinaryService.uploadBuffer(f.buffer, { folder: 'devine/products' });
+      } catch (_) {}
+    }
+  }
+  return variants;
+}
+
+const fileByField = (files, name) => (files || []).find((f) => f.fieldname === name);
 
 // Public: list active products (used by B2C site + flows)
 router.get('/', async (req, res) => {
@@ -101,12 +118,13 @@ router.get('/:id', async (req, res) => {
 });
 
 // Admin: create product (uploads image, auto-pushes New Product Launch template)
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', auth, upload.any(), async (req, res) => {
   try {
     const b = req.body;
     let imageUrl = b.imageUrl || '';
-    if (req.file) {
-      imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/products' });
+    const mainImg = fileByField(req.files, 'image');
+    if (mainImg) {
+      imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
     const retailerId = b.retailerId || `dvn_${genOrderId('p').toLowerCase().replace(/-/g, '')}`;
     const product = await Product.create({
@@ -121,7 +139,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       margin: b.margin || '',
       moq: b.moq || '',
       unit: b.unit || 'unit',
-      variants: parseVariants(b.variants),
+      variants: await buildVariants(b.variants, req.files),
       imageUrl,
       rating: Number(b.rating) || 4.5,
       badges: b.badges ? String(b.badges).split(',').map((s) => s.trim()) : [],
@@ -149,20 +167,21 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
   }
 });
 
-router.put('/:id', auth, upload.single('image'), async (req, res) => {
+router.put('/:id', auth, upload.any(), async (req, res) => {
   try {
     const b = req.body;
     const update = { ...b };
     let oldImageUrl = null;
-    if (req.file) {
+    const mainImg = fileByField(req.files, 'image');
+    if (mainImg) {
       const existing = await Product.findById(req.params.id).select('imageUrl').lean();
       oldImageUrl = existing?.imageUrl || null;
-      update.imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/products' });
+      update.imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
     ['price', 'mrp', 'dealerPrice', 'rating'].forEach((k) => {
       if (update[k] !== undefined) update[k] = Number(update[k]);
     });
-    if (update.variants !== undefined) update.variants = parseVariants(update.variants);
+    if (update.variants !== undefined) update.variants = await buildVariants(update.variants, req.files);
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
     // Keep the Meta catalog in sync (price/availability/description).

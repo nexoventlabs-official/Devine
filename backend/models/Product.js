@@ -22,7 +22,8 @@ const ProductSchema = new mongoose.Schema(
         unit: { type: String, default: 'g' }, // g | kg | ml | litre | piece | pack | ...
         price: { type: Number, default: 0 }, // B2C price for this size
         mrp: { type: Number, default: 0 },
-        dealerPrice: { type: Number, default: 0 }
+        dealerPrice: { type: Number, default: 0 },
+        imageUrl: { type: String, default: '' } // per-size image
       }
     ],
     imageUrl: { type: String, default: '' },

@@ -404,8 +404,13 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
                   {product.variants.map((v, i) => {
                     const vDisc = v.mrp && v.price && v.mrp > v.price ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : 0;
                     return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #eee', borderRadius: 8, padding: '8px 12px' }}>
-                        <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{variantText(v)}</span>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #eee', borderRadius: 8, padding: '8px 12px', gap: 10 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {v.imageUrl && (
+                            <img src={v.imageUrl} alt={variantText(v)} style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }} />
+                          )}
+                          <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{variantText(v)}</span>
+                        </span>
                         <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           <span style={{ fontWeight: 800, color: '#1a1a1a' }}>₹{v.price}</span>
                           {vDisc > 0 && (

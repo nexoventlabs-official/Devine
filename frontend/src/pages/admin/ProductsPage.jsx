@@ -1,37 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
 
-const empty = {
-  name: '', category: '', shortDesc: '', description: '',
-  price: '', mrp: '', dealerPrice: '', margin: '', moq: '', rating: '4.5'
-};
-
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
 
-// Reusable editor for size/quantity variants (250g, 500g, 1kg...) each with its own price.
+// Editor for size/quantity variants (250g, 500g, 1kg...) each with its own price + image.
 function VariantsEditor({ variants, setVariants }) {
-  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', mrp: '', dealerPrice: '' }]);
+  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', mrp: '', dealerPrice: '', imageUrl: '', imageFile: null }]);
   const upd = (i, k, v) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; setVariants(n); };
   const del = (i) => setVariants(variants.filter((_, idx) => idx !== i));
   return (
-    <div style={{ gridColumn: '1 / -1', border: '1px dashed #cbd5e1', borderRadius: 10, padding: 12, background: '#fff' }}>
+    <div style={{ border: '1px dashed #cbd5e1', borderRadius: 10, padding: 12, background: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Size / Quantity variants (optional)</div>
         <button type="button" onClick={add} style={{ ...miniBtn, background: '#1a7f37' }}>+ Add size</button>
       </div>
       {variants.length === 0 && (
-        <div style={{ fontSize: 12, color: '#999' }}>No variants — the base price above is used. Add sizes like 250 g, 500 g, 1 kg (each with its own price).</div>
+        <div style={{ fontSize: 12, color: '#999' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price and image.</div>
       )}
       {variants.map((v, i) => (
-        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 76 }} />
-          <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 96 }}>
+        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {(v.imageFile || v.imageUrl) ? (
+            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }} />
+          ) : (
+            <div style={{ width: 40, height: 40, borderRadius: 6, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>img</div>
+          )}
+          <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
+          <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-          <input type="number" placeholder="Price ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 96 }} />
-          <input type="number" placeholder="MRP" value={v.mrp} onChange={(e) => upd(i, 'mrp', e.target.value)} style={{ ...input, width: 84 }} />
-          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 96 }} />
+          <input type="number" placeholder="Price ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 88 }} />
+          <input type="number" placeholder="MRP" value={v.mrp} onChange={(e) => upd(i, 'mrp', e.target.value)} style={{ ...input, width: 78 }} />
+          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 88 }} />
+          <label style={{ ...miniBtn, background: '#2563eb', cursor: 'pointer' }}>
+            {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
+          </label>
           <button type="button" onClick={() => del(i)} style={{ ...miniBtn, background: '#c0392b' }}>✕</button>
         </div>
       ))}
@@ -42,14 +46,11 @@ function VariantsEditor({ variants, setVariants }) {
 export default function ProductsAdminPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState(empty);
-  const [file, setFile] = useState(null);
   const [msg, setMsg] = useState('');
-  const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [scheduleFor, setScheduleFor] = useState(null); // product being scheduled
-  const [editing, setEditing] = useState(null); // product being edited
-  const [variants, setVariants] = useState([]); // size/quantity variants for the new product
+  const [editing, setEditing] = useState(null); // product being edited (null = create)
+  const [formOpen, setFormOpen] = useState(false); // add/edit modal open
 
   async function load() {
     const [p, c] = await Promise.all([api.get('/products?all=1'), api.get('/catalog/categories?all=1')]);
@@ -58,31 +59,12 @@ export default function ProductsAdminPage() {
   }
   useEffect(() => { load(); }, []);
 
-  async function submit(e) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      fd.append('variants', JSON.stringify(variants));
-      if (file) fd.append('image', file);
-      await api.postForm('/products', fd);
-      setMsg('Product added & synced to catalog');
-      setForm(empty);
-      setFile(null);
-      setVariants([]);
-      await load();
-    } catch (e) { setMsg(e.message); }
-    setBusy(false);
-  }
-
   async function remove(id) {
     if (!confirm('Delete this product? It will also be removed from the WhatsApp catalog.')) return;
     await api.del(`/products/${id}`);
     await load();
   }
 
-  // Toggle manual out-of-stock (pause). isPaused=true => out of stock on WhatsApp.
   async function togglePaused(p) {
     await api.patch(`/products/${p._id}/availability`, { isPaused: !p.isPaused });
     await load();
@@ -98,32 +80,23 @@ export default function ProductsAdminPage() {
     setSyncing(false);
   }
 
+  const openNew = () => { setEditing(null); setFormOpen(true); };
+  const openEdit = (p) => { setEditing(p); setFormOpen(true); };
+
   return (
     <div style={{ padding: 24, fontFamily: 'Inter, sans-serif' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ marginTop: 0 }}>Products</h1>
-        <button onClick={syncCatalog} disabled={syncing} style={{ ...btn, background: '#0b5' }}>
-          {syncing ? 'Syncing…' : '↻ Sync WhatsApp Catalog'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={openNew} style={btn}>+ Add Product</button>
+          <button onClick={syncCatalog} disabled={syncing} style={{ ...btn, background: '#0b5' }}>
+            {syncing ? 'Syncing…' : '↻ Sync WhatsApp Catalog'}
+          </button>
+        </div>
       </div>
-      {msg && <div style={{ background: '#e8f7ec', color: '#1a7f37', padding: 10, borderRadius: 8, marginBottom: 16 }}>{msg}</div>}
+      {msg && <div style={{ background: '#e8f7ec', color: '#1a7f37', padding: 10, borderRadius: 8, margin: '16px 0' }}>{msg}</div>}
 
-      <form onSubmit={submit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 12, background: '#fafafa', padding: 16, borderRadius: 12, marginBottom: 24 }}>
-        <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={input} />
-        <input list="cats" required placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={input} />
-        <datalist id="cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
-        <input placeholder="Short description" value={form.shortDesc} onChange={(e) => setForm({ ...form, shortDesc: e.target.value })} style={input} />
-        <input type="number" required placeholder="Price (MRP/B2C)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} style={input} />
-        <input type="number" placeholder="MRP" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} style={input} />
-        <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={(e) => setForm({ ...form, dealerPrice: e.target.value })} style={input} />
-        <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={(e) => setForm({ ...form, margin: e.target.value })} style={input} />
-        <input placeholder="MOQ" value={form.moq} onChange={(e) => setForm({ ...form, moq: e.target.value })} style={input} />
-        <VariantsEditor variants={variants} setVariants={setVariants} />
-        <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
-        <button disabled={busy} style={btn}>{busy ? 'Saving…' : 'Add Product'}</button>
-      </form>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 16, marginTop: 16 }}>
         {products.map((p) => {
           const outOfStock = p.isPaused || p.inStock === false || p.active === false;
           return (
@@ -148,7 +121,7 @@ export default function ProductsAdminPage() {
                   {p.soldOutSchedule?.enabled && <span style={{ fontSize: 11, color: '#888', marginLeft: 6 }}>⏱ scheduled</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                  <button onClick={() => setEditing(p)} style={{ ...miniBtn, background: '#111827' }}>Edit</button>
+                  <button onClick={() => openEdit(p)} style={{ ...miniBtn, background: '#111827' }}>Edit</button>
                   <button onClick={() => togglePaused(p)} style={{ ...miniBtn, background: p.isPaused ? '#1a7f37' : '#f59e0b' }}>
                     {p.isPaused ? 'Mark In Stock' : 'Mark Out of Stock'}
                   </button>
@@ -165,44 +138,46 @@ export default function ProductsAdminPage() {
         <ScheduleModal product={scheduleFor} onClose={() => setScheduleFor(null)} onSaved={() => { setScheduleFor(null); load(); }} />
       )}
 
-      {editing && (
-        <ProductEditModal
+      {formOpen && (
+        <ProductFormModal
           product={editing}
           categories={categories}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); load(); }}
+          onClose={() => setFormOpen(false)}
+          onSaved={() => { setFormOpen(false); load(); }}
         />
       )}
     </div>
   );
 }
 
-function ProductEditModal({ product, categories, onClose, onSaved }) {
+function ProductFormModal({ product, categories, onClose, onSaved }) {
+  const isEdit = !!product;
   const [form, setForm] = useState({
-    name: product.name || '',
-    category: product.category || '',
-    shortDesc: product.shortDesc || '',
-    description: product.description || '',
-    price: product.price ?? '',
-    mrp: product.mrp ?? '',
-    dealerPrice: product.dealerPrice ?? '',
-    margin: product.margin || '',
-    moq: product.moq || '',
-    badges: (product.badges || []).join(', ')
+    name: product?.name || '',
+    category: product?.category || '',
+    shortDesc: product?.shortDesc || '',
+    description: product?.description || '',
+    price: product?.price ?? '',
+    mrp: product?.mrp ?? '',
+    dealerPrice: product?.dealerPrice ?? '',
+    margin: product?.margin || '',
+    moq: product?.moq || '',
+    badges: (product?.badges || []).join(', ')
   });
   const [variants, setVariants] = useState(
-    (product.variants || []).map((v) => ({
+    (product?.variants || []).map((v) => ({
       quantity: v.quantity ?? '',
       unit: v.unit || 'g',
       price: v.price ?? '',
       mrp: v.mrp ?? '',
-      dealerPrice: v.dealerPrice ?? ''
+      dealerPrice: v.dealerPrice ?? '',
+      imageUrl: v.imageUrl || '',
+      imageFile: null
     }))
   );
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
-
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function save(e) {
@@ -212,12 +187,16 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      fd.append('variants', JSON.stringify(variants));
+      // Variant metadata (keep existing imageUrl; drop the File object)
+      const variantsPayload = variants.map(({ imageFile, ...v }) => v);
+      fd.append('variants', JSON.stringify(variantsPayload));
+      variants.forEach((v, i) => { if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile); });
       if (file) fd.append('image', file);
-      await api.putForm(`/products/${product._id}`, fd);
+      if (isEdit) await api.putForm(`/products/${product._id}`, fd);
+      else await api.postForm('/products', fd);
       onSaved();
     } catch (e2) {
-      setErr(e2.message || 'Update failed');
+      setErr(e2.message || 'Save failed');
       setSaving(false);
     }
   }
@@ -225,10 +204,11 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
   return (
     <div style={overlay} onClick={onClose}>
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
-        <h3 style={{ marginTop: 0 }}>Edit Product — {product.name}</h3>
+        <h3 style={{ marginTop: 0 }}>{isEdit ? `Edit Product — ${product.name}` : 'Add Product'}</h3>
         {err && <div style={{ background: '#fdecec', color: '#c0392b', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 12 }}>
-          {(file || product.imageUrl) && (
+          {(file || product?.imageUrl) && (
             <img
               src={file ? URL.createObjectURL(file) : product.imageUrl}
               alt=""
@@ -236,14 +216,15 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
             />
           )}
           <label style={{ fontSize: 13, color: '#555' }}>
-            Replace image
+            {isEdit ? 'Replace main image' : 'Main product image'}
             <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />
           </label>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
           <input required placeholder="Name" value={form.name} onChange={set('name')} style={input} />
-          <input list="edit-cats" required placeholder="Category" value={form.category} onChange={set('category')} style={input} />
-          <datalist id="edit-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
+          <input list="prod-cats" required placeholder="Category" value={form.category} onChange={set('category')} style={input} />
+          <datalist id="prod-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
           <input type="number" required placeholder="Price (MRP/B2C)" value={form.price} onChange={set('price')} style={input} />
           <input type="number" placeholder="MRP" value={form.mrp} onChange={set('mrp')} style={input} />
           <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
@@ -253,12 +234,12 @@ function ProductEditModal({ product, categories, onClose, onSaved }) {
         </div>
         <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
         <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={4} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical' }} />
-        <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+        <div style={{ marginTop: 10 }}>
           <VariantsEditor variants={variants} setVariants={setVariants} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button type="button" onClick={onClose} style={{ ...btn, background: '#888' }}>Cancel</button>
-          <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : 'Save Changes'}</button>
+          <button type="submit" disabled={saving} style={btn}>{saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Add Product')}</button>
         </div>
       </form>
     </div>
@@ -339,4 +320,4 @@ const input = { padding: 9, border: '1px solid #ddd', borderRadius: 6 };
 const btn = { background: '#1a7f37', color: '#fff', border: 0, borderRadius: 6, padding: '9px 14px', cursor: 'pointer' };
 const miniBtn = { color: '#fff', border: 0, borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 12 };
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
-const modal = { background: '#fff', borderRadius: 12, padding: 24, width: 'min(560px, 92vw)', maxHeight: '86vh', overflowY: 'auto' };
+const modal = { background: '#fff', borderRadius: 12, padding: 24, width: 'min(640px, 94vw)', maxHeight: '90vh', overflowY: 'auto' };
