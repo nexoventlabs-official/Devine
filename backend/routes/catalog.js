@@ -5,10 +5,68 @@ import Category from '../models/Category.js';
 import FlowAsset from '../models/FlowAsset.js';
 import SupplyCountry from '../models/SupplyCountry.js';
 import BulkRange from '../models/BulkRange.js';
+import Offer from '../models/Offer.js';
+import Product from '../models/Product.js';
 import cloudinaryService from '../services/cloudinary.js';
+import catalogService from '../services/catalogService.js';
 import { ASSET_KEYS } from '../services/assets.js';
 
 const router = express.Router();
+
+// ---------------- OFFERS ----------------
+function sanitizeOffer(b = {}) {
+  return {
+    title: b.title,
+    active: b.active !== false && b.active !== 'false',
+    productIds: Array.isArray(b.productIds) ? b.productIds : [],
+    b2c: {
+      enabled: !!b.b2c?.enabled,
+      type: b.b2c?.type === 'flat' ? 'flat' : 'percent',
+      value: Number(b.b2c?.value) || 0
+    },
+    b2b: {
+      enabled: !!b.b2b?.enabled,
+      type: b.b2b?.type === 'flat' ? 'flat' : 'percent',
+      value: Number(b.b2b?.value) || 0
+    },
+    startsAt: b.startsAt || null,
+    endsAt: b.endsAt || null
+  };
+}
+
+// Re-push affected products to the catalog so offer strikethrough updates.
+async function resyncOfferProducts(productIds) {
+  const ids = [...new Set((productIds || []).map(String))];
+  if (!ids.length) return;
+  const prods = await Product.find({ _id: { $in: ids } });
+  for (const p of prods) catalogService.syncProductToMeta(p).catch(() => {});
+}
+
+router.get('/offers', auth, async (_req, res) => {
+  const list = await Offer.find().sort({ createdAt: -1 }).populate('productIds', 'name retailerId price dealerPrice').lean();
+  res.json({ success: true, data: list });
+});
+
+router.post('/offers', auth, async (req, res) => {
+  const offer = await Offer.create(sanitizeOffer(req.body));
+  res.json({ success: true, data: offer });
+  resyncOfferProducts(offer.productIds).catch(() => {});
+});
+
+router.put('/offers/:id', auth, async (req, res) => {
+  const prev = await Offer.findById(req.params.id).lean();
+  const offer = await Offer.findByIdAndUpdate(req.params.id, sanitizeOffer(req.body), { new: true });
+  res.json({ success: true, data: offer });
+  // Re-sync both the old and new product sets (removed products lose the offer).
+  const affected = [...(prev?.productIds || []), ...(offer?.productIds || [])];
+  resyncOfferProducts(affected).catch(() => {});
+});
+
+router.delete('/offers/:id', auth, async (req, res) => {
+  const offer = await Offer.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
+  if (offer) resyncOfferProducts(offer.productIds).catch(() => {});
+});
 
 // ---------------- BULK / WHOLESALE RANGES ----------------
 router.get('/bulk-ranges', async (req, res) => {

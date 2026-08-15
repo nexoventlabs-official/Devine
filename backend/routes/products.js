@@ -7,9 +7,17 @@ import { getClient } from '../services/metaCloud.js';
 import { genOrderId } from '../services/ids.js';
 import DealerProfile from '../models/DealerProfile.js';
 import catalogService from '../services/catalogService.js';
+import { buildOfferIndex, offerForProduct, b2cPricing } from '../services/offers.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
+
+// Attach B2C offer pricing to a lean product: offerPrice (base) + per-variant offerPrice.
+function withOffer(p, offer) {
+  const base = b2cPricing(p.price, offer);
+  const variants = (p.variants || []).map((v) => ({ ...v, offerPrice: b2cPricing(v.price || p.price, offer).offer }));
+  return { ...p, offerPrice: base.offer, offerTitle: base.offer ? (offer?.title || 'Special Offer') : null, variants };
+}
 
 // Normalize incoming variants (JSON string from multipart form, or array) into
 // clean [{ label, quantity, unit, price, mrp, dealerPrice }]. Skips empty rows.
@@ -59,8 +67,10 @@ router.get('/', async (req, res) => {
   const filter = { active: true };
   if (req.query.category) filter.category = req.query.category;
   if (req.query.featured === 'true') filter.featured = true;
-  const products = await Product.find(req.query.all ? {} : filter).sort({ createdAt: -1 });
-  res.json({ success: true, data: products });
+  const products = await Product.find(req.query.all ? {} : filter).sort({ createdAt: -1 }).lean();
+  const idx = await buildOfferIndex().catch(() => new Map());
+  const data = products.map((p) => withOffer(p, idx.get(String(p._id))));
+  res.json({ success: true, data });
 });
 
 // Public: distinct categories for filter UI
@@ -103,11 +113,13 @@ router.get('/:id', async (req, res) => {
 
   // Strip PII-bearing raw ratings before sending to the public client.
   const { ratings, ...safe } = p;
+  const offer = await offerForProduct(p._id).catch(() => null);
+  const priced = withOffer(safe, offer);
 
   res.json({
     success: true,
     data: {
-      ...safe,
+      ...priced,
       avgRating: Math.round(avgRating * 10) / 10,
       totalRatings,
       reviewCount: p.reviewCount || totalRatings,

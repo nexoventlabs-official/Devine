@@ -6,6 +6,7 @@ import CategoriesPage from './CategoriesPage';
 import FlowImagesPage from './FlowImagesPage';
 import SupplyCountriesPage from './SupplyCountriesPage';
 import BulkRangesPage from './BulkRangesPage';
+import OffersPage from './OffersPage';
 import LeadsPage from './LeadsPage';
 import OrdersPage from './OrdersPage';
 
@@ -46,6 +47,7 @@ const NAV = [
   { to: '/admin/products', label: '🫙 Products' },
   { to: '/admin/categories', label: '🗂️ Categories' },
   { to: '/admin/bulk-ranges', label: '📦 Bulk Ranges' },
+  { to: '/admin/offers', label: '🏷️ Offers' },
   { to: '/admin/flow-images', label: '🖼️ Flow Images' },
   { to: '/admin/supply-countries', label: '🌍 Supply Countries' },
   { to: '/crn', label: '💬 CRM' }
@@ -76,6 +78,7 @@ export default function AdminLayout() {
           <Route path="products" element={<ProductsAdminPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="bulk-ranges" element={<BulkRangesPage />} />
+          <Route path="offers" element={<OffersPage />} />
           <Route path="flow-images" element={<FlowImagesPage />} />
           <Route path="supply-countries" element={<SupplyCountriesPage />} />
         </Routes>

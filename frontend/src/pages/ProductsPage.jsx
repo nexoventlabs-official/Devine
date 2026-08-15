@@ -231,14 +231,16 @@ export default function ProductsPage({ onOpenEnquiry, productId, initialCategory
                   {/* Price */}
                   {prod.price ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
-                      <span style={{ fontWeight: 800, fontSize: 18, color: '#1a1a1a' }}>₹{prod.price}</span>
-                      {prod.mrp && prod.mrp > prod.price && (
+                      {prod.offerPrice ? (
                         <>
-                          <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 14 }}>₹{prod.mrp}</span>
+                          <span style={{ fontWeight: 800, fontSize: 18, color: '#1a1a1a' }}>₹{prod.offerPrice}</span>
+                          <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 14 }}>₹{prod.price}</span>
                           <span style={{ color: '#388e3c', fontWeight: 700, fontSize: 13 }}>
-                            {Math.round(((prod.mrp - prod.price) / prod.mrp) * 100)}% off
+                            {Math.round(((prod.price - prod.offerPrice) / prod.price) * 100)}% off
                           </span>
                         </>
+                      ) : (
+                        <span style={{ fontWeight: 800, fontSize: 18, color: '#1a1a1a' }}>₹{prod.price}</span>
                       )}
                     </div>
                   ) : null}
@@ -333,10 +335,8 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
   const ratingCount = product.totalRatings || product.reviewCount || 0;
   const dist = product.ratingDistribution || {};
   const reviews = product.reviews || [];
-  const discount =
-    product.mrp && product.price && product.mrp > product.price
-      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
-      : 0;
+  const offerPrice = product.offerPrice && product.offerPrice < product.price ? product.offerPrice : null;
+  const discount = offerPrice ? Math.round(((product.price - offerPrice) / product.price) * 100) : 0;
 
   return (
     <div style={ov.page}>
@@ -385,13 +385,16 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
 
             {/* Price */}
             {product.price ? (
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '8px 0' }}>
-                <span style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a' }}>₹{product.price}</span>
-                {product.mrp && product.mrp > product.price && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '8px 0', flexWrap: 'wrap' }}>
+                {offerPrice ? (
                   <>
-                    <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 16 }}>₹{product.mrp}</span>
+                    <span style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a' }}>₹{offerPrice}</span>
+                    <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 16 }}>₹{product.price}</span>
                     <span style={{ color: '#388e3c', fontWeight: 700, fontSize: 15 }}>{discount}% off</span>
+                    {product.offerTitle && <span style={{ background: '#fff3e0', color: '#e65100', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>{product.offerTitle}</span>}
                   </>
+                ) : (
+                  <span style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a' }}>₹{product.price}</span>
                 )}
               </div>
             ) : null}
@@ -402,7 +405,8 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
                 <div style={ov.sectionLabel}>Available Sizes</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {product.variants.map((v, i) => {
-                    const vDisc = v.mrp && v.price && v.mrp > v.price ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : 0;
+                    const vOff = v.offerPrice && v.offerPrice < v.price ? v.offerPrice : null;
+                    const vDisc = vOff ? Math.round(((v.price - vOff) / v.price) * 100) : 0;
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #eee', borderRadius: 8, padding: '8px 12px', gap: 10 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -412,12 +416,14 @@ function ProductDetailPage({ product, loading, onBack, onEnquire }) {
                           <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{variantText(v)}</span>
                         </span>
                         <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontWeight: 800, color: '#1a1a1a' }}>₹{v.price}</span>
-                          {vDisc > 0 && (
+                          {vOff ? (
                             <>
-                              <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 13 }}>₹{v.mrp}</span>
+                              <span style={{ fontWeight: 800, color: '#1a1a1a' }}>₹{vOff}</span>
+                              <span style={{ color: '#878787', textDecoration: 'line-through', fontSize: 13 }}>₹{v.price}</span>
                               <span style={{ color: '#388e3c', fontWeight: 700, fontSize: 13 }}>{vDisc}% off</span>
                             </>
+                          ) : (
+                            <span style={{ fontWeight: 800, color: '#1a1a1a' }}>₹{v.price}</span>
                           )}
                         </span>
                       </div>

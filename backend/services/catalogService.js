@@ -6,6 +6,7 @@
 // FMCG products have no variants, so Product.retailerId IS the Meta retailer_id.
 import Product from '../models/Product.js';
 import { getClient } from './metaCloud.js';
+import { buildOfferIndex, offerForProduct, b2cPricing } from './offers.js';
 import logger from './logger.js';
 
 const CATALOG_ID = () => process.env.META_CATALOG_ID || '';
@@ -59,7 +60,7 @@ const variantLabel = (v) => v.label || `${v.quantity || ''} ${v.unit || ''}`.tri
  *  - With variants -> one item per size (retailerId = `${base}__v${i}`), all
  *    sharing item_group_id = base so Meta renders a size picker.
  */
-export function expandToCatalogItems(p, { includeRatings = true } = {}) {
+export function expandToCatalogItems(p, { includeRatings = true, offer = null } = {}) {
   const base = {
     description: buildProductDescription(p, { includeRatings }),
     currency: 'INR',
@@ -68,22 +69,27 @@ export function expandToCatalogItems(p, { includeRatings = true } = {}) {
     groupId: p.retailerId
   };
   if (Array.isArray(p.variants) && p.variants.length) {
-    return p.variants.map((v, i) => ({
-      ...base,
-      retailerId: `${p.retailerId}__v${i}`,
-      name: `${p.name} - ${variantLabel(v)}`,
-      size: variantLabel(v),
-      price: v.price || p.price,
-      salePrice: v.mrp && v.mrp > v.price ? v.price : null,
-      imageUrl: v.imageUrl || p.imageUrl || null
-    }));
+    return p.variants.map((v, i) => {
+      // With an active offer: catalog price = original (struck), sale_price = offer price.
+      const pr = b2cPricing(v.price || p.price, offer);
+      return {
+        ...base,
+        retailerId: `${p.retailerId}__v${i}`,
+        name: `${p.name} - ${variantLabel(v)}`,
+        size: variantLabel(v),
+        price: pr.original,
+        salePrice: pr.offer,
+        imageUrl: v.imageUrl || p.imageUrl || null
+      };
+    });
   }
+  const pr = b2cPricing(p.price, offer);
   return [{
     ...base,
     retailerId: p.retailerId,
     name: p.name,
-    price: p.price,
-    salePrice: p.mrp && p.mrp > p.price ? p.price : null,
+    price: pr.original,
+    salePrice: pr.offer,
     imageUrl: p.imageUrl || null
   }];
 }
@@ -102,7 +108,8 @@ export async function syncProductToMeta(product, { includeRatings = true } = {})
   if (!isEnabled()) return null;
   try {
     const wa = getClient(CHANNEL());
-    const items = expandToCatalogItems(product, { includeRatings });
+    const offer = await offerForProduct(product._id).catch(() => null);
+    const items = expandToCatalogItems(product, { includeRatings, offer });
     const newIds = items.map((it) => it.retailerId);
 
     // Remove items that existed before but are no longer part of this product.
@@ -146,10 +153,11 @@ export async function autoSync() {
   const products = await Product.find({ active: true });
 
   // Expand every product to its catalog items; track stale ids to remove.
+  const offerIndex = await buildOfferIndex().catch(() => new Map());
   const allItems = [];
   const stale = [];
   for (const p of products) {
-    const items = expandToCatalogItems(p);
+    const items = expandToCatalogItems(p, { offer: offerIndex.get(String(p._id)) || null });
     const newIds = items.map((it) => it.retailerId);
     (p.catalogItemIds || []).forEach((id) => { if (!newIds.includes(id)) stale.push(id); });
     allItems.push(...items);

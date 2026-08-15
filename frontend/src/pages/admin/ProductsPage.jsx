@@ -6,7 +6,7 @@ const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo
 
 // Editor for size/quantity variants (250g, 500g, 1kg...) each with its own price + image.
 function VariantsEditor({ variants, setVariants }) {
-  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', mrp: '', dealerPrice: '', imageUrl: '', imageFile: null }]);
+  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', dealerPrice: '', imageUrl: '', imageFile: null }]);
   const upd = (i, k, v) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; setVariants(n); };
   const del = (i) => setVariants(variants.filter((_, idx) => idx !== i));
   return (
@@ -29,9 +29,8 @@ function VariantsEditor({ variants, setVariants }) {
           <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-          <input type="number" placeholder="Price ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 88 }} />
-          <input type="number" placeholder="MRP" value={v.mrp} onChange={(e) => upd(i, 'mrp', e.target.value)} style={{ ...input, width: 78 }} />
-          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 88 }} />
+          <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
+          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
           <label style={{ ...miniBtn, background: '#2563eb', cursor: 'pointer' }}>
             {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
@@ -158,7 +157,6 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
     shortDesc: product?.shortDesc || '',
     description: product?.description || '',
     price: product?.price ?? '',
-    mrp: product?.mrp ?? '',
     dealerPrice: product?.dealerPrice ?? '',
     margin: product?.margin || '',
     moq: product?.moq || '',
@@ -169,7 +167,6 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
       quantity: v.quantity ?? '',
       unit: v.unit || 'g',
       price: v.price ?? '',
-      mrp: v.mrp ?? '',
       dealerPrice: v.dealerPrice ?? '',
       imageUrl: v.imageUrl || '',
       imageFile: null
@@ -225,8 +222,7 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
           <input required placeholder="Name" value={form.name} onChange={set('name')} style={input} />
           <input list="prod-cats" required placeholder="Category" value={form.category} onChange={set('category')} style={input} />
           <datalist id="prod-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
-          <input type="number" required placeholder="Price (MRP/B2C)" value={form.price} onChange={set('price')} style={input} />
-          <input type="number" placeholder="MRP" value={form.mrp} onChange={set('mrp')} style={input} />
+          <input type="number" required placeholder="B2C price" value={form.price} onChange={set('price')} style={input} />
           <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
           <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={set('margin')} style={input} />
           <input placeholder="MOQ" value={form.moq} onChange={set('moq')} style={input} />
