@@ -175,6 +175,74 @@ export default function ProductsAdminPage() {
   );
 }
 
+// Styled category picker: shows each category's tile image + name in the dropdown.
+function CategorySelect({ categories, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef(null);
+  const selected = categories.find((c) => c.name === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const thumb = (url) => (url
+    ? <img src={url} alt="" style={{ width: 26, height: 26, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid #3a3a3a', background: '#fff' }} />
+    : <div style={{ width: 26, height: 26, borderRadius: 6, background: '#333', flexShrink: 0 }} />);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          ...input, width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 10,
+          cursor: 'pointer', textAlign: 'left', paddingTop: 6, paddingBottom: 6,
+          borderColor: open ? '#1ed760' : '#333'
+        }}
+      >
+        {selected && thumb(selected.imageUrl)}
+        <span style={{ flex: 1, color: selected ? '#ffffff' : '#7c7c7c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? selected.name : 'Category *'}
+        </span>
+        <span style={{ color: '#b3b3b3', fontSize: 10, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▼</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 50,
+          background: '#282828', border: '1px solid #3a3a3a', borderRadius: 12, padding: 6,
+          maxHeight: 260, overflowY: 'auto', boxShadow: 'rgba(0,0,0,0.5) 0px 10px 30px'
+        }}>
+          {categories.length === 0 && <div style={{ padding: 10, color: '#7c7c7c', fontSize: 13 }}>No categories yet</div>}
+          {categories.map((c) => {
+            const active = c.name === value;
+            return (
+              <button
+                key={c._id}
+                type="button"
+                onClick={() => { onChange(c.name); setOpen(false); }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#3a3a3a'; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box',
+                  padding: '7px 8px', border: 0, borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                  background: active ? 'rgba(30,215,96,0.15)' : 'transparent', color: '#ffffff', fontSize: 13
+                }}
+              >
+                {thumb(c.imageUrl)}
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                {active && <span style={{ color: '#1ed760', fontSize: 13 }}>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductFormModal({ product, categories, onClose, onSaved }) {
   const isEdit = !!product;
   const [form, setForm] = useState({
@@ -205,6 +273,7 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
 
   async function save(e) {
     e.preventDefault();
+    if (!form.category) { setErr('Please select a category'); return; }
     setSaving(true);
     setErr('');
     try {
@@ -277,8 +346,7 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
           <input required placeholder="Name *" value={form.name} onChange={set('name')} style={input} />
-          <input list="prod-cats" required placeholder="Category *" value={form.category} onChange={set('category')} style={input} />
-          <datalist id="prod-cats">{categories.map((c) => <option key={c._id} value={c.name} />)}</datalist>
+          <CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} />
           <input type="number" required placeholder="B2C price *" value={form.price} onChange={set('price')} style={input} />
           <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
           <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={set('margin')} style={input} />
