@@ -365,19 +365,36 @@ async function showCategoryProducts(phone, slug) {
   return true;
 }
 
-async function addToCart(phone, retailerId) {
+// Resolve a catalog retailer id (base OR variant `base__vN`) to a cart line.
+async function resolveCatalogItem(retailerId) {
+  const m = String(retailerId).match(/^(.*)__v(\d+)$/);
+  if (m) {
+    const p = await Product.findOne({ retailerId: m[1] }).lean();
+    if (!p) return null;
+    const v = (p.variants || [])[Number(m[2])];
+    if (v) {
+      const label = v.label || `${v.quantity || ''} ${v.unit || ''}`.trim();
+      return { retailerId, name: `${p.name} - ${label}`, price: v.price || p.price, imageUrl: v.imageUrl || p.imageUrl };
+    }
+    return { retailerId: p.retailerId, name: p.name, price: p.price, imageUrl: p.imageUrl };
+  }
   const p = await Product.findOne({ retailerId }).lean();
-  if (!p) return wa().sendText(phone, 'Sorry, that product is unavailable.');
+  return p ? { retailerId: p.retailerId, name: p.name, price: p.price, imageUrl: p.imageUrl } : null;
+}
+
+async function addToCart(phone, retailerId) {
+  const item = await resolveCatalogItem(retailerId);
+  if (!item) return wa().sendText(phone, 'Sorry, that product is unavailable.');
   const convo = await getConversation(phone, CH);
   const cart = Array.isArray(convo.context?.cart) ? convo.context.cart : [];
-  const existing = cart.find((i) => i.retailerId === retailerId);
+  const existing = cart.find((i) => i.retailerId === item.retailerId);
   if (existing) existing.quantity += 1;
-  else cart.push({ retailerId, name: p.name, price: p.price, quantity: 1, imageUrl: p.imageUrl });
+  else cart.push({ retailerId: item.retailerId, name: item.name, price: item.price, quantity: 1, imageUrl: item.imageUrl });
   await patchContext(phone, CH, { cart });
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   return wa().sendButtons(
     phone,
-    `✅ Added *${p.name}*.\n\n🛒 Cart total: *Rs.${total}* (${cart.length} item${cart.length > 1 ? 's' : ''})`,
+    `✅ Added *${item.name}*.\n\n🛒 Cart total: *Rs.${total}* (${cart.length} item${cart.length > 1 ? 's' : ''})`,
     [
       { id: 'view_summary', text: 'Checkout' },
       { id: 'browse', text: 'Add more' }
@@ -391,14 +408,14 @@ async function handleCatalogOrder(phone, order, name) {
   const items = order.product_items || [];
   const cart = [];
   for (const it of items) {
-    const p = await Product.findOne({ retailerId: it.product_retailer_id }).lean();
-    if (!p) continue;
+    const resolved = await resolveCatalogItem(it.product_retailer_id);
+    if (!resolved) continue;
     cart.push({
-      retailerId: p.retailerId,
-      name: p.name,
-      price: p.price,
+      retailerId: resolved.retailerId,
+      name: resolved.name,
+      price: resolved.price,
       quantity: Number(it.quantity) || 1,
-      imageUrl: p.imageUrl
+      imageUrl: resolved.imageUrl
     });
   }
   if (!cart.length) {

@@ -171,25 +171,33 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
   try {
     const b = req.body;
     const update = { ...b };
-    let oldImageUrl = null;
     const mainImg = fileByField(req.files, 'image');
+    const needExisting = !!mainImg || update.variants !== undefined;
+    const existing = needExisting ? await Product.findById(req.params.id).select('imageUrl variants').lean() : null;
+
+    let oldImageUrl = null;
     if (mainImg) {
-      const existing = await Product.findById(req.params.id).select('imageUrl').lean();
       oldImageUrl = existing?.imageUrl || null;
       update.imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
     ['price', 'mrp', 'dealerPrice', 'rating'].forEach((k) => {
       if (update[k] !== undefined) update[k] = Number(update[k]);
     });
-    if (update.variants !== undefined) update.variants = await buildVariants(update.variants, req.files);
+
+    let staleVariantImages = [];
+    if (update.variants !== undefined) {
+      update.variants = await buildVariants(update.variants, req.files);
+      const newUrls = new Set(update.variants.map((v) => v.imageUrl).filter(Boolean));
+      staleVariantImages = (existing?.variants || []).map((v) => v.imageUrl).filter((u) => u && !newUrls.has(u));
+    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
-    // Keep the Meta catalog in sync (price/availability/description).
+    // Keep the Meta catalog in sync (price/availability/description/variants).
     if (product) catalogService.syncProductToMeta(product).catch(() => {});
-    // Remove the replaced image from Cloudinary.
-    if (oldImageUrl && oldImageUrl !== update.imageUrl) {
-      cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
-    }
+    // Remove replaced images (main + any removed variant images) from Cloudinary.
+    if (oldImageUrl && oldImageUrl !== update.imageUrl) cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
+    staleVariantImages.forEach((u) => cloudinaryService.deleteByUrl(u).catch(() => {}));
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -200,7 +208,8 @@ router.delete('/:id', auth, async (req, res) => {
   if (!p) return res.status(404).json({ success: false, message: 'Not found' });
   cloudinaryService.deleteByUrl(p.imageUrl).catch(() => {});
   if (p.waveImageUrl) cloudinaryService.deleteByUrl(p.waveImageUrl).catch(() => {});
-  catalogService.deleteProductFromMeta(p.retailerId).catch(() => {});
+  (p.variants || []).forEach((v) => { if (v.imageUrl) cloudinaryService.deleteByUrl(v.imageUrl).catch(() => {}); });
+  catalogService.deleteProductFromMeta(p).catch(() => {});
   res.json({ success: true, message: 'Deleted' });
 });
 

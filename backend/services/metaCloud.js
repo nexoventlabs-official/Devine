@@ -480,11 +480,12 @@ export function getClient(channel) {
           google_product_category: 'Food, Beverages & Tobacco > Food Items',
           brand: process.env.BUSINESS_NAME || 'Devine Natural Foods',
           condition: 'new',
-          // Unique group id per product = no variant picker
-          item_group_id: p.retailerId,
+          // Group id: variants of one product share it -> Meta shows a size picker.
+          item_group_id: p.groupId || p.retailerId,
           // Clear strikethrough unless a real sale price is provided
           sale_price: p.salePrice && p.salePrice < p.price ? `${Number(p.salePrice).toFixed(2)} ${currency}` : ''
         };
+        if (p.size) data.size = String(p.size); // variant attribute (e.g. "500 g")
         if (p.imageUrl) data.image_link = squareUrl(p.imageUrl);
         return { method: 'CREATE', data };
       });
@@ -497,10 +498,17 @@ export function getClient(channel) {
     },
 
     async deleteCatalogProduct(catalogId, retailerId) {
+      return this.deleteCatalogProducts(catalogId, [retailerId]);
+    },
+
+    // Delete multiple catalog items (base + variant retailer ids) in one batch.
+    async deleteCatalogProducts(catalogId, retailerIds = []) {
       if (!catalogId) throw new Error('META_CATALOG_ID not configured');
+      const ids = [...new Set((retailerIds || []).filter(Boolean))];
+      if (!ids.length) return null;
       const { data } = await api.post(
         `${GRAPH()}/${catalogId}/batch`,
-        { requests: [{ method: 'DELETE', retailer_id: retailerId }] },
+        { requests: ids.map((retailer_id) => ({ method: 'DELETE', retailer_id })) },
         { headers: authHeaders }
       );
       return data;

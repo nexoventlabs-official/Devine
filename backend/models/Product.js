@@ -36,6 +36,10 @@ const ProductSchema = new mongoose.Schema(
     inStock: { type: Boolean, default: true },
     active: { type: Boolean, default: true },
 
+    // Retailer IDs last pushed to the Meta catalog (base or per-variant), used to
+    // clean up stale items when variants change.
+    catalogItemIds: [{ type: String }],
+
     // ---- Ratings (aggregated from customer reviews) ----
     avgRating: { type: Number, default: 0 },
     totalRatings: { type: Number, default: 0 },
