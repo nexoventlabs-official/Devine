@@ -7,7 +7,6 @@ export default function BulkRangesPage() {
   const [list, setList] = useState([]);
   const [name, setName] = useState('');
   const [moq, setMoq] = useState('');
-  const [order, setOrder] = useState(0);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -25,10 +24,9 @@ export default function BulkRangesPage() {
       const fd = new FormData();
       fd.append('name', name);
       fd.append('moq', moq);
-      fd.append('order', order);
       if (file) fd.append('image', file);
       await api.postForm('/catalog/bulk-ranges', fd);
-      setName(''); setMoq(''); setOrder(0); setFile(null);
+      setName(''); setMoq(''); setFile(null);
       await load();
     } finally { setBusy(false); }
   }
@@ -47,7 +45,6 @@ export default function BulkRangesPage() {
       <form onSubmit={add} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: '#fafafa', padding: 16, borderRadius: 12, marginBottom: 20 }}>
         <input required placeholder="Range name (e.g. Honey Range)" value={name} onChange={(e) => setName(e.target.value)} style={input} />
         <input placeholder="MOQ (e.g. MOQ 50/variant)" value={moq} onChange={(e) => setMoq(e.target.value)} style={input} />
-        <input type="number" placeholder="Order" value={order} onChange={(e) => setOrder(e.target.value)} style={{ ...input, width: 90 }} />
         <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
         <button disabled={busy} style={btn}>{busy ? 'Saving…' : 'Add'}</button>
       </form>
@@ -58,7 +55,7 @@ export default function BulkRangesPage() {
             {r.imageUrl && <img src={r.imageUrl} alt="" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 8 }} />}
             <div style={{ fontWeight: 700, marginTop: 8 }}>{r.name}</div>
             {r.moq && <div style={{ fontSize: 12, color: '#888' }}>{r.moq}</div>}
-            <div style={{ fontSize: 11, color: '#aaa' }}>Order: {r.order}{r.active === false ? ' · hidden' : ''}</div>
+            {r.active === false && <div style={{ fontSize: 11, color: '#aaa' }}>hidden</div>}
             <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'center' }}>
               <button onClick={() => setEditing(r)} style={{ ...btn, background: '#111827', padding: '7px 12px' }}>Edit</button>
               <button onClick={() => remove(r._id)} style={{ ...btn, background: '#c0392b', padding: '7px 12px' }}>Delete</button>
@@ -78,7 +75,6 @@ export default function BulkRangesPage() {
 function BulkRangeEditModal({ range, onClose, onSaved }) {
   const [name, setName] = useState(range.name || '');
   const [moq, setMoq] = useState(range.moq || '');
-  const [order, setOrder] = useState(range.order ?? 0);
   const [active, setActive] = useState(range.active !== false);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -92,7 +88,6 @@ function BulkRangeEditModal({ range, onClose, onSaved }) {
       const fd = new FormData();
       fd.append('name', name);
       fd.append('moq', moq);
-      fd.append('order', order);
       fd.append('active', active ? 'true' : 'false');
       if (file) fd.append('image', file);
       await api.putForm(`/catalog/bulk-ranges/${range._id}`, fd);
@@ -122,9 +117,6 @@ function BulkRangeEditModal({ range, onClose, onSaved }) {
         </label>
         <label style={lbl}>MOQ
           <input value={moq} onChange={(e) => setMoq(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
-        </label>
-        <label style={lbl}>Order
-          <input type="number" value={order} onChange={(e) => setOrder(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
         </label>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '10px 0' }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (visible in flow)

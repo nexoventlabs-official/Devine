@@ -6,7 +6,6 @@ import { api } from '../../adminApi';
 export default function CategoriesPage() {
   const [list, setList] = useState([]);
   const [name, setName] = useState('');
-  const [order, setOrder] = useState(0);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // category being edited
@@ -23,10 +22,9 @@ export default function CategoriesPage() {
     try {
       const fd = new FormData();
       fd.append('name', name);
-      fd.append('order', order);
       if (file) fd.append('image', file);
       await api.postForm('/catalog/categories', fd);
-      setName(''); setFile(null); setOrder(0);
+      setName(''); setFile(null);
       await load();
     } finally { setBusy(false); }
   }
@@ -43,7 +41,6 @@ export default function CategoriesPage() {
       <p style={{ color: '#666' }}>Upload a category name + tile image. Used in the B2C "Browse products" flow and the website category strip.</p>
       <form onSubmit={add} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: '#fafafa', padding: 16, borderRadius: 12, marginBottom: 20 }}>
         <input required placeholder="Category name" value={name} onChange={(e) => setName(e.target.value)} style={input} />
-        <input type="number" placeholder="Order" value={order} onChange={(e) => setOrder(e.target.value)} style={{ ...input, width: 90 }} />
         <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
         <button disabled={busy} style={btn}>Add</button>
       </form>
@@ -52,7 +49,6 @@ export default function CategoriesPage() {
           <div key={c._id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 14, textAlign: 'center' }}>
             {c.imageUrl && <img src={c.imageUrl} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8 }} />}
             <div style={{ fontWeight: 600, marginTop: 8 }}>{c.name}</div>
-            {typeof c.order === 'number' && <div style={{ fontSize: 12, color: '#888' }}>Order: {c.order}</div>}
             <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'center' }}>
               <button onClick={() => setEditing(c)} style={{ ...btn, background: '#111827', padding: '7px 12px' }}>Edit</button>
               <button onClick={() => remove(c._id)} style={{ ...btn, background: '#c0392b', padding: '7px 12px' }}>Delete</button>
@@ -74,7 +70,6 @@ export default function CategoriesPage() {
 
 function CategoryEditModal({ category, onClose, onSaved }) {
   const [name, setName] = useState(category.name || '');
-  const [order, setOrder] = useState(category.order ?? 0);
   const [active, setActive] = useState(category.active !== false);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -87,7 +82,6 @@ function CategoryEditModal({ category, onClose, onSaved }) {
     try {
       const fd = new FormData();
       fd.append('name', name);
-      fd.append('order', order);
       fd.append('active', active ? 'true' : 'false');
       if (file) fd.append('image', file);
       await api.putForm(`/catalog/categories/${category._id}`, fd);
@@ -120,9 +114,6 @@ function CategoryEditModal({ category, onClose, onSaved }) {
 
         <label style={lbl}>Name
           <input required value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
-        </label>
-        <label style={lbl}>Order
-          <input type="number" value={order} onChange={(e) => setOrder(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box' }} />
         </label>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '10px 0' }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (visible on site & flow)
