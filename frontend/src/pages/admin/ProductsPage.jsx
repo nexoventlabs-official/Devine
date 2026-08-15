@@ -20,23 +20,25 @@ function VariantsEditor({ variants, setVariants }) {
         <div style={{ fontSize: 12, color: '#b3b3b3' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price and image.</div>
       )}
       {variants.map((v, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
           {(v.imageFile || v.imageUrl) ? (
-            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #333' }} />
+            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #333', flexShrink: 0 }} />
           ) : (
-            <div style={{ width: 38, height: 38, borderRadius: 6, background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c' }}>img</div>
+            <div style={{ width: 38, height: 38, borderRadius: 6, background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c', flexShrink: 0 }}>img</div>
           )}
-          <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
-          <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
-            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-          <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
-          <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
-          <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
-            {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
-          </label>
-          <button type="button" onClick={() => del(i)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>✕</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', flex: 1, minWidth: 0 }}>
+            <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
+            <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
+              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
+            <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
+            <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
+              {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
+            </label>
+          </div>
+          <button type="button" onClick={() => del(i)} title="Remove variant" style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)', flexShrink: 0, alignSelf: 'center' }}>✕</button>
         </div>
       ))}
     </div>
