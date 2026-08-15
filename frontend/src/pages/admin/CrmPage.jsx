@@ -112,6 +112,55 @@ function FlowCard({ rich, isOut }) {
   );
 }
 
+// Outbound bot/agent message: image/doc header + body + reply/CTA/flow buttons.
+function BotCard({ rich }) {
+  const btnStyle = {
+    display: 'block', textAlign: 'center', padding: '7px 10px', fontSize: 13, fontWeight: 700,
+    color: '#8fd3ff', textDecoration: 'none', borderRadius: 6
+  };
+  const iconFor = (kind) => (kind === 'flow' ? '🧩 ' : kind === 'list' ? '☰ ' : kind === 'location' ? '📍 ' : kind === 'pay' ? '💳 ' : '🔘 ');
+  return (
+    <div style={{ minWidth: 220, maxWidth: 330 }}>
+      {rich.headerImageUrl && (
+        <img src={rich.headerImageUrl} alt="" style={{ width: '100%', borderRadius: 8, marginBottom: 8, display: 'block', maxHeight: 220, objectFit: 'cover' }} />
+      )}
+      {rich.headerDocName && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 10px', marginBottom: 8, fontSize: 12.5, fontWeight: 600 }}>
+          📄 {rich.headerDocName}
+        </div>
+      )}
+      {rich.body && (
+        <div style={{ fontSize: 14, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.45 }} dangerouslySetInnerHTML={{ __html: formatText(rich.body) }} />
+      )}
+      {rich.footer && <div style={{ fontSize: 11, opacity: 0.6, marginTop: 5 }}>{rich.footer}</div>}
+      {rich.listSections?.length > 0 && (
+        <div style={{ marginTop: 6 }}>
+          {rich.listSections.map((s, i) => (
+            <div key={i}>
+              {s.title && <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.65, marginTop: 6 }}>{s.title}</div>}
+              {s.rows.map((r, j) => <div key={j} style={{ fontSize: 12.5, opacity: 0.9 }}>• {r}</div>)}
+            </div>
+          ))}
+        </div>
+      )}
+      {(rich.buttons?.length > 0 || rich.cta) && (
+        <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 4, display: 'flex', flexDirection: 'column' }}>
+          {rich.cta && (
+            rich.cta.url
+              ? <a href={rich.cta.url} target="_blank" rel="noreferrer" style={btnStyle}>🔗 {rich.cta.text}</a>
+              : <div style={btnStyle}>🔗 {rich.cta.text}</div>
+          )}
+          {rich.buttons.map((b, i) => (
+            <div key={i} style={{ ...btnStyle, borderTop: (i > 0 || rich.cta) ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
+              {iconFor(b.kind)}{b.text}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---- main component --------------------------------------------------------
 
 export default function CrmPage() {
@@ -244,6 +293,7 @@ export default function CrmPage() {
                 if (rich?.kind === 'order') inner = <OrderCard rich={rich} isOut={false} />;
                 else if (rich?.kind === 'location') inner = <LocationCard rich={rich} isOut={false} />;
                 else if (rich?.kind === 'flow') inner = <FlowCard rich={rich} isOut={false} />;
+                else if (rich?.kind === 'bot') inner = <BotCard rich={rich} />;
                 else inner = <div style={{ fontSize: 14, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }} dangerouslySetInnerHTML={{ __html: formatText(m.body) }} />;
 
                 return (

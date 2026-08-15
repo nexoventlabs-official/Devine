@@ -5,6 +5,8 @@ import https from 'https';
 import FormData from 'form-data';
 import logger from './logger.js';
 import cloudinaryService from './cloudinary.js';
+import Message from '../models/Message.js';
+import { emitMessage } from './eventBus.js';
 
 const agent = new https.Agent({ keepAlive: true, maxSockets: 25, timeout: 60000 });
 const api = axios.create({
@@ -39,6 +41,85 @@ export function channelForPhoneNumberId(phoneNumberId) {
 }
 
 const clean = (phone) => String(phone || '').replace('@c.us', '').replace(/\D/g, '');
+
+// Describe an outgoing WhatsApp payload so the CRM can render it richly
+// (image/document header, reply buttons, CTA/flow buttons, list, etc.).
+function describeOutbound(payload) {
+  const type = payload.type;
+  const d = { type, body: '', headerImageUrl: '', headerDocName: '', headerText: '', footer: '', buttons: [], cta: null, flowCta: '', listSections: [] };
+
+  if (type === 'text') {
+    d.body = payload.text?.body || '';
+  } else if (type === 'image') {
+    d.headerImageUrl = payload.image?.link || '';
+    d.body = payload.image?.caption || '📷 Photo';
+  } else if (type === 'document') {
+    d.headerDocName = payload.document?.filename || 'Document';
+    d.body = payload.document?.caption || `📄 ${d.headerDocName}`;
+  } else if (type === 'template') {
+    d.body = `Template: ${payload.template?.name || ''}`;
+  } else if (type === 'interactive') {
+    const it = payload.interactive || {};
+    d.body = it.body?.text || '';
+    d.footer = it.footer?.text || '';
+    if (it.header?.type === 'image') d.headerImageUrl = it.header.image?.link || '';
+    if (it.header?.type === 'document') d.headerDocName = it.header.document?.filename || 'Document';
+    if (it.header?.type === 'text') d.headerText = it.header.text || '';
+
+    if (it.type === 'button') {
+      d.buttons = (it.action?.buttons || []).map((b) => ({ text: b.reply?.title || '', kind: 'reply' })).filter((b) => b.text);
+    } else if (it.type === 'list') {
+      d.buttons = [{ text: it.action?.button || 'Menu', kind: 'list' }];
+      d.listSections = (it.action?.sections || []).map((s) => ({ title: s.title || '', rows: (s.rows || []).map((r) => r.title) }));
+    } else if (it.type === 'cta_url') {
+      d.cta = { text: it.action?.parameters?.display_text || 'Open', url: it.action?.parameters?.url || '' };
+    } else if (it.type === 'flow') {
+      d.flowCta = it.action?.parameters?.flow_cta || 'Open';
+      d.buttons = [{ text: d.flowCta, kind: 'flow' }];
+      if (!d.body || d.body === ' ') d.body = d.headerText || '';
+    } else if (it.type === 'location_request_message') {
+      d.type = 'location_request';
+      d.buttons = [{ text: 'Send location', kind: 'location' }];
+    } else if (it.type === 'order_details') {
+      d.type = 'order_request';
+      d.body = d.body || '🧾 Payment request';
+      d.buttons = [{ text: 'Review and Pay', kind: 'pay' }];
+    } else if (it.type === 'order_status') {
+      d.type = 'order_status';
+    } else if (it.type === 'product_list' || it.type === 'product') {
+      d.type = 'catalog';
+      d.body = d.body || '🛍️ Catalog';
+    }
+  } else {
+    return null;
+  }
+
+  // Readable fallback for the thread preview list.
+  if (!d.body) d.body = d.flowCta || (d.buttons[0]?.text) || d.headerText || '';
+  return d;
+}
+
+// Persist an outbound bot/agent message to the CRM chat log (fire-and-forget).
+async function logOutbound(channel, payload, resData) {
+  try {
+    const d = describeOutbound(payload);
+    if (!d) return;
+    const phone = String(payload.to || '').replace(/\D/g, '');
+    if (!phone) return;
+    const doc = await Message.create({
+      channel,
+      phone,
+      direction: 'out',
+      type: d.type,
+      body: d.body,
+      raw: { outbound: d },
+      metaMessageId: resData?.messages?.[0]?.id
+    });
+    emitMessage(doc);
+  } catch (err) {
+    logger.warn('logOutbound failed', { error: err.message });
+  }
+}
 const squareUrl = (url) => cloudinaryService.getOptimizedUrl(url, '1:1');
 // Preserve the uploaded image's ratio (used for message/cta headers).
 const originalUrl = (url) => cloudinaryService.getOptimizedUrl(url, 'original');
@@ -55,7 +136,11 @@ export function getClient(channel) {
   const base = `${GRAPH()}/${cfg.phoneNumberId}`;
   const authHeaders = { Authorization: `Bearer ${cfg.token}` };
 
-  const post = (payload) => api.post(`${base}/messages`, payload, { headers: authHeaders });
+  const post = async (payload) => {
+    const res = await api.post(`${base}/messages`, payload, { headers: authHeaders });
+    logOutbound(channel, payload, res?.data); // fire-and-forget CRM log
+    return res;
+  };
 
   const client = {
     channel,

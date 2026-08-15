@@ -6,7 +6,6 @@ import DealerProfile from '../models/DealerProfile.js';
 import Conversation from '../models/Conversation.js';
 import Product from '../models/Product.js';
 import { getClient } from '../services/metaCloud.js';
-import { emitMessage } from '../services/eventBus.js';
 import { renderTemplate } from '../services/templates.js';
 import logger from '../services/logger.js';
 
@@ -21,12 +20,15 @@ router.get('/threads', auth, async (req, res) => {
     {
       $group: {
         _id: '$phone',
-        name: { $first: '$name' },
+        names: { $push: '$name' },
         lastBody: { $first: '$body' },
         lastAt: { $first: '$createdAt' },
         lastDirection: { $first: '$direction' }
       }
     },
+    // Prefer the most recent non-empty name (outbound bot messages have none).
+    { $addFields: { name: { $first: { $filter: { input: '$names', cond: { $ne: ['$$this', ''] } } } } } },
+    { $project: { names: 0 } },
     { $sort: { lastAt: -1 } },
     { $limit: 200 }
   ]);
@@ -64,7 +66,24 @@ router.get('/messages/:phone', auth, async (req, res) => {
 function buildRich(m, prodMap = {}) {
   const raw = m.raw || {};
 
-  if (m.type === 'order' && raw.order) {
+  // Outbound bot/agent message with an image/doc header, buttons, CTA or flow.
+  if (m.direction === 'out' && raw.outbound) {
+    const o = raw.outbound;
+    const hasRich = o.headerImageUrl || o.headerDocName || (o.buttons && o.buttons.length) || o.cta || o.flowCta || (o.listSections && o.listSections.length);
+    if (!hasRich) return null; // plain text -> normal bubble
+    return {
+      kind: 'bot',
+      headerImageUrl: o.headerImageUrl || '',
+      headerDocName: o.headerDocName || '',
+      body: o.body || m.body || '',
+      footer: o.footer || '',
+      buttons: o.buttons || [],
+      cta: o.cta || null,
+      listSections: o.listSections || []
+    };
+  }
+
+  if (m.direction === 'in' && m.type === 'order' && raw.order) {
     const order = raw.order;
     const items = (order.product_items || []).map((it) => {
       const rid = String(it.product_retailer_id || '');
@@ -90,7 +109,7 @@ function buildRich(m, prodMap = {}) {
     return { kind: 'order', items, total, currency, note: order.text || '', catalogId: order.catalog_id || '' };
   }
 
-  if (m.type === 'location' && raw.location) {
+  if (m.direction === 'in' && m.type === 'location' && raw.location) {
     const { latitude, longitude, name, address } = raw.location;
     const mapUrl = latitude != null && longitude != null
       ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
@@ -98,7 +117,7 @@ function buildRich(m, prodMap = {}) {
     return { kind: 'location', latitude, longitude, name: name || '', address: address || '', mapUrl };
   }
 
-  if (m.type === 'flow') {
+  if (m.direction === 'in' && m.type === 'flow') {
     let resp = {};
     try {
       const rj = raw?.interactive?.nfm_reply?.response_json;
@@ -127,13 +146,8 @@ router.post('/send', auth, async (req, res) => {
   try {
     const { channel = 'b2b', phone, body } = req.body;
     const wa = getClient(channel);
-    const result = await wa.sendText(phone, body);
-    const doc = await Message.create({
-      channel, phone, direction: 'out', type: 'text', body,
-      metaMessageId: result?.messages?.[0]?.id
-    });
-    emitMessage(doc);
-    res.json({ success: true, data: doc });
+    await wa.sendText(phone, body); // logged centrally by metaCloud outbound logger
+    res.json({ success: true });
   } catch (err) {
     logger.error('CRM send error', { error: err.message });
     res.status(500).json({ success: false, message: err.message });
@@ -203,8 +217,7 @@ router.post('/templates/:id/trigger', auth, async (req, res) => {
             await wa.sendText(r.phone, body);
           }
         }
-        await Message.create({ channel, phone: r.phone, name: r.name, direction: 'out', type: 'template', body });
-        sent++;
+        sent++; // outbound logged centrally by metaCloud
       } catch (err) {
         logger.warn('Template trigger send failed', { phone: r.phone, error: err.message });
       }

@@ -3,7 +3,6 @@ import Template from '../models/Template.js';
 import DealerProfile from '../models/DealerProfile.js';
 import { getClient } from './metaCloud.js';
 import { renderTemplate } from './templates.js';
-import Message from '../models/Message.js';
 import logger from './logger.js';
 
 // Send a stored template (by key) to one dealer.
@@ -26,7 +25,7 @@ async function sendTemplateTo(key, dealer, extraCtx = {}) {
     } else {
       await wa.sendText(dealer.phone, body);
     }
-    await Message.create({ channel: 'b2b', phone: dealer.phone, name: dealer.name, direction: 'out', type: 'template', body });
+    // Outbound logged centrally by metaCloud outbound logger.
   } catch (err) {
     logger.warn('Scheduled template send failed', { key, phone: dealer.phone, error: err.message });
   }
