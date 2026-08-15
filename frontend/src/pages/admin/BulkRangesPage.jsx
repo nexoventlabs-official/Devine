@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 // B2B bulk/wholesale ranges (name + MOQ + 1:1 tile image)
 export default function BulkRangesPage() {
   const [list, setList] = useState([]);
   const [editing, setEditing] = useState(null); // bulk range being edited (null = new)
   const [formOpen, setFormOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const res = await api.get('/catalog/bulk-ranges?all=1');
-    setList(res.data || []);
+    try {
+      const res = await api.get('/catalog/bulk-ranges?all=1');
+      setList(res.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -21,6 +25,8 @@ export default function BulkRangesPage() {
 
   const openNew = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (r) => { setEditing(r); setFormOpen(true); };
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>

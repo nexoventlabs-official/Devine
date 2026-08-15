@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 const STATUSES = ['confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered', 'cancelled'];
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const res = await api.get('/orders');
-    setOrders(res.data || []);
+    try {
+      const res = await api.get('/orders');
+      setOrders(res.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -21,6 +25,8 @@ export default function OrdersPage() {
     } catch (e) { alert(e.message); }
     setBusy('');
   }
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 // Curated keys used across WhatsApp flows.
 const FIELDS = [
@@ -64,6 +65,7 @@ export default function FlowImagesPage() {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all' | 'banners' | 'icons' | 'docs'
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     try {
@@ -73,7 +75,7 @@ export default function FlowImagesPage() {
       setAssets(map);
     } catch (e) {
       console.error(e);
-    }
+    } finally { setLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
@@ -112,6 +114,8 @@ export default function FlowImagesPage() {
     }
     setBusy('');
   }
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', maxWidth: 1200, margin: '0 auto', color: '#ffffff' }}>

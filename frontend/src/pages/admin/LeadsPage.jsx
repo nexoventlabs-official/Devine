@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../../adminApi';
 import { SERVER_ORIGIN, ADMIN_TOKEN_KEY } from '../../config';
+import Loader from './Loader';
 
 const TYPE_LABEL = {
   dealer: 'Dealer', bulk: 'Bulk/Wholesale', gifting: 'Corporate Gifting',
@@ -25,12 +26,15 @@ function beep() {
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [channel, setChannel] = useState('');
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const esRef = useRef(null);
 
   async function load() {
-    const res = await api.get(`/leads${channel ? `?channel=${channel}` : ''}`);
-    setLeads(res.data || []);
+    try {
+      const res = await api.get(`/leads${channel ? `?channel=${channel}` : ''}`);
+      setLeads(res.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, [channel]);
 
@@ -49,6 +53,8 @@ export default function LeadsPage() {
     es.onerror = () => {};
     return () => es.close();
   }, []);
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>

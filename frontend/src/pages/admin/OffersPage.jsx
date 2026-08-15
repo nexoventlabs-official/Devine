@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 // Admin offers: pick products, set a B2C and/or B2B discount.
 export default function OffersPage() {
@@ -8,10 +9,14 @@ export default function OffersPage() {
   const [editing, setEditing] = useState(null); // offer being edited (null = none)
   const [creating, setCreating] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   async function load() {
-    const [o, p] = await Promise.all([api.get('/catalog/offers'), api.get('/products?all=1')]);
-    setOffers(o.data || []);
-    setProducts(p.data || []);
+    try {
+      const [o, p] = await Promise.all([api.get('/catalog/offers'), api.get('/products?all=1')]);
+      setOffers(o.data || []);
+      setProducts(p.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -22,6 +27,8 @@ export default function OffersPage() {
   }
 
   const fmtRule = (r) => (r?.enabled ? (r.type === 'flat' ? `₹${r.value} off` : `${r.value}% off`) : '—');
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>

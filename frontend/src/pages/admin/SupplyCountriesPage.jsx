@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 // Export supply countries (country name, logo, order)
 export default function SupplyCountriesPage() {
   const [list, setList] = useState([]);
   const [editing, setEditing] = useState(null); // country being edited (null = new)
   const [formOpen, setFormOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const res = await api.get('/catalog/supply-countries?all=1');
-    setList(res.data || []);
+    try {
+      const res = await api.get('/catalog/supply-countries?all=1');
+      setList(res.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -21,6 +25,8 @@ export default function SupplyCountriesPage() {
 
   const openNew = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (c) => { setEditing(c); setFormOpen(true); };
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>

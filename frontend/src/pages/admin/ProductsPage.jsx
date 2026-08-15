@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
+import Loader from './Loader';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
@@ -50,11 +51,14 @@ export default function ProductsAdminPage() {
   const [scheduleFor, setScheduleFor] = useState(null); // product being scheduled
   const [editing, setEditing] = useState(null); // product being edited (null = create)
   const [formOpen, setFormOpen] = useState(false); // add/edit modal open
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [p, c] = await Promise.all([api.get('/products?all=1'), api.get('/catalog/categories?all=1')]);
-    setProducts(p.data || []);
-    setCategories(c.data || []);
+    try {
+      const [p, c] = await Promise.all([api.get('/products?all=1'), api.get('/catalog/categories?all=1')]);
+      setProducts(p.data || []);
+      setCategories(c.data || []);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -81,6 +85,8 @@ export default function ProductsAdminPage() {
 
   const openNew = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (p) => { setEditing(p); setFormOpen(true); };
+
+  if (loading) return <Loader />;
 
   return (
     <div style={{ padding: 28, fontFamily: 'SpotifyMixUI, Inter, sans-serif', color: '#ffffff' }}>
