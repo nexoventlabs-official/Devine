@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
 import Loader from './Loader';
+import { EditIcon, TrashIcon, CalendarIcon, BoxIcon, IconBtn, ConfirmModal } from './adminUi';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
@@ -51,6 +52,7 @@ export default function ProductsAdminPage() {
   const [msg, setMsg] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [scheduleFor, setScheduleFor] = useState(null); // product being scheduled
+  const [availFor, setAvailFor] = useState(null); // product for availability modal
   const [editing, setEditing] = useState(null); // product being edited (null = create)
   const [formOpen, setFormOpen] = useState(false); // add/edit modal open
   const [loading, setLoading] = useState(true);
@@ -63,17 +65,6 @@ export default function ProductsAdminPage() {
     } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
-
-  async function remove(id) {
-    if (!confirm('Delete this product? It will also be removed from the catalog.')) return;
-    await api.del(`/products/${id}`);
-    await load();
-  }
-
-  async function togglePaused(p) {
-    await api.patch(`/products/${p._id}/availability`, { isPaused: !p.isPaused });
-    await load();
-  }
 
   async function syncCatalog() {
     setSyncing(true);
@@ -106,29 +97,41 @@ export default function ProductsAdminPage() {
       </div>
       {msg && <div style={{ background: 'rgba(30, 215, 96, 0.15)', color: '#1ed760', border: '1px solid rgba(30, 215, 96, 0.3)', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 14 }}>{msg}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 18, marginTop: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 20, marginTop: 16 }}>
         {products.map((p) => {
           const outOfStock = p.isPaused || p.inStock === false || p.active === false;
+          const scheduled = !!p.soldOutSchedule?.enabled;
           return (
-            <div key={p._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 12, opacity: outOfStock ? 0.65 : 1, transition: 'background 0.2s ease', boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
-              <div style={{ width: '100%', height: 160, background: '#ffffff', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, position: 'relative', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+            <div key={p._id}
+              style={{ background: '#181818', border: '1px solid #282828', borderRadius: 14, overflow: 'hidden', transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease', boxShadow: 'rgba(0,0,0,0.35) 0px 6px 16px' }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.5) 0px 12px 28px'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = '#282828'; e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.35) 0px 6px 16px'; }}
+            >
+              {/* Image (1:1) with overlays */}
+              <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#ffffff' }}>
                 {p.imageUrl ? (
-                  <img
-                    src={p.imageUrl}
-                    alt={p.name}
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                    }}
+                  <img src={p.imageUrl} alt={p.name}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 12, boxSizing: 'border-box', opacity: outOfStock ? 0.55 : 1 }}
+                    onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
                   />
                 ) : null}
-                <div style={{ display: p.imageUrl ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>
-                  <span>No Image</span>
+                <div style={{ display: p.imageUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>No Image</div>
+
+                {/* Status badge (top-left) */}
+                <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 9999, textTransform: 'uppercase', letterSpacing: '0.8px', background: outOfStock ? 'rgba(243,114,127,0.92)' : 'rgba(30,215,96,0.92)', color: '#0a0a0a', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
+                  {outOfStock ? 'Out of stock' : 'In stock'}
+                </span>
+
+                {/* Edit + Schedule icons (top-right) */}
+                <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
+                  <IconBtn icon={<EditIcon size={15} color="#ffffff" />} title="Edit product" onClick={() => openEdit(p)} />
+                  <IconBtn icon={<CalendarIcon size={15} color={scheduled ? '#1ed760' : '#ffffff'} />} title="Schedule availability" onClick={() => setScheduleFor(p)} />
                 </div>
               </div>
+
+              {/* Details */}
               <div style={{ padding: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#ffffff' }}>{p.name}</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                 <div style={{ color: '#b3b3b3', fontSize: 13, marginTop: 2 }}>{p.category}</div>
                 <div style={{ marginTop: 8, fontWeight: 700, fontSize: 15, color: '#1ed760' }}>
                   ₹{p.price} {p.dealerPrice ? <span style={{ color: '#b3b3b3', fontSize: 12, fontWeight: 400 }}>| Dealer ₹{p.dealerPrice}</span> : ''}
@@ -138,23 +141,16 @@ export default function ProductsAdminPage() {
                     {p.variants.map((v) => v.label || `${v.quantity}${v.unit}`).join(' · ')}
                   </div>
                 )}
-                <div style={{ marginTop: 6, fontSize: 12, color: '#ffa42b' }}>
-                  Rating: {(p.avgRating || p.rating || 0).toFixed ? (p.avgRating || p.rating || 0).toFixed(1) : (p.avgRating || p.rating || 0)} ({p.totalRatings || p.reviewCount || 0})
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#ffa42b' }}>
+                  <span>★ {(p.avgRating || p.rating || 0).toFixed ? (p.avgRating || p.rating || 0).toFixed(1) : (p.avgRating || p.rating || 0)} ({p.totalRatings || p.reviewCount || 0})</span>
+                  {scheduled && <span style={{ color: '#539df5' }}>· Scheduled</span>}
                 </div>
-                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, textTransform: 'uppercase', letterSpacing: '1px', background: outOfStock ? 'rgba(243, 114, 127, 0.15)' : 'rgba(30, 215, 96, 0.15)', color: outOfStock ? '#f3727f' : '#1ed760', border: outOfStock ? '1px solid rgba(243, 114, 127, 0.3)' : '1px solid rgba(30, 215, 96, 0.3)' }}>
-                    {outOfStock ? 'OUT OF STOCK' : 'IN STOCK'}
-                  </span>
-                  {p.soldOutSchedule?.enabled && <span style={{ fontSize: 11, color: '#b3b3b3' }}>Scheduled</span>}
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-                  <button onClick={() => openEdit(p)} style={{ ...miniBtn, background: '#282828', color: '#ffffff' }}>Edit</button>
-                  <button onClick={() => togglePaused(p)} style={{ ...miniBtn, background: p.isPaused ? '#1ed760' : '#ffa42b', color: p.isPaused ? '#000' : '#000' }}>
-                    {p.isPaused ? 'In Stock' : 'Out of Stock'}
-                  </button>
-                  <button onClick={() => setScheduleFor(p)} style={{ ...miniBtn, background: '#1f1f1f', color: '#539df5', border: '1px solid rgba(83,157,245,0.4)' }}>Schedule</button>
-                  <button onClick={() => remove(p._id)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)' }}>Delete</button>
-                </div>
+
+                {/* Availability button */}
+                <button onClick={() => setAvailFor(p)}
+                  style={{ marginTop: 14, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '9px 12px', borderRadius: 9999, cursor: 'pointer', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', border: `1px solid ${outOfStock ? 'rgba(243,114,127,0.4)' : 'rgba(30,215,96,0.4)'}`, background: outOfStock ? 'rgba(243,114,127,0.12)' : 'rgba(30,215,96,0.12)', color: outOfStock ? '#f3727f' : '#1ed760' }}>
+                  <BoxIcon size={15} /> Availability
+                </button>
               </div>
             </div>
           );
@@ -165,14 +161,61 @@ export default function ProductsAdminPage() {
         <ScheduleModal product={scheduleFor} onClose={() => setScheduleFor(null)} onSaved={() => { setScheduleFor(null); load(); }} />
       )}
 
+      {availFor && (
+        <AvailabilityModal product={availFor} onClose={() => setAvailFor(null)} onSaved={() => { setAvailFor(null); load(); }} />
+      )}
+
       {formOpen && (
         <ProductFormModal
           product={editing}
           categories={categories}
           onClose={() => setFormOpen(false)}
           onSaved={() => { setFormOpen(false); load(); }}
+          onDeleted={() => { setFormOpen(false); load(); }}
         />
       )}
+    </div>
+  );
+}
+
+// Availability popup — set a product In Stock / Out of Stock.
+function AvailabilityModal({ product, onClose, onSaved }) {
+  const [busy, setBusy] = useState(false);
+  const paused = !!product.isPaused;
+  async function set(val) {
+    setBusy(true);
+    try {
+      await api.patch(`/products/${product._id}/availability`, { isPaused: val });
+      onSaved();
+    } catch (e) { alert(e.message || 'Failed'); setBusy(false); }
+  }
+  const optionStyle = (activeSel, accent) => ({
+    display: 'flex', alignItems: 'center', gap: 12, width: '100%', boxSizing: 'border-box', textAlign: 'left',
+    padding: '14px 16px', borderRadius: 12, cursor: busy ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700,
+    background: activeSel ? `${accent}22` : '#181818', color: '#ffffff',
+    border: `1px solid ${activeSel ? accent : '#333'}`
+  });
+  return (
+    <div style={overlay} onClick={onClose}>
+      <div style={{ ...modal, width: 'min(440px, 92vw)' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>Availability</h3>
+          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+        </div>
+        <p style={{ margin: '0 0 18px', color: '#b3b3b3', fontSize: 13 }}>{product.name}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button type="button" disabled={busy} onClick={() => set(false)} style={optionStyle(!paused, '#1ed760')}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#1ed760', flexShrink: 0 }} />
+            In Stock — available to order
+            {!paused && <span style={{ marginLeft: 'auto', color: '#1ed760' }}>✓</span>}
+          </button>
+          <button type="button" disabled={busy} onClick={() => set(true)} style={optionStyle(paused, '#f3727f')}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f3727f', flexShrink: 0 }} />
+            Out of Stock — hidden from ordering
+            {paused && <span style={{ marginLeft: 'auto', color: '#f3727f' }}>✓</span>}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -245,8 +288,18 @@ function CategorySelect({ categories, value, onChange }) {
   );
 }
 
-function ProductFormModal({ product, categories, onClose, onSaved }) {
+function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) {
   const isEdit = !!product;
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function doDelete() {
+    setDeleting(true);
+    try {
+      await api.del(`/products/${product._id}`);
+      onDeleted ? onDeleted() : onClose();
+    } catch (e) { alert(e.message || 'Delete failed'); setDeleting(false); setConfirmDel(false); }
+  }
   const [form, setForm] = useState({
     name: product?.name || '',
     category: product?.category || '',
@@ -299,8 +352,26 @@ function ProductFormModal({ product, categories, onClose, onSaved }) {
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? `Edit Product — ${product.name}` : 'Add Product'}</h3>
-          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {isEdit && (
+              <button type="button" title="Delete product" onClick={() => setConfirmDel(true)}
+                style={{ background: 'rgba(243,114,127,0.14)', border: '1px solid rgba(243,114,127,0.4)', color: '#f3727f', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrashIcon size={15} color="#f3727f" />
+              </button>
+            )}
+            <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+          </div>
         </div>
+        {confirmDel && (
+          <ConfirmModal
+            title="Delete this product?"
+            message={`"${product.name}" will be permanently removed from the site and the WhatsApp catalog. This can't be undone.`}
+            confirmText="Delete Product"
+            busy={deleting}
+            onConfirm={doDelete}
+            onCancel={() => setConfirmDel(false)}
+          />
+        )}
         {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{err}</div>}
 
         <div style={{ marginBottom: 16 }}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../adminApi';
 import Loader from './Loader';
+import { EditIcon, TrashIcon, IconBtn, ConfirmModal } from './adminUi';
 
 // B2C browse categories (name + tile image)
 export default function CategoriesPage() {
@@ -17,12 +18,6 @@ export default function CategoriesPage() {
   }
   useEffect(() => { load(); }, []);
 
-  async function remove(id) {
-    if (!confirm('Delete category?')) return;
-    await api.del(`/catalog/categories/${id}`);
-    await load();
-  }
-
   const openNew = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (c) => { setEditing(c); setFormOpen(true); };
 
@@ -38,31 +33,29 @@ export default function CategoriesPage() {
         <button onClick={openNew} style={btn}>+ Add Category</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 18, marginTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 20, marginTop: 10 }}>
         {list.map((c) => (
-          <div key={c._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 14, textAlign: 'center', opacity: c.active === false ? 0.6 : 1, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px', transition: 'transform 0.2s ease, background 0.2s ease' }}>
-            <div style={{ width: '100%', height: 140, background: '#ffffff', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, position: 'relative', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+          <div key={c._id}
+            style={{ background: '#181818', border: '1px solid #282828', borderRadius: 14, overflow: 'hidden', opacity: c.active === false ? 0.6 : 1, boxShadow: 'rgba(0,0,0,0.35) 0px 6px 16px', transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3a3a3a'; e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.5) 0px 12px 28px'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = '#282828'; e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.35) 0px 6px 16px'; }}
+          >
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#ffffff' }}>
               {c.imageUrl ? (
-                <img
-                  src={c.imageUrl}
-                  alt={c.name}
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                  }}
+                <img src={c.imageUrl} alt={c.name}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 12, boxSizing: 'border-box' }}
+                  onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
                 />
               ) : null}
-              <div style={{ display: c.imageUrl ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>
-                <span>No Image</span>
+              <div style={{ display: c.imageUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c7c7c', fontSize: 12, fontWeight: 600, background: '#252525', position: 'absolute', inset: 0 }}>No Image</div>
+              {c.active === false && (
+                <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 9999, textTransform: 'uppercase', letterSpacing: '0.8px', background: 'rgba(243,114,127,0.92)', color: '#0a0a0a' }}>Inactive</span>
+              )}
+              <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                <IconBtn icon={<EditIcon size={15} color="#ffffff" />} title="Edit category" onClick={() => openEdit(c)} />
               </div>
             </div>
-            <div style={{ fontWeight: 700, marginTop: 12, fontSize: 15, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-            {c.active === false && <div style={{ fontSize: 11, color: '#f3727f', marginTop: 2, fontWeight: 600 }}>Inactive</div>}
-            <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'center' }}>
-              <button onClick={() => openEdit(c)} style={{ ...miniBtn, background: '#282828', color: '#ffffff', flex: 1 }}>Edit</button>
-              <button onClick={() => remove(c._id)} style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)', flex: 1 }}>Delete</button>
-            </div>
+            <div style={{ padding: '12px 14px', fontWeight: 700, fontSize: 15, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
           </div>
         ))}
         {list.length === 0 && <div style={{ color: '#b3b3b3', fontSize: 14 }}>No categories yet. Click "+ Add Category" above.</div>}
@@ -73,19 +66,30 @@ export default function CategoriesPage() {
           category={editing}
           onClose={() => setFormOpen(false)}
           onSaved={() => { setFormOpen(false); load(); }}
+          onDeleted={() => { setFormOpen(false); load(); }}
         />
       )}
     </div>
   );
 }
 
-function CategoryModal({ category, onClose, onSaved }) {
+function CategoryModal({ category, onClose, onSaved, onDeleted }) {
   const isEdit = !!category;
   const [name, setName] = useState(category?.name || '');
   const [active, setActive] = useState(category?.active !== false);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function doDelete() {
+    setDeleting(true);
+    try {
+      await api.del(`/catalog/categories/${category._id}`);
+      onDeleted ? onDeleted() : onClose();
+    } catch (e) { setErr(e.message || 'Delete failed'); setDeleting(false); setConfirmDel(false); }
+  }
 
   async function save(e) {
     e.preventDefault();
@@ -110,8 +114,26 @@ function CategoryModal({ category, onClose, onSaved }) {
       <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? 'Edit Category' : 'Add New Category'}</h3>
-          <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {isEdit && (
+              <button type="button" title="Delete category" onClick={() => setConfirmDel(true)}
+                style={{ background: 'rgba(243,114,127,0.14)', border: '1px solid rgba(243,114,127,0.4)', color: '#f3727f', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrashIcon size={15} color="#f3727f" />
+              </button>
+            )}
+            <button type="button" onClick={onClose} style={{ background: '#282828', border: 0, color: '#b3b3b3', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>✕</button>
+          </div>
         </div>
+        {confirmDel && (
+          <ConfirmModal
+            title="Delete this category?"
+            message={`"${category.name}" will be removed from the storefront and WhatsApp catalog. This can't be undone.`}
+            confirmText="Delete Category"
+            busy={deleting}
+            onConfirm={doDelete}
+            onCancel={() => setConfirmDel(false)}
+          />
+        )}
         {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{err}</div>}
 
         <div style={{ marginBottom: 16 }}>
