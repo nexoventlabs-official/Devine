@@ -11,6 +11,7 @@ import Lead from '../models/Lead.js';
 import { emitOrder, emitLead } from './eventBus.js';
 import { genOrderId } from './ids.js';
 import catalogService from './catalogService.js';
+import { offerForProduct, b2cPricing } from './offers.js';
 import logger from './logger.js';
 
 const CH = 'b2c';
@@ -366,20 +367,25 @@ async function showCategoryProducts(phone, slug) {
 }
 
 // Resolve a catalog retailer id (base OR variant `base__vN`) to a cart line.
+// Applies any live B2C offer so the cart/payment uses the discounted price
+// (must match what the site + WhatsApp catalog show).
 async function resolveCatalogItem(retailerId) {
   const m = String(retailerId).match(/^(.*)__v(\d+)$/);
+  const baseId = m ? m[1] : retailerId;
+  const p = await Product.findOne({ retailerId: baseId }).lean();
+  if (!p) return null;
+  const offer = await offerForProduct(p._id).catch(() => null);
+  const effective = (base) => b2cPricing(base, offer).offer || base;
+
   if (m) {
-    const p = await Product.findOne({ retailerId: m[1] }).lean();
-    if (!p) return null;
     const v = (p.variants || [])[Number(m[2])];
     if (v) {
       const label = v.label || `${v.quantity || ''} ${v.unit || ''}`.trim();
-      return { retailerId, name: `${p.name} - ${label}`, price: v.price || p.price, imageUrl: v.imageUrl || p.imageUrl };
+      const list = v.price || p.price;
+      return { retailerId, name: `${p.name} - ${label}`, price: effective(list), imageUrl: v.imageUrl || p.imageUrl };
     }
-    return { retailerId: p.retailerId, name: p.name, price: p.price, imageUrl: p.imageUrl };
   }
-  const p = await Product.findOne({ retailerId }).lean();
-  return p ? { retailerId: p.retailerId, name: p.name, price: p.price, imageUrl: p.imageUrl } : null;
+  return { retailerId: p.retailerId, name: p.name, price: effective(p.price), imageUrl: p.imageUrl };
 }
 
 async function addToCart(phone, retailerId) {
