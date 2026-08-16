@@ -443,6 +443,18 @@ export function getClient(channel) {
       };
       if (!hasImages && process.env.META_CATALOG_ID) order.catalog_id = process.env.META_CATALOG_ID;
 
+      // Payment provider block. For a Razorpay gateway configuration (created in
+      // WhatsApp Manager > Payment configurations), Meta requires the nested
+      // `razorpay: { receipt, notes }` object in addition to configuration_name.
+      const gatewayType = process.env.WHATSAPP_PAYMENT_GATEWAY_TYPE || 'razorpay';
+      const paymentGateway = { type: gatewayType, configuration_name: paymentConfig };
+      if (gatewayType === 'razorpay') {
+        paymentGateway.razorpay = {
+          receipt: `dev_${String(referenceId).slice(-12)}`,
+          notes: { reference_id: String(referenceId) }
+        };
+      }
+
       const payload = {
         messaging_product: 'whatsapp',
         to: clean(phone),
@@ -457,11 +469,7 @@ export function getClient(channel) {
             parameters: {
               reference_id: referenceId,
               type: 'physical-goods',
-              // Provider type is env-driven: 'razorpay'/'payu'/... for a gateway config,
-              // or 'upi_vpa' for a direct UPI VPA configuration.
-              payment_settings: [
-                { type: 'payment_gateway', payment_gateway: { type: process.env.WHATSAPP_PAYMENT_GATEWAY_TYPE || 'razorpay', configuration_name: paymentConfig } }
-              ],
+              payment_settings: [{ type: 'payment_gateway', payment_gateway: paymentGateway }],
               currency: 'INR',
               total_amount: { value: toPaise(totalAmount), offset: 100 },
               order
@@ -475,7 +483,6 @@ export function getClient(channel) {
 
     // Confirm/cancel payment outcome to the customer (order_status).
     async sendOrderStatusUpdate(phone, referenceId, status, description = '') {
-      const paymentConfig = process.env.WHATSAPP_PAYMENT_CONFIG;
       const payload = {
         messaging_product: 'whatsapp',
         to: clean(phone),
@@ -485,7 +492,7 @@ export function getClient(channel) {
           body: { text: description || (status === 'completed' ? '✅ Payment received! Order confirmed.' : `Order status: ${status}`) },
           action: {
             name: 'review_order',
-            parameters: { reference_id: referenceId, order: { status, description: description || `Order ${status}` }, payment_configuration: paymentConfig }
+            parameters: { reference_id: referenceId, order: { status, description: description || `Order ${status}` } }
           }
         }
       };
