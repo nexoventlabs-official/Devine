@@ -152,10 +152,28 @@ function OfferModal({ offer, products, onClose, onSaved }) {
         <input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 10 }} />
         <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #282828', borderRadius: 8, background: '#181818' }}>
           {filtered.map((p) => (
-            <label key={p._id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #252525', cursor: 'pointer', color: '#ffffff', fontSize: 13 }}>
-              <input type="checkbox" checked={selected.has(p._id)} onChange={() => toggle(p._id)} />
-              <span style={{ flex: 1, fontWeight: 600 }}>{p.name}</span>
-              <span style={{ color: '#b3b3b3', fontSize: 12 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
+            <label key={p._id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderBottom: '1px solid #252525', cursor: 'pointer', color: '#ffffff', fontSize: 13 }}>
+              <input type="checkbox" checked={selected.has(p._id)} onChange={() => toggle(p._id)} style={{ marginTop: 13, accentColor: '#1ed760' }} />
+              <div style={{ width: 40, height: 40, borderRadius: 6, background: '#ffffff', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3 }}>
+                {p.imageUrl
+                  ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                  : <span style={{ fontSize: 9, color: '#7c7c7c' }}>Item</span>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontWeight: 600 }}>{p.name}</span>
+                  <span style={{ color: '#b3b3b3', fontSize: 12, flexShrink: 0 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
+                </div>
+                {p.variants?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {p.variants.map((v, i) => (
+                      <span key={i} style={{ fontSize: 11, color: '#b3b3b3', background: '#252525', borderRadius: 6, padding: '2px 8px' }}>
+                        {v.label || `${v.quantity}${v.unit}`} · ₹{v.price}{v.dealerPrice ? ` / D₹${v.dealerPrice}` : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </label>
           ))}
           {filtered.length === 0 && <div style={{ padding: 12, color: '#b3b3b3', fontSize: 13 }}>No products found.</div>}

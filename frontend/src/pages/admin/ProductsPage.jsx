@@ -156,8 +156,27 @@ export default function ProductsAdminPage() {
                   </div>
                 )}
                 {p.variants?.length > 0 && (
-                  <div style={{ fontSize: 12, color: '#539df5', marginTop: 4 }}>
-                    {p.variants.map((v) => v.label || `${v.quantity}${v.unit}`).join(' · ')}
+                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #282828', paddingTop: 10 }}>
+                    {p.variants.map((v, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                        {v.imageUrl
+                          ? <img src={v.imageUrl} alt="" style={{ width: 26, height: 26, borderRadius: 5, objectFit: 'cover', background: '#fff', flexShrink: 0 }} />
+                          : <span style={{ width: 26, height: 26, borderRadius: 5, background: '#333', flexShrink: 0 }} />}
+                        <span style={{ color: '#e0e0e0', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.label || `${v.quantity}${v.unit}`}</span>
+                        <span style={{ color: '#1ed760', fontWeight: 700, flexShrink: 0 }}>
+                          {v.offerPrice ? (
+                            <><span style={{ color: '#7c7c7c', textDecoration: 'line-through', fontWeight: 400, marginRight: 4 }}>₹{v.price}</span>₹{v.offerPrice}</>
+                          ) : (<>₹{v.price}</>)}
+                        </span>
+                        {v.dealerPrice ? (
+                          <span style={{ color: '#b3b3b3', fontSize: 11, flexShrink: 0 }}>
+                            {v.dealerOfferPrice ? (
+                              <>· D <span style={{ textDecoration: 'line-through', marginRight: 3 }}>₹{v.dealerPrice}</span>₹{v.dealerOfferPrice}</>
+                            ) : (<>· D ₹{v.dealerPrice}</>)}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#ffa42b' }}>
