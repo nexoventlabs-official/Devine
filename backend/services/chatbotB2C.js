@@ -517,7 +517,15 @@ async function finishOrder(phone, convo, location) {
   const cart = convo.context?.cart || [];
   if (!cart.length) return sendWelcome(phone);
   const itemsTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryCharge = itemsTotal >= 500 ? 0 : 40;
+
+  // Delivery charge is per-product (set in admin). For a mixed cart we charge the
+  // highest delivery fee among the ordered products once (0 = free delivery).
+  const baseIds = [...new Set(cart.map((i) => String(i.retailerId || '').split('__v')[0]).filter(Boolean))];
+  let deliveryCharge = 0;
+  if (baseIds.length) {
+    const prods = await Product.find({ retailerId: { $in: baseIds } }).select('retailerId deliveryCharge').lean();
+    deliveryCharge = prods.reduce((m, p) => Math.max(m, Number(p.deliveryCharge) || 0), 0);
+  }
   const orderId = genOrderId('DVN-B2C');
   const trackId = genOrderId('TRK');
   const expected = new Date(Date.now() + 3 * 24 * 3600 * 1000);

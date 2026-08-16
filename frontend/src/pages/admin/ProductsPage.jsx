@@ -309,8 +309,10 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
     dealerPrice: product?.dealerPrice ?? '',
     margin: product?.margin || '',
     moq: product?.moq || '',
+    deliveryCharge: product?.deliveryCharge ?? '',
     badges: (product?.badges || []).join(', ')
   });
+  const [chargeDelivery, setChargeDelivery] = useState((product?.deliveryCharge || 0) > 0);
   const [variants, setVariants] = useState(
     (product?.variants || []).map((v) => ({
       quantity: v.quantity ?? '',
@@ -334,6 +336,8 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      // Delivery charge only applies when the Shipping checkbox is on; else 0.
+      fd.set('deliveryCharge', chargeDelivery ? (Number(form.deliveryCharge) || 0) : 0);
       const variantsPayload = variants.map(({ imageFile, ...v }) => v);
       fd.append('variants', JSON.stringify(variantsPayload));
       variants.forEach((v, i) => { if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile); });
@@ -428,6 +432,23 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
         </div>
         <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
         <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={3} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} />
+
+        {/* Delivery / shipping charge */}
+        <div style={{ marginTop: 12, background: '#181818', border: '1px solid #333', borderRadius: 12, padding: '12px 14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: '#ffffff' }}>
+            <input type="checkbox" checked={chargeDelivery} onChange={(e) => setChargeDelivery(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#1ed760', cursor: 'pointer' }} />
+            Shipping (Delivery) — charge a delivery fee for this product
+          </label>
+          {chargeDelivery ? (
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#b3b3b3', fontSize: 13 }}>Delivery charge (₹)</span>
+              <input type="number" min="0" placeholder="e.g. 40" value={form.deliveryCharge} onChange={set('deliveryCharge')} style={{ ...input, width: 150 }} />
+            </div>
+          ) : (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#7c7c7c' }}>Free delivery (₹0) for this product.</div>
+          )}
+        </div>
+
         <div style={{ marginTop: 14 }}>
           <VariantsEditor variants={variants} setVariants={setVariants} />
         </div>

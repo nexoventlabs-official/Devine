@@ -151,6 +151,7 @@ router.post('/', auth, upload.any(), async (req, res) => {
       margin: b.margin || '',
       moq: b.moq || '',
       unit: b.unit || 'unit',
+      deliveryCharge: Number(b.deliveryCharge) || 0,
       variants: await buildVariants(b.variants, req.files),
       imageUrl,
       rating: Number(b.rating) || 4.5,
@@ -192,8 +193,8 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
       oldImageUrl = existing?.imageUrl || null;
       update.imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
-    ['price', 'mrp', 'dealerPrice', 'rating'].forEach((k) => {
-      if (update[k] !== undefined) update[k] = Number(update[k]);
+    ['price', 'mrp', 'dealerPrice', 'rating', 'deliveryCharge'].forEach((k) => {
+      if (update[k] !== undefined) update[k] = Number(update[k]) || 0;
     });
 
     let staleVariantImages = [];
