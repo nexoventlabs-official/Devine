@@ -133,9 +133,28 @@ export default function ProductsAdminPage() {
               <div style={{ padding: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 16, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                 <div style={{ color: '#b3b3b3', fontSize: 13, marginTop: 2 }}>{p.category}</div>
-                <div style={{ marginTop: 8, fontWeight: 700, fontSize: 15, color: '#1ed760' }}>
-                  ₹{p.price} {p.dealerPrice ? <span style={{ color: '#b3b3b3', fontSize: 12, fontWeight: 400 }}>| Dealer ₹{p.dealerPrice}</span> : ''}
+                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: '#1ed760' }}>
+                    {p.offerPrice ? (
+                      <><span style={{ color: '#7c7c7c', textDecoration: 'line-through', fontWeight: 400, fontSize: 13, marginRight: 6 }}>₹{p.price}</span>₹{p.offerPrice}</>
+                    ) : (<>₹{p.price}</>)}
+                  </span>
+                  {p.dealerPrice ? (
+                    <span style={{ fontSize: 12, color: '#b3b3b3' }}>
+                      | Dealer{' '}
+                      {p.dealerOfferPrice ? (
+                        <><span style={{ textDecoration: 'line-through', marginRight: 4 }}>₹{p.dealerPrice}</span><span style={{ color: '#1ed760', fontWeight: 700 }}>₹{p.dealerOfferPrice}</span></>
+                      ) : (<>₹{p.dealerPrice}</>)}
+                    </span>
+                  ) : null}
                 </div>
+                {(p.offerPrice || p.dealerOfferPrice) && p.offerTitle && (
+                  <div style={{ marginTop: 6 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 9999, background: 'rgba(255,164,43,0.15)', color: '#ffa42b', border: '1px solid rgba(255,164,43,0.35)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      🏷 {p.offerTitle}
+                    </span>
+                  </div>
+                )}
                 {p.variants?.length > 0 && (
                   <div style={{ fontSize: 12, color: '#539df5', marginTop: 4 }}>
                     {p.variants.map((v) => v.label || `${v.quantity}${v.unit}`).join(' · ')}

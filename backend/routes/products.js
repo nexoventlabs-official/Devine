@@ -7,7 +7,7 @@ import { getClient } from '../services/metaCloud.js';
 import { genOrderId } from '../services/ids.js';
 import DealerProfile from '../models/DealerProfile.js';
 import catalogService from '../services/catalogService.js';
-import { buildOfferIndex, offerForProduct, b2cPricing } from '../services/offers.js';
+import { buildOfferIndex, offerForProduct, b2cPricing, b2bPricing } from '../services/offers.js';
 import logger from '../services/logger.js';
 
 const router = express.Router();
@@ -15,8 +15,19 @@ const router = express.Router();
 // Attach B2C offer pricing to a lean product: offerPrice (base) + per-variant offerPrice.
 function withOffer(p, offer) {
   const base = b2cPricing(p.price, offer);
-  const variants = (p.variants || []).map((v) => ({ ...v, offerPrice: b2cPricing(v.price || p.price, offer).offer }));
-  return { ...p, offerPrice: base.offer, offerTitle: base.offer ? (offer?.title || 'Special Offer') : null, variants };
+  const dealer = b2bPricing(p.dealerPrice, offer);
+  const variants = (p.variants || []).map((v) => ({
+    ...v,
+    offerPrice: b2cPricing(v.price || p.price, offer).offer,
+    dealerOfferPrice: b2bPricing(v.dealerPrice || p.dealerPrice, offer).offer
+  }));
+  return {
+    ...p,
+    offerPrice: base.offer,
+    dealerOfferPrice: dealer.offer,
+    offerTitle: (base.offer || dealer.offer) ? (offer?.title || 'Special Offer') : null,
+    variants
+  };
 }
 
 // Normalize incoming variants (JSON string from multipart form, or array) into
