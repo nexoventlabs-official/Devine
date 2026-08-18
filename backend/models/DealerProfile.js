@@ -15,6 +15,8 @@ const DealerProfileSchema = new mongoose.Schema(
     areaManagerName: { type: String, default: '' },
     areaManagerPhone: { type: String, default: '' },
     lastOrderAt: { type: Date },
+    // How the dealer registered: 'whatsapp' (default) or 'website'.
+    source: { type: String, default: 'whatsapp' },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' }
   },
   { timestamps: true }

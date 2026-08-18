@@ -9,6 +9,8 @@ import BulkRangesPage from './BulkRangesPage';
 import OffersPage from './OffersPage';
 import LeadsPage from './LeadsPage';
 import OrdersPage from './OrdersPage';
+import DealersPage from './DealersPage';
+import CareersPage from './CareersPage';
 
 function Login({ onLogin }) {
   const [u, setU] = useState('');
@@ -52,6 +54,8 @@ const NAV = [
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/bulk-ranges', label: 'Bulk Ranges' },
   { to: '/admin/offers', label: 'Offers' },
+  { to: '/admin/dealers', label: 'Dealers' },
+  { to: '/admin/careers', label: 'Careers' },
   { to: '/admin/flow-images', label: 'Flow Images' },
   { to: '/admin/supply-countries', label: 'Supply Countries' },
   { to: '/crn', label: 'CRM' }
@@ -105,6 +109,8 @@ export default function AdminLayout() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="bulk-ranges" element={<BulkRangesPage />} />
           <Route path="offers" element={<OffersPage />} />
+          <Route path="dealers" element={<DealersPage />} />
+          <Route path="careers" element={<CareersPage />} />
           <Route path="flow-images" element={<FlowImagesPage />} />
           <Route path="supply-countries" element={<SupplyCountriesPage />} />
         </Routes>

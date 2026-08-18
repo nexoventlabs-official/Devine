@@ -265,6 +265,7 @@ app.post('/api/dealers/register', async (req, res) => {
           district: (district || '').trim(),
           city: city.trim(),
           capacity: capacity.trim(),
+          source: 'website',
           status: 'Active'
         },
         $setOnInsert: { dealerId }
@@ -301,6 +302,28 @@ app.post('/api/dealers/register', async (req, res) => {
     logger.error('Dealer register error', { error: err.message });
     res.status(500).json({ success: false, message: 'Internal Server Error.' });
   }
+});
+
+// ---- Admin: list / manage dealers (web + WhatsApp registered) ----
+app.get('/api/dealers', async (_req, res) => {
+  try {
+    const dealers = await DealerProfile.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: dealers });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.patch('/api/dealers/:id/status', async (req, res) => {
+  const { status } = req.body;
+  if (!['Active', 'Inactive'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+  const updated = await DealerProfile.findByIdAndUpdate(req.params.id, { status }, { new: true });
+  if (!updated) return res.status(404).json({ success: false, message: 'Not found.' });
+  res.json({ success: true, data: updated });
+});
+app.delete('/api/dealers/:id', async (req, res) => {
+  const d = await DealerProfile.findByIdAndDelete(req.params.id);
+  if (!d) return res.status(404).json({ success: false, message: 'Not found.' });
+  res.json({ success: true, message: 'Deleted.' });
 });
 
 // ---------------- Admin auth ----------------
