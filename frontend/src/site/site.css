@@ -162,7 +162,12 @@
 .devine-site .product-card p.tag{ color: var(--ink-faint); font-size: 0.88rem; margin-bottom: 18px; min-height: 2.4em; }
 .devine-site .product-card .btn{ padding: 9px 22px; font-size: 0.84rem; }
 .devine-site .product-card .price{ font-family: var(--font-display); font-size: 1.15rem; color: var(--amber-deep); margin-bottom: 14px; }
-.devine-site .product-card .price s{ color: var(--ink-faint); font-size: 0.9rem; margin-right: 6px; }
+.devine-site .product-card .price s{ color: var(--ink-faint); font-size: 0.9rem; margin-right: 6px; font-family: var(--font-body); }
+.devine-site .feat-thumb{ position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: var(--ivory-deep); margin-bottom: 20px; }
+.devine-site .feat-thumb img{ width: 100%; height: 100%; object-fit: cover; }
+.devine-site .feat-thumb .badge-offer{ position:absolute; top:10px; left:10px; background: var(--wine); color:#fff; font-size:0.7rem; font-weight:700; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:0.04em; }
+.devine-site a.product-card{ display:flex; flex-direction:column; }
+.devine-site a.product-card .btn{ margin-top: auto; }
 
 /* ---------- Story split ---------- */
 .devine-site .story-split{ display:grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items:center; }

@@ -4,12 +4,6 @@ import { API_BASE_URL } from '../config';
 import { TrustBand, AwardBand } from './Layout';
 
 const BANNERS = ['/site/banners/banner.png', '/site/banners/banner2.png', '/site/banners/banner3.png'];
-const HEX_GRADIENTS = [
-  'linear-gradient(160deg,#E5A860,#8A5320)',
-  'linear-gradient(160deg,#F3DDB8,#B8712F)',
-  'linear-gradient(160deg,#8FA06B,#4F5C38)',
-  'linear-gradient(160deg,#B4586A,#7A2A38)'
-];
 
 function BannerSlider() {
   const [idx, setIdx] = useState(0);
@@ -71,22 +65,21 @@ export default function Home() {
 
           {products.length > 0 ? (
             <div className="product-grid">
-              {products.map((p, i) => {
+              {products.map((p) => {
                 const hasOffer = p.offerPrice && p.offerPrice < p.price;
                 return (
-                  <div className="product-card" key={p._id}>
-                    <div className="product-hex">
-                      <div className="hx" style={{ background: HEX_GRADIENTS[i % HEX_GRADIENTS.length] }}>
-                        {p.imageUrl ? <img src={p.imageUrl} alt={p.name} /> : null}
-                      </div>
+                  <Link to={`/product/${p._id}`} className="product-card" key={p._id}>
+                    <div className="feat-thumb">
+                      {hasOffer && <span className="badge-offer">Offer</span>}
+                      {p.imageUrl ? <img src={p.imageUrl} alt={p.name} /> : null}
                     </div>
                     <h3>{p.name}</h3>
                     <p className="tag">{p.shortDesc || p.category}</p>
                     <div className="price">
                       {hasOffer ? <><s>₹{p.price}</s>₹{p.offerPrice}</> : <>₹{p.price}</>}
                     </div>
-                    <Link to={`/product/${p._id}`} className="btn btn-outline">Learn More</Link>
-                  </div>
+                    <span className="btn btn-outline">Learn More</span>
+                  </Link>
                 );
               })}
             </div>
