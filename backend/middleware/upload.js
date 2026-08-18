@@ -4,9 +4,9 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB (covers PDFs)
+  limits: { fileSize: 60 * 1024 * 1024 }, // 60MB (covers short product videos)
   fileFilter: (req, file, cb) => {
-    const ok = /image\/(png|jpe?g|webp|svg\+xml)|application\/pdf/.test(file.mimetype);
+    const ok = /image\/(png|jpe?g|webp|svg\+xml)|application\/pdf|video\/(mp4|quicktime|webm|3gpp|x-matroska)/.test(file.mimetype);
     cb(ok ? null : new Error('Unsupported file type'), ok);
   }
 });

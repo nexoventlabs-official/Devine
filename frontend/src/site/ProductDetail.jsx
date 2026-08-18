@@ -31,10 +31,17 @@ export default function ProductDetail() {
     return () => { on = false; };
   }, [id]);
 
-  const gallery = useMemo(() => {
+  // Ordered media: cover, main, gallery, then each variant's images, then video.
+  const media = useMemo(() => {
     if (!product) return [];
-    const imgs = [product.imageUrl, ...(product.gallery || []), ...((product.variants || []).map((v) => v.imageUrl))];
-    return Array.from(new Set(imgs.filter(Boolean)));
+    const out = [];
+    const pushImg = (u) => { if (u && !out.some((m) => m.url === u)) out.push({ type: 'image', url: u }); };
+    pushImg(product.coverImageUrl);
+    pushImg(product.imageUrl);
+    (product.gallery || []).forEach(pushImg);
+    (product.variants || []).forEach((v) => { pushImg(v.imageUrl); (v.images || []).forEach(pushImg); });
+    if (product.videoUrl) out.push({ type: 'video', url: product.videoUrl });
+    return out;
   }, [product]);
 
   if (loading) return <div className="devine-site-detail"><div className="site-loader">Loading…</div></div>;
@@ -71,11 +78,21 @@ export default function ProductDetail() {
           <div className="pd-grid">
             {/* Gallery */}
             <div className="pd-gallery">
-              <img className="pd-main-img" src={gallery[imgIdx] || product.imageUrl} alt={product.name} />
-              {gallery.length > 1 && (
+              {(() => {
+                const active = media[imgIdx] || media[0];
+                if (!active) return <img className="pd-main-img" src={product.imageUrl} alt={product.name} />;
+                return active.type === 'video'
+                  ? <video className="pd-main-img" src={active.url} controls playsInline poster={product.coverImageUrl || product.imageUrl} style={{ background: '#000' }} />
+                  : <img className="pd-main-img" src={active.url} alt={product.name} />;
+              })()}
+              {media.length > 1 && (
                 <div className="pd-thumbs">
-                  {gallery.map((g, i) => (
-                    <img key={g} src={g} alt="" className={i === imgIdx ? 'active' : ''} onClick={() => setImgIdx(i)} />
+                  {media.map((m, i) => (
+                    <div key={i} onClick={() => setImgIdx(i)} className={`pd-thumb${i === imgIdx ? ' active' : ''}`} style={{ position: 'relative' }}>
+                      {m.type === 'video'
+                        ? <><video src={m.url} muted /><span className="pd-thumb-play">▶</span></>
+                        : <img src={m.url} alt="" />}
+                    </div>
                   ))}
                 </div>
               )}
@@ -102,7 +119,7 @@ export default function ProductDetail() {
                       <b>Standard</b><span>₹{product.offerPrice && product.offerPrice < product.price ? product.offerPrice : product.price}</span>
                     </button>
                     {product.variants.map((vr, i) => (
-                      <button key={i} className={`pd-variant${variantIdx === i ? ' active' : ''}`} onClick={() => { setVariantIdx(i); if (vr.imageUrl) { const gi = gallery.indexOf(vr.imageUrl); if (gi >= 0) setImgIdx(gi); } }}>
+                      <button key={i} className={`pd-variant${variantIdx === i ? ' active' : ''}`} onClick={() => { setVariantIdx(i); if (vr.imageUrl) { const gi = media.findIndex((m) => m.url === vr.imageUrl); if (gi >= 0) setImgIdx(gi); } }}>
                         <b>{vr.label || `${vr.quantity} ${vr.unit}`}</b>
                         <span>₹{vr.offerPrice && vr.offerPrice < (vr.price || product.price) ? vr.offerPrice : (vr.price || product.price)}</span>
                       </button>

@@ -6,11 +6,29 @@ import { EditIcon, TrashIcon, CalendarIcon, BoxIcon, IconBtn, ConfirmModal } fro
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
 
-// Editor for size/quantity variants (250g, 500g, 1kg...) each with its own price + image.
+// Small removable thumbnail used by gallery editors.
+function Thumb({ src, isVideo, onRemove }) {
+  return (
+    <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+      {isVideo
+        ? <video src={src} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid #333', background: '#000' }} muted />
+        : <img src={src} alt="" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid #333' }} />}
+      <button type="button" onClick={onRemove} title="Remove"
+        style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#f3727f', color: '#000', border: 0, cursor: 'pointer', fontSize: 11, lineHeight: '18px', padding: 0, fontWeight: 800 }}>×</button>
+    </div>
+  );
+}
+
+// Editor for size/quantity variants (250g, 500g, 1kg...) each with its own price,
+// a MAIN image and multiple ADDITIONAL images.
 function VariantsEditor({ variants, setVariants }) {
-  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', dealerPrice: '', imageUrl: '', imageFile: null }]);
+  const add = () => setVariants([...variants, { quantity: '', unit: 'g', price: '', dealerPrice: '', imageUrl: '', imageFile: null, images: [], newImages: [] }]);
   const upd = (i, k, v) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; setVariants(n); };
   const del = (i) => setVariants(variants.filter((_, idx) => idx !== i));
+  const addImages = (i, files) => { const n = [...variants]; n[i] = { ...n[i], newImages: [...(n[i].newImages || []), ...Array.from(files)] }; setVariants(n); };
+  const rmExisting = (i, url) => { const n = [...variants]; n[i] = { ...n[i], images: (n[i].images || []).filter((u) => u !== url) }; setVariants(n); };
+  const rmNew = (i, idx) => { const n = [...variants]; n[i] = { ...n[i], newImages: (n[i].newImages || []).filter((_, j) => j !== idx) }; setVariants(n); };
+
   return (
     <div style={{ border: '1px solid #282828', borderRadius: 8, padding: 14, background: '#181818' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -18,28 +36,40 @@ function VariantsEditor({ variants, setVariants }) {
         <button type="button" onClick={add} style={{ ...miniBtn, background: '#1ed760', color: '#000' }}>+ Add size</button>
       </div>
       {variants.length === 0 && (
-        <div style={{ fontSize: 12, color: '#b3b3b3' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price and image.</div>
+        <div style={{ fontSize: 12, color: '#b3b3b3' }}>No variants — the base price/image is used. Add sizes like 250 g, 500 g, 1 kg, each with its own price, a main image and extra images.</div>
       )}
       {variants.map((v, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
-          {(v.imageFile || v.imageUrl) ? (
-            <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #333', flexShrink: 0 }} />
-          ) : (
-            <div style={{ width: 38, height: 38, borderRadius: 6, background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c', flexShrink: 0 }}>img</div>
-          )}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', flex: 1, minWidth: 0 }}>
-            <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
-            <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-            <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
-            <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
-            <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
-              {v.imageFile || v.imageUrl ? 'Change' : 'Image'}
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
+        <div key={i} style={{ border: '1px solid #282828', borderRadius: 8, padding: 10, marginBottom: 10, background: '#141414' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
+            {(v.imageFile || v.imageUrl) ? (
+              <img src={v.imageFile ? URL.createObjectURL(v.imageFile) : v.imageUrl} alt="" style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #333', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 38, height: 38, borderRadius: 6, background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c', flexShrink: 0 }}>img</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', flex: 1, minWidth: 0 }}>
+              <input type="number" placeholder="Qty" value={v.quantity} onChange={(e) => upd(i, 'quantity', e.target.value)} style={{ ...input, width: 70 }} />
+              <select value={v.unit} onChange={(e) => upd(i, 'unit', e.target.value)} style={{ ...input, width: 86 }}>
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+              <input type="number" placeholder="B2C ₹" value={v.price} onChange={(e) => upd(i, 'price', e.target.value)} style={{ ...input, width: 92 }} />
+              <input type="number" placeholder="Dealer ₹" value={v.dealerPrice} onChange={(e) => upd(i, 'dealerPrice', e.target.value)} style={{ ...input, width: 92 }} />
+              <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
+                {v.imageFile || v.imageUrl ? 'Change main' : 'Main image'}
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upd(i, 'imageFile', e.target.files[0])} />
+              </label>
+            </div>
+            <button type="button" onClick={() => del(i)} title="Remove variant" style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)', flexShrink: 0, alignSelf: 'center' }}>✕</button>
+          </div>
+          {/* Additional images for this variant */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
+            <span style={{ fontSize: 11, color: '#7c7c7c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Extra images:</span>
+            {(v.images || []).map((url) => <Thumb key={url} src={url} onRemove={() => rmExisting(i, url)} />)}
+            {(v.newImages || []).map((f, idx) => <Thumb key={idx} src={URL.createObjectURL(f)} onRemove={() => rmNew(i, idx)} />)}
+            <label style={{ ...miniBtn, background: '#282828', color: '#ffffff', cursor: 'pointer', border: '1px dashed #4d4d4d' }}>
+              + Add
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => addImages(i, e.target.files)} />
             </label>
           </div>
-          <button type="button" onClick={() => del(i)} title="Remove variant" style={{ ...miniBtn, background: 'transparent', color: '#f3727f', border: '1px solid rgba(243,114,127,0.4)', flexShrink: 0, alignSelf: 'center' }}>✕</button>
         </div>
       ))}
     </div>
@@ -358,10 +388,18 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
       price: v.price ?? '',
       dealerPrice: v.dealerPrice ?? '',
       imageUrl: v.imageUrl || '',
-      imageFile: null
+      imageFile: null,
+      images: Array.isArray(v.images) ? [...v.images] : [],
+      newImages: []
     }))
   );
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null); // main image
+  const [cover, setCover] = useState(null); // cover image file
+  const [coverUrl, setCoverUrl] = useState(product?.coverImageUrl || '');
+  const [video, setVideo] = useState(null); // video file
+  const [videoUrl, setVideoUrl] = useState(product?.videoUrl || '');
+  // Gallery items: existing = { url }, new = { file }.
+  const [gallery, setGallery] = useState((product?.gallery || []).map((url) => ({ url })));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -376,10 +414,29 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
       // Delivery charge only applies when the Shipping checkbox is on; else 0.
       fd.set('deliveryCharge', chargeDelivery ? (Number(form.deliveryCharge) || 0) : 0);
-      const variantsPayload = variants.map(({ imageFile, ...v }) => v);
+
+      // Variants: keep quantity/unit/price/dealer/imageUrl + kept extra images; upload new files.
+      const variantsPayload = variants.map(({ imageFile, newImages, ...v }) => v);
       fd.append('variants', JSON.stringify(variantsPayload));
-      variants.forEach((v, i) => { if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile); });
+      variants.forEach((v, i) => {
+        if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile);
+        (v.newImages || []).forEach((f) => fd.append(`variant_gallery_${i}`, f));
+      });
+
       if (file) fd.append('image', file);
+
+      // Cover image: new file, or the kept/cleared url.
+      if (cover) fd.append('cover', cover);
+      else fd.append('coverImageUrl', coverUrl || '');
+
+      // Video: new file, or the kept/cleared url.
+      if (video) fd.append('video', video);
+      else fd.append('videoUrl', videoUrl || '');
+
+      // Gallery: kept existing urls + newly chosen files.
+      fd.append('galleryKeep', JSON.stringify(gallery.filter((g) => g.url).map((g) => g.url)));
+      gallery.filter((g) => g.file).forEach((g) => fd.append('gallery', g.file));
+
       if (isEdit) await api.putForm(`/products/${product._id}`, fd);
       else await api.postForm('/products', fd);
       onSaved();
@@ -456,6 +513,58 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
                 {file ? file.name : 'PNG, JPG, WebP up to 10MB'}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Cover image + Video */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>Cover image <span style={{ color: '#7c7c7c' }}>(detail hero)</span></div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {(cover || coverUrl) ? (
+                <div style={{ position: 'relative' }}>
+                  <img src={cover ? URL.createObjectURL(cover) : coverUrl} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #333' }} />
+                  <button type="button" onClick={() => { setCover(null); setCoverUrl(''); }} title="Remove" style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#f3727f', color: '#000', border: 0, cursor: 'pointer', fontSize: 11, fontWeight: 800, padding: 0 }}>×</button>
+                </div>
+              ) : (
+                <div style={{ width: 60, height: 60, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c' }}>None</div>
+              )}
+              <label style={{ ...miniBtn, background: '#282828', color: '#fff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
+                {(cover || coverUrl) ? 'Change' : 'Choose'}
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => setCover(e.target.files[0])} />
+              </label>
+            </div>
+          </div>
+          <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>Product video <span style={{ color: '#7c7c7c' }}>(mp4)</span></div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {(video || videoUrl) ? (
+                <div style={{ position: 'relative' }}>
+                  <video src={video ? URL.createObjectURL(video) : videoUrl} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #333', background: '#000' }} muted />
+                  <button type="button" onClick={() => { setVideo(null); setVideoUrl(''); }} title="Remove" style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#f3727f', color: '#000', border: 0, cursor: 'pointer', fontSize: 11, fontWeight: 800, padding: 0 }}>×</button>
+                </div>
+              ) : (
+                <div style={{ width: 60, height: 60, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#7c7c7c' }}>▶</div>
+              )}
+              <label style={{ ...miniBtn, background: '#282828', color: '#fff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
+                {(video || videoUrl) ? 'Change' : 'Choose'}
+                <input type="file" accept="video/*" style={{ display: 'none' }} onChange={(e) => setVideo(e.target.files[0])} />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Product gallery (multiple images) */}
+        <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 10 }}>Additional product images</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {gallery.map((g, idx) => (
+              <Thumb key={idx} src={g.url || URL.createObjectURL(g.file)} onRemove={() => setGallery(gallery.filter((_, j) => j !== idx))} />
+            ))}
+            <label style={{ ...miniBtn, background: '#282828', color: '#fff', cursor: 'pointer', border: '1px dashed #4d4d4d' }}>
+              + Add images
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => setGallery([...gallery, ...Array.from(e.target.files).map((f) => ({ file: f }))])} />
+            </label>
           </div>
         </div>
 

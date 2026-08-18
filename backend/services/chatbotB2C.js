@@ -182,6 +182,10 @@ async function handleSelection(phone, selectedId, name) {
   if (selectedId.startsWith('add_')) {
     return addToCart(phone, selectedId.replace('add_', ''));
   }
+  // View product photos + video: photos_<retailerId>
+  if (selectedId.startsWith('photos_')) {
+    return sendProductGallery(phone, selectedId.replace('photos_', ''));
+  }
   // View cart summary
   if (selectedId === 'view_summary') {
     return openOrderSummary(phone);
@@ -356,14 +360,46 @@ async function showCategoryProducts(phone, slug) {
       `${p.shortDesc || p.description || ''}\n\n` +
       `⭐ ${p.rating || 4.5} (${p.reviewCount || 0})\n` +
       `*Rs.${p.price}*${p.mrp && p.mrp > p.price ? `  ~Rs.${p.mrp}~` : ''}`;
-    await wa()
-      .sendImageWithButtons(phone, p.imageUrl, body, [
-        { id: `add_${p.retailerId}`, text: 'Add to cart' },
-        { id: 'view_summary', text: 'View cart' }
-      ])
-      .catch(() => {});
+    const hasMedia = (p.gallery && p.gallery.length) || p.videoUrl || (p.variants || []).some((v) => v.imageUrl || (v.images && v.images.length));
+    const buttons = [
+      { id: `add_${p.retailerId}`, text: 'Add to cart' },
+      { id: 'view_summary', text: 'View cart' }
+    ];
+    if (hasMedia) buttons.push({ id: `photos_${p.retailerId}`, text: '📷 Photos' });
+    await wa().sendImageWithButtons(phone, p.imageUrl, body, buttons).catch(() => {});
   }
   return true;
+}
+
+// Send a product's full photo set as a carousel of image messages, then the
+// product video if present. Called on demand via the "📷 Photos" button so we
+// never spam. Videos that WhatsApp can't play are skipped gracefully.
+async function sendProductGallery(phone, retailerId) {
+  const p = await Product.findOne({ retailerId }).lean();
+  if (!p) return wa().sendText(phone, 'Sorry, that product is unavailable.');
+
+  const imgs = [];
+  const push = (u) => { if (u && !imgs.includes(u)) imgs.push(u); };
+  push(p.coverImageUrl);
+  push(p.imageUrl);
+  (p.gallery || []).forEach(push);
+  (p.variants || []).forEach((v) => { push(v.imageUrl); (v.images || []).forEach(push); });
+
+  if (!imgs.length && !p.videoUrl) return wa().sendText(phone, 'No additional photos for this product yet.');
+
+  await wa().sendText(phone, `📷 *${p.name}* — ${imgs.length} photo${imgs.length === 1 ? '' : 's'}`).catch(() => {});
+  for (let i = 0; i < imgs.slice(0, 8).length; i++) {
+    await wa().sendImageOriginal(phone, imgs[i], i === 0 ? `${p.name} • Rs.${p.price}` : '').catch(() => {});
+  }
+  if (p.videoUrl) {
+    await wa().sendVideo(phone, p.videoUrl, `🎬 ${p.name}`).catch((err) =>
+      logger.warn('Product video send failed', { retailerId, error: err.response?.data?.error?.message || err.message })
+    );
+  }
+  return wa().sendButtons(phone, `Add *${p.name}* to your cart?`, [
+    { id: `add_${p.retailerId}`, text: 'Add to cart' },
+    { id: 'browse', text: 'Keep browsing' }
+  ]);
 }
 
 // Resolve a catalog retailer id (base OR variant `base__vN`) to a cart line.

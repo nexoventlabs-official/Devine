@@ -51,20 +51,27 @@ function parseVariants(raw) {
         price,
         mrp: Number(v.mrp) || 0,
         dealerPrice: Number(v.dealerPrice) || 0,
-        imageUrl: v.imageUrl || '' // preserved existing image; overridden if a new file is uploaded
+        imageUrl: v.imageUrl || '', // preserved existing MAIN image; overridden if a new file is uploaded
+        images: Array.isArray(v.images) ? v.images.filter(Boolean) : [] // preserved existing ADDITIONAL images
       };
     })
     .filter((v) => v.price > 0 || v.quantity > 0);
 }
 
-// Parse variants + upload any per-variant image files (field `variant_image_<i>`).
+// Parse variants + upload per-variant MAIN image (`variant_image_<i>`) and any
+// ADDITIONAL images (`variant_gallery_<i>`, may repeat), appended to images[].
 async function buildVariants(rawVariants, files) {
   const variants = parseVariants(rawVariants);
   for (let i = 0; i < variants.length; i++) {
-    const f = (files || []).find((x) => x.fieldname === `variant_image_${i}`);
-    if (f) {
+    const mainF = (files || []).find((x) => x.fieldname === `variant_image_${i}`);
+    if (mainF) {
+      try { variants[i].imageUrl = await cloudinaryService.uploadBuffer(mainF.buffer, { folder: 'devine/products' }); } catch (_) {}
+    }
+    const galFiles = (files || []).filter((x) => x.fieldname === `variant_gallery_${i}`);
+    for (const gf of galFiles) {
       try {
-        variants[i].imageUrl = await cloudinaryService.uploadBuffer(f.buffer, { folder: 'devine/products' });
+        const url = await cloudinaryService.uploadBuffer(gf.buffer, { folder: 'devine/products' });
+        variants[i].images = [...(variants[i].images || []), url];
       } catch (_) {}
     }
   }
@@ -72,6 +79,33 @@ async function buildVariants(rawVariants, files) {
 }
 
 const fileByField = (files, name) => (files || []).find((f) => f.fieldname === name);
+
+// Upload product-level media: cover image, gallery (kept URLs + new files), video.
+// `galleryKeep` is a JSON array of existing gallery URLs to preserve on edit.
+async function buildProductMedia(b, files) {
+  const media = {};
+  const coverF = fileByField(files, 'cover');
+  if (coverF) media.coverImageUrl = await cloudinaryService.uploadBuffer(coverF.buffer, { folder: 'devine/products' });
+  else if (b.coverImageUrl !== undefined) media.coverImageUrl = b.coverImageUrl || '';
+
+  const videoF = fileByField(files, 'video');
+  if (videoF) media.videoUrl = await cloudinaryService.uploadBuffer(videoF.buffer, { folder: 'devine/products/videos', resourceType: 'video' });
+  else if (b.videoUrl !== undefined) media.videoUrl = b.videoUrl || '';
+
+  let gallery = null;
+  if (b.galleryKeep !== undefined) {
+    try { gallery = JSON.parse(b.galleryKeep) || []; } catch { gallery = []; }
+  }
+  const galFiles = (files || []).filter((f) => f.fieldname === 'gallery');
+  if (galFiles.length) {
+    if (gallery === null) gallery = [];
+    for (const gf of galFiles) {
+      try { gallery.push(await cloudinaryService.uploadBuffer(gf.buffer, { folder: 'devine/products' })); } catch (_) {}
+    }
+  }
+  if (gallery !== null) media.gallery = gallery;
+  return media;
+}
 
 // Public: list active products (used by B2C site + flows)
 router.get('/', async (req, res) => {
@@ -150,6 +184,7 @@ router.post('/', auth, upload.any(), async (req, res) => {
       imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
     const retailerId = b.retailerId || `dvn_${genOrderId('p').toLowerCase().replace(/-/g, '')}`;
+    const media = await buildProductMedia(b, req.files);
     const product = await Product.create({
       name: b.name,
       retailerId,
@@ -165,6 +200,9 @@ router.post('/', auth, upload.any(), async (req, res) => {
       deliveryCharge: Number(b.deliveryCharge) || 0,
       variants: await buildVariants(b.variants, req.files),
       imageUrl,
+      coverImageUrl: media.coverImageUrl || '',
+      videoUrl: media.videoUrl || '',
+      gallery: media.gallery || [],
       rating: Number(b.rating) || 4.5,
       badges: b.badges ? String(b.badges).split(',').map((s) => s.trim()) : [],
       inStock: b.inStock !== 'false',
@@ -211,9 +249,18 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
     let staleVariantImages = [];
     if (update.variants !== undefined) {
       update.variants = await buildVariants(update.variants, req.files);
-      const newUrls = new Set(update.variants.map((v) => v.imageUrl).filter(Boolean));
-      staleVariantImages = (existing?.variants || []).map((v) => v.imageUrl).filter((u) => u && !newUrls.has(u));
+      const newUrls = new Set();
+      update.variants.forEach((v) => { if (v.imageUrl) newUrls.add(v.imageUrl); (v.images || []).forEach((u) => newUrls.add(u)); });
+      (existing?.variants || []).forEach((v) => {
+        if (v.imageUrl && !newUrls.has(v.imageUrl)) staleVariantImages.push(v.imageUrl);
+        (v.images || []).forEach((u) => { if (u && !newUrls.has(u)) staleVariantImages.push(u); });
+      });
     }
+
+    // Cover / gallery / video (kept URLs + new uploads).
+    Object.assign(update, await buildProductMedia(b, req.files));
+    // galleryKeep is a transport-only field; not part of the schema.
+    delete update.galleryKeep;
 
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     res.json({ success: true, data: product });
@@ -231,8 +278,14 @@ router.delete('/:id', auth, async (req, res) => {
   const p = await Product.findByIdAndDelete(req.params.id);
   if (!p) return res.status(404).json({ success: false, message: 'Not found' });
   cloudinaryService.deleteByUrl(p.imageUrl).catch(() => {});
+  if (p.coverImageUrl) cloudinaryService.deleteByUrl(p.coverImageUrl).catch(() => {});
+  if (p.videoUrl) cloudinaryService.deleteByUrl(p.videoUrl).catch(() => {});
   if (p.waveImageUrl) cloudinaryService.deleteByUrl(p.waveImageUrl).catch(() => {});
-  (p.variants || []).forEach((v) => { if (v.imageUrl) cloudinaryService.deleteByUrl(v.imageUrl).catch(() => {}); });
+  (p.gallery || []).forEach((u) => { if (u) cloudinaryService.deleteByUrl(u).catch(() => {}); });
+  (p.variants || []).forEach((v) => {
+    if (v.imageUrl) cloudinaryService.deleteByUrl(v.imageUrl).catch(() => {});
+    (v.images || []).forEach((u) => { if (u) cloudinaryService.deleteByUrl(u).catch(() => {}); });
+  });
   catalogService.deleteProductFromMeta(p).catch(() => {});
   res.json({ success: true, message: 'Deleted' });
 });

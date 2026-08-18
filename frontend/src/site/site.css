@@ -346,8 +346,11 @@
 .devine-site .pd-gallery{ position:sticky; top: 100px; }
 .devine-site .pd-main-img{ width:100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 10px; background: var(--paper); border:1px solid var(--line); }
 .devine-site .pd-thumbs{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
-.devine-site .pd-thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:6px; border:1.5px solid var(--line); cursor:pointer; background:var(--paper); }
-.devine-site .pd-thumbs img.active{ border-color: var(--amber-deep); }
+.devine-site .pd-thumb{ width:64px; height:64px; border-radius:6px; border:1.5px solid var(--line); cursor:pointer; background:var(--paper); overflow:hidden; }
+.devine-site .pd-thumb.active{ border-color: var(--amber-deep); }
+.devine-site .pd-thumb img, .devine-site .pd-thumb video{ width:100%; height:100%; object-fit:cover; display:block; }
+.devine-site .pd-thumb-play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; background:rgba(0,0,0,0.35); }
+.devine-site video.pd-main-img{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; }
 .devine-site .pd-cat{ font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color: var(--ink-faint); }
 .devine-site .pd-title{ font-size: clamp(1.8rem, 3.5vw, 2.6rem); margin:6px 0 10px; }
 .devine-site .pd-rating{ display:flex; align-items:center; gap:8px; color: var(--gold); font-weight:600; margin-bottom:16px; }

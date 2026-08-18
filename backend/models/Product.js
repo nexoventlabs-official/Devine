@@ -25,13 +25,16 @@ const ProductSchema = new mongoose.Schema(
         price: { type: Number, default: 0 }, // B2C price for this size
         mrp: { type: Number, default: 0 },
         dealerPrice: { type: Number, default: 0 },
-        imageUrl: { type: String, default: '' } // per-size image
+        imageUrl: { type: String, default: '' }, // per-size MAIN image
+        images: [{ type: String }] // per-size ADDITIONAL images
       }
     ],
-    imageUrl: { type: String, default: '' },
+    imageUrl: { type: String, default: '' }, // main product image
+    coverImageUrl: { type: String, default: '' }, // hero/cover image (detail page + carousel first)
+    videoUrl: { type: String, default: '' }, // product video (Cloudinary)
     waveImageUrl: { type: String, default: '' }, // decorative bg for homepage featured card
     featured: { type: Boolean, default: false },
-    gallery: [{ type: String }],
+    gallery: [{ type: String }], // additional product images
     rating: { type: Number, default: 4.5 },
     reviewCount: { type: Number, default: 0 },
     badges: [{ type: String }],

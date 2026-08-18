@@ -261,6 +261,28 @@ export function getClient(channel) {
       }
     },
 
+    // Send an image at its original aspect ratio (for product photo galleries).
+    async sendImageOriginal(phone, imageUrl, caption = '') {
+      const { data } = await post({
+        messaging_product: 'whatsapp',
+        to: clean(phone),
+        type: 'image',
+        image: { link: originalUrl(imageUrl), caption }
+      });
+      return data;
+    },
+
+    // Send a video message (product videos). WhatsApp supports mp4/3gp (H.264/AAC).
+    async sendVideo(phone, videoUrl, caption = '') {
+      const { data } = await post({
+        messaging_product: 'whatsapp',
+        to: clean(phone),
+        type: 'video',
+        video: { link: videoUrl, caption }
+      });
+      return data;
+    },
+
     async sendCtaUrl(phone, body, buttonText, url, footer = '', imageUrl = null) {
       try {
         const payload = {
