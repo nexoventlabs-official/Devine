@@ -60,6 +60,14 @@ const variantLabel = (v) => v.label || `${v.quantity || ''} ${v.unit || ''}`.tri
  *  - With variants -> one item per size (retailerId = `${base}__v${i}`), all
  *    sharing item_group_id = base so Meta renders a size picker.
  */
+// Collect up to 10 extra image URLs for a catalog item (shown as the ‹ › carousel
+// on the WhatsApp catalog detail screen), excluding the item's main image.
+function extraImages(mainUrl, ...arrays) {
+  const out = [];
+  arrays.flat().forEach((u) => { if (u && u !== mainUrl && !out.includes(u)) out.push(u); });
+  return out.slice(0, 10);
+}
+
 export function expandToCatalogItems(p, { includeRatings = true, offer = null } = {}) {
   const base = {
     description: buildProductDescription(p, { includeRatings }),
@@ -72,6 +80,7 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
     return p.variants.map((v, i) => {
       // With an active offer: catalog price = original (struck), sale_price = offer price.
       const pr = b2cPricing(v.price || p.price, offer);
+      const mainUrl = v.imageUrl || p.imageUrl || null;
       return {
         ...base,
         retailerId: `${p.retailerId}__v${i}`,
@@ -79,18 +88,21 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
         size: variantLabel(v),
         price: pr.original,
         salePrice: pr.offer,
-        imageUrl: v.imageUrl || p.imageUrl || null
+        imageUrl: mainUrl,
+        additionalImages: extraImages(mainUrl, v.images || [], p.coverImageUrl, p.gallery || [])
       };
     });
   }
   const pr = b2cPricing(p.price, offer);
+  const mainUrl = p.imageUrl || null;
   return [{
     ...base,
     retailerId: p.retailerId,
     name: p.name,
     price: pr.original,
     salePrice: pr.offer,
-    imageUrl: p.imageUrl || null
+    imageUrl: mainUrl,
+    additionalImages: extraImages(mainUrl, p.coverImageUrl, p.gallery || [])
   }];
 }
 

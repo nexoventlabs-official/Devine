@@ -601,6 +601,10 @@ export function getClient(channel) {
         };
         if (p.size) data.size = String(p.size); // variant attribute (e.g. "500 g")
         if (p.imageUrl) data.image_link = squareUrl(p.imageUrl);
+        // Extra images -> ‹ › carousel on the WhatsApp catalog detail screen (comma-separated, max 10).
+        if (Array.isArray(p.additionalImages) && p.additionalImages.length) {
+          data.additional_image_link = p.additionalImages.slice(0, 10).map((u) => squareUrl(u)).join(',');
+        }
         return { method: 'CREATE', data };
       });
       const { data } = await api.post(
