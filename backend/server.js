@@ -9,6 +9,10 @@ import { Server as SocketServer } from 'socket.io';
 
 import Enquiry from './models/Enquiry.js';
 import Career from './models/Career.js';
+import DealerProfile from './models/DealerProfile.js';
+import Lead from './models/Lead.js';
+import { genDealerId } from './services/ids.js';
+import { emitLead } from './services/eventBus.js';
 
 import webhookRouter from './routes/webhook.js';
 import flowEndpointRouter from './routes/flowEndpoint.js';
@@ -199,6 +203,104 @@ app.patch('/api/careers/:id/status', async (req, res) => {
 app.delete('/api/careers/:id', async (req, res) => {
   await Career.findByIdAndDelete(req.params.id);
   res.json({ success: true, message: 'Deleted.' });
+});
+
+// ==========================================
+// Dealer registration (public web form). Mirrors the WhatsApp B2B dealer flow:
+// creates a DealerProfile keyed by phone so the B2B chatbot immediately shows
+// "Already a Dealer - Profile" when that number messages on WhatsApp. Issues a
+// unique Devine Dealer ID (DVN-####).
+// ==========================================
+
+// Normalize to WhatsApp `from` format: digits only, with India country code.
+function normalizeWaPhone(raw) {
+  let d = (raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  d = d.replace(/^0+/, '');
+  if (d.length === 10) d = `91${d}`;
+  else if (d.length === 11 && d.startsWith('0')) d = `91${d.slice(1)}`;
+  return d;
+}
+
+async function uniqueDealerId() {
+  for (let i = 0; i < 8; i++) {
+    const id = genDealerId();
+    // eslint-disable-next-line no-await-in-loop
+    if (!(await DealerProfile.exists({ dealerId: id }))) return id;
+  }
+  return `DVN-${String(Date.now()).slice(-6)}`;
+}
+
+app.post('/api/dealers/register', async (req, res) => {
+  try {
+    const { name, phone, businessName, businessType, state, district, city, capacity, email } = req.body;
+    if (!name || !phone || !businessName || !businessType || !state || !city || !capacity) {
+      return res.status(400).json({ success: false, message: 'Please fill all required fields.' });
+    }
+    const waPhone = normalizeWaPhone(phone);
+    if (waPhone.length < 12) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit WhatsApp number.' });
+    }
+
+    const existing = await DealerProfile.findOne({ phone: waPhone });
+    if (existing) {
+      return res.json({
+        success: true,
+        alreadyRegistered: true,
+        dealerId: existing.dealerId,
+        message: `This number is already registered as a Devine dealer (${existing.dealerId}). Send "hi" on WhatsApp to open your dealer portal.`
+      });
+    }
+
+    const dealerId = await uniqueDealerId();
+    const dealer = await DealerProfile.findOneAndUpdate(
+      { phone: waPhone },
+      {
+        $set: {
+          phone: waPhone,
+          name: name.trim(),
+          businessName: businessName.trim(),
+          businessType: businessType.trim(),
+          state: state.trim(),
+          district: (district || '').trim(),
+          city: city.trim(),
+          capacity: capacity.trim(),
+          status: 'Active'
+        },
+        $setOnInsert: { dealerId }
+      },
+      { new: true, upsert: true }
+    );
+
+    // Mirror the WhatsApp flow: log a CRM lead so the team can follow up.
+    try {
+      const lead = await Lead.create({
+        channel: 'b2b',
+        type: 'dealer',
+        name: name.trim(),
+        phone: waPhone,
+        businessName: businessName.trim(),
+        businessType: businessType.trim(),
+        state: state.trim(),
+        district: (district || '').trim(),
+        city: city.trim(),
+        capacity: capacity.trim(),
+        details: { source: 'website', email: (email || '').trim() }
+      });
+      emitLead(lead);
+    } catch (e) {
+      logger.warn('Dealer lead create failed', { error: e.message });
+    }
+
+    res.status(201).json({
+      success: true,
+      dealerId: dealer.dealerId,
+      message: 'Dealer registration received. Send "hi" on WhatsApp to open your dealer portal.'
+    });
+  } catch (err) {
+    logger.error('Dealer register error', { error: err.message });
+    res.status(500).json({ success: false, message: 'Internal Server Error.' });
+  }
 });
 
 // ---------------- Admin auth ----------------
