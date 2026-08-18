@@ -258,7 +258,8 @@
 .devine-site .info-card{ background: var(--ink); color: var(--ivory); border-radius: 6px; padding: 40px 32px; }
 .devine-site .info-card h3{ color:var(--ivory); font-size:1.3rem; margin-bottom: 22px; }
 .devine-site .info-row{ display:flex; gap:14px; margin-bottom:22px; align-items:flex-start; }
-.devine-site .info-row .hx-icon{ flex:none; width:34px; height:34px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background: var(--amber-light); }
+.devine-site .info-row .hx-icon{ flex:none; width:36px; height:36px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background: var(--amber-light); display:flex; align-items:center; justify-content:center; }
+.devine-site .info-row .hx-icon svg{ width:16px; height:16px; }
 .devine-site .info-row div b{ display:block; font-size:0.95rem; margin-bottom:2px; }
 .devine-site .info-row div span{ font-size:0.88rem; color: rgba(250,246,236,0.65); }
 .devine-site form.site-form{ display:grid; gap:18px; }
