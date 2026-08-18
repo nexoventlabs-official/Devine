@@ -448,7 +448,7 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
 
   return (
     <div style={overlay} onClick={onClose}>
-      <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={save}>
+      <form style={{ ...modal, width: 'min(920px, 96vw)' }} onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#ffffff' }}>{isEdit ? `Edit Product — ${product.name}` : 'Add Product'}</h3>
           <div style={{ display: 'flex', gap: 8 }}>
