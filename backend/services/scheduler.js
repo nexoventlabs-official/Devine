@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import Template from '../models/Template.js';
 import DealerProfile from '../models/DealerProfile.js';
+import Order from '../models/Order.js';
 import { getClient } from './metaCloud.js';
 import { renderTemplate } from './templates.js';
 import logger from './logger.js';
@@ -78,6 +79,23 @@ export function startSchedulers() {
     },
     { timezone: 'Asia/Kolkata' }
   );
+
+  // Remove abandoned online orders that were never paid within 15 minutes.
+  // (Online + still pending + not paid => customer didn't complete WhatsApp Pay.)
+  cron.schedule('* * * * *', async () => {
+    try {
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+      const res = await Order.deleteMany({
+        paymentMethod: 'online',
+        paymentStatus: { $ne: 'paid' },
+        status: 'pending',
+        createdAt: { $lt: cutoff }
+      });
+      if (res.deletedCount) logger.info('Removed unpaid online orders', { count: res.deletedCount });
+    } catch (err) {
+      logger.warn('Unpaid order cleanup failed', { error: err.message });
+    }
+  });
 
   logger.info('CRM schedulers started');
 }
