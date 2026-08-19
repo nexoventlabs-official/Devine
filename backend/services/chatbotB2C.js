@@ -11,7 +11,7 @@ import Lead from '../models/Lead.js';
 import { emitOrder, emitLead } from './eventBus.js';
 import { genOrderId } from './ids.js';
 import catalogService from './catalogService.js';
-import { offerForProduct, b2cPricing } from './offers.js';
+import { offerForProduct, offerForVariant, b2cPricing } from './offers.js';
 import logger from './logger.js';
 
 const CH = 'b2c';
@@ -409,18 +409,21 @@ async function resolveCatalogItem(retailerId) {
   const baseId = m ? m[1] : retailerId;
   const p = await Product.findOne({ retailerId: baseId }).lean();
   if (!p) return null;
-  const offer = await offerForProduct(p._id).catch(() => null);
-  const effective = (base) => b2cPricing(base, offer).offer || base;
 
   if (m) {
-    const v = (p.variants || [])[Number(m[2])];
+    const vIdx = Number(m[2]);
+    const v = (p.variants || [])[vIdx];
     if (v) {
       const label = v.label || `${v.quantity || ''} ${v.unit || ''}`.trim();
       const list = v.price || p.price;
-      return { retailerId, name: `${p.name} - ${label}`, price: effective(list), imageUrl: v.imageUrl || p.imageUrl };
+      const offer = await offerForVariant(p._id, vIdx).catch(() => null);
+      const price = b2cPricing(list, offer).offer || list;
+      return { retailerId, name: `${p.name} - ${label}`, price, imageUrl: v.imageUrl || p.imageUrl };
     }
   }
-  return { retailerId: p.retailerId, name: p.name, price: effective(p.price), imageUrl: p.imageUrl };
+  const offer = await offerForProduct(p._id).catch(() => null);
+  const price = b2cPricing(p.price, offer).offer || p.price;
+  return { retailerId: p.retailerId, name: p.name, price, imageUrl: p.imageUrl };
 }
 
 async function addToCart(phone, retailerId) {

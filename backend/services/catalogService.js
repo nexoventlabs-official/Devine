@@ -6,7 +6,7 @@
 // FMCG products have no variants, so Product.retailerId IS the Meta retailer_id.
 import Product from '../models/Product.js';
 import { getClient } from './metaCloud.js';
-import { buildOfferIndex, offerForProduct, b2cPricing } from './offers.js';
+import { buildOfferIndex, resolveOffer, b2cPricing } from './offers.js';
 import logger from './logger.js';
 
 const CATALOG_ID = () => process.env.META_CATALOG_ID || '';
@@ -69,7 +69,7 @@ function extraImages(mainUrl, ...arrays) {
   return out.slice(0, 10);
 }
 
-export function expandToCatalogItems(p, { includeRatings = true, offer = null } = {}) {
+export function expandToCatalogItems(p, { includeRatings = true, idx = null } = {}) {
   const base = {
     description: buildProductDescription(p, { includeRatings }),
     currency: 'INR',
@@ -79,7 +79,8 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
   };
   if (Array.isArray(p.variants) && p.variants.length) {
     return p.variants.map((v, i) => {
-      // With an active offer: catalog price = original (struck), sale_price = offer price.
+      // Per-variant offer (falls back to product-wide). Catalog price = original (struck), sale_price = offer.
+      const offer = resolveOffer(idx, p._id, i);
       const pr = b2cPricing(v.price || p.price, offer);
       const mainUrl = v.imageUrl || p.imageUrl || null;
       return {
@@ -94,7 +95,7 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
       };
     });
   }
-  const pr = b2cPricing(p.price, offer);
+  const pr = b2cPricing(p.price, resolveOffer(idx, p._id));
   const mainUrl = p.imageUrl || null;
   return [{
     ...base,
@@ -121,8 +122,8 @@ export async function syncProductToMeta(product, { includeRatings = true } = {})
   if (!isEnabled()) return null;
   try {
     const wa = getClient(CHANNEL());
-    const offer = await offerForProduct(product._id).catch(() => null);
-    const items = expandToCatalogItems(product, { includeRatings, offer });
+    const idx = await buildOfferIndex().catch(() => ({ product: new Map(), variant: new Map() }));
+    const items = expandToCatalogItems(product, { includeRatings, idx });
     const newIds = items.map((it) => it.retailerId);
 
     // Remove items that existed before but are no longer part of this product.
@@ -170,7 +171,7 @@ export async function autoSync() {
   const allItems = [];
   const stale = [];
   for (const p of products) {
-    const items = expandToCatalogItems(p, { offer: offerIndex.get(String(p._id)) || null });
+    const items = expandToCatalogItems(p, { idx: offerIndex });
     const newIds = items.map((it) => it.retailerId);
     (p.catalogItemIds || []).forEach((id) => { if (!newIds.includes(id)) stale.push(id); });
     allItems.push(...items);

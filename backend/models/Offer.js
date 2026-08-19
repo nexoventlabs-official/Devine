@@ -6,7 +6,13 @@ const OfferSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     active: { type: Boolean, default: true },
+    // Whole-product targets (offer applies to all sizes of these products).
     productIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    // Specific-variant targets (offer applies to a single size of a product).
+    variantTargets: [{
+      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      index: { type: Number }
+    }],
     b2c: {
       enabled: { type: Boolean, default: true },
       type: { type: String, enum: ['percent', 'flat'], default: 'percent' },

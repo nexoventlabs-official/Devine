@@ -19,6 +19,9 @@ function sanitizeOffer(b = {}) {
     title: b.title,
     active: b.active !== false && b.active !== 'false',
     productIds: Array.isArray(b.productIds) ? b.productIds : [],
+    variantTargets: Array.isArray(b.variantTargets)
+      ? b.variantTargets.filter((t) => t && t.product != null && t.index != null).map((t) => ({ product: t.product, index: Number(t.index) }))
+      : [],
     b2c: {
       enabled: !!b.b2c?.enabled,
       type: b.b2c?.type === 'flat' ? 'flat' : 'percent',
@@ -47,10 +50,15 @@ router.get('/offers', auth, async (_req, res) => {
   res.json({ success: true, data: list });
 });
 
+// All product ids affected by an offer (whole-product + variant targets).
+function offerProductIds(offer) {
+  return [...(offer?.productIds || []), ...((offer?.variantTargets || []).map((t) => t.product))];
+}
+
 router.post('/offers', auth, async (req, res) => {
   const offer = await Offer.create(sanitizeOffer(req.body));
   res.json({ success: true, data: offer });
-  resyncOfferProducts(offer.productIds).catch(() => {});
+  resyncOfferProducts(offerProductIds(offer)).catch(() => {});
 });
 
 router.put('/offers/:id', auth, async (req, res) => {
@@ -58,14 +66,14 @@ router.put('/offers/:id', auth, async (req, res) => {
   const offer = await Offer.findByIdAndUpdate(req.params.id, sanitizeOffer(req.body), { new: true });
   res.json({ success: true, data: offer });
   // Re-sync both the old and new product sets (removed products lose the offer).
-  const affected = [...(prev?.productIds || []), ...(offer?.productIds || [])];
+  const affected = [...offerProductIds(prev), ...offerProductIds(offer)];
   resyncOfferProducts(affected).catch(() => {});
 });
 
 router.delete('/offers/:id', auth, async (req, res) => {
   const offer = await Offer.findByIdAndDelete(req.params.id);
   res.json({ success: true });
-  if (offer) resyncOfferProducts(offer.productIds).catch(() => {});
+  if (offer) resyncOfferProducts(offerProductIds(offer)).catch(() => {});
 });
 
 // ---------------- BULK / WHOLESALE RANGES ----------------

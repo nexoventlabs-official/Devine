@@ -43,6 +43,13 @@ export default function OffersPage() {
       <div style={{ display: 'grid', gap: 14 }}>
         {offers.map((o) => {
           const prods = (o.productIds || []).map(p => (typeof p === 'object' ? p : products.find(x => x._id === p))).filter(Boolean);
+          const vTargets = (o.variantTargets || []).map((t) => {
+            const pid = typeof t.product === 'object' ? t.product?._id : t.product;
+            const prod = products.find((x) => x._id === pid);
+            if (!prod) return null;
+            const v = prod.variants?.[t.index];
+            return { prod, label: v ? (v.label || `${v.quantity}${v.unit}`) : `size ${t.index + 1}` };
+          }).filter(Boolean);
           return (
             <div key={o._id} style={{ background: '#181818', border: '1px solid #282828', borderRadius: 8, padding: 18, boxShadow: 'rgba(0,0,0,0.3) 0px 8px 8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
@@ -51,7 +58,7 @@ export default function OffersPage() {
                     {o.title} {o.active ? <span style={pill('rgba(30, 215, 96, 0.15)', '#1ed760', 'rgba(30, 215, 96, 0.3)')}>Active</span> : <span style={pill('rgba(243, 114, 127, 0.15)', '#f3727f', 'rgba(243, 114, 127, 0.3)')}>Off</span>}
                   </div>
                   <div style={{ fontSize: 13, color: '#b3b3b3', marginTop: 4 }}>
-                    B2C: <strong style={{ color: '#1ed760' }}>{fmtRule(o.b2c)}</strong> · B2B: <strong style={{ color: '#539df5' }}>{fmtRule(o.b2b)}</strong> · {prods.length} product(s)
+                    B2C: <strong style={{ color: '#1ed760' }}>{fmtRule(o.b2c)}</strong> · B2B: <strong style={{ color: '#539df5' }}>{fmtRule(o.b2b)}</strong> · {prods.length} product(s){vTargets.length ? `, ${vTargets.length} size(s)` : ''}
                   </div>
                   
                   {/* Product Thumbnails Row */}
@@ -72,7 +79,7 @@ export default function OffersPage() {
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#7c7c7c', marginTop: 6 }}>
-                    {prods.map((p) => p.name).join(', ') || 'No products selected'}
+                    {[...prods.map((p) => p.name), ...vTargets.map((t) => `${t.prod.name} (${t.label})`)].join(', ') || 'No products selected'}
                   </div>
                 </div>
 
@@ -106,11 +113,15 @@ function OfferModal({ offer, products, onClose, onSaved }) {
   const [b2c, setB2c] = useState({ enabled: offer?.b2c?.enabled ?? true, type: offer?.b2c?.type || 'percent', value: offer?.b2c?.value ?? '' });
   const [b2b, setB2b] = useState({ enabled: offer?.b2b?.enabled ?? false, type: offer?.b2b?.type || 'percent', value: offer?.b2b?.value ?? '' });
   const [selected, setSelected] = useState(new Set((offer?.productIds || []).map((p) => (typeof p === 'string' ? p : p._id))));
+  const [variantSel, setVariantSel] = useState(new Set(
+    (offer?.variantTargets || []).map((t) => `${typeof t.product === 'string' ? t.product : t.product?._id}#${t.index}`)
+  ));
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const toggle = (id) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
+  const toggleVariant = (pid, i) => { const key = `${pid}#${i}`; const n = new Set(variantSel); n.has(key) ? n.delete(key) : n.add(key); setVariantSel(n); };
 
   async function save(e) {
     e.preventDefault();
@@ -120,6 +131,7 @@ function OfferModal({ offer, products, onClose, onSaved }) {
         title,
         active,
         productIds: [...selected],
+        variantTargets: [...variantSel].map((k) => { const [product, index] = k.split('#'); return { product, index: Number(index) }; }),
         b2c: { enabled: b2c.enabled, type: b2c.type, value: Number(b2c.value) || 0 },
         b2b: { enabled: b2b.enabled, type: b2b.type, value: Number(b2b.value) || 0 }
       };
@@ -148,36 +160,54 @@ function OfferModal({ offer, products, onClose, onSaved }) {
         <DiscountRow label="B2C discount (website + catalog)" rule={b2c} setRule={setB2c} />
         <DiscountRow label="B2B discount (dealer price)" rule={b2b} setRule={setB2b} />
 
-        <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Products ({selected.size} selected)</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', margin: '16px 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          Products ({selected.size} whole{variantSel.size ? `, ${variantSel.size} size${variantSel.size > 1 ? 's' : ''}` : ''})
+        </div>
+        <div style={{ fontSize: 11.5, color: '#7c7c7c', marginBottom: 10 }}>Tick a product to apply to all its sizes, or tap individual sizes below to target only those.</div>
         <input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginBottom: 10 }} />
-        <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #282828', borderRadius: 8, background: '#181818' }}>
+        <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #282828', borderRadius: 8, background: '#181818' }}>
           {filtered.map((p) => (
-            <label key={p._id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderBottom: '1px solid #252525', cursor: 'pointer', color: '#ffffff', fontSize: 13 }}>
-              <input type="checkbox" checked={selected.has(p._id)} onChange={() => toggle(p._id)} style={{ marginTop: 13, accentColor: '#1ed760' }} />
-              <div style={{ width: 40, height: 40, borderRadius: 6, background: '#ffffff', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3 }}>
-                {p.imageUrl
-                  ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
-                  : <span style={{ fontSize: 9, color: '#7c7c7c' }}>Item</span>}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 600 }}>{p.name}</span>
-                  <span style={{ color: '#b3b3b3', fontSize: 12, flexShrink: 0 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
+            <div key={p._id} style={{ padding: '10px 12px', borderBottom: '1px solid #252525', color: '#ffffff', fontSize: 13 }}>
+              <div onClick={() => toggle(p._id)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input type="checkbox" checked={selected.has(p._id)} readOnly style={{ marginTop: 13, accentColor: '#1ed760', pointerEvents: 'none' }} />
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: '#ffffff', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3 }}>
+                  {p.imageUrl
+                    ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                    : <span style={{ fontSize: 9, color: '#7c7c7c' }}>Item</span>}
                 </div>
-                {p.variants?.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {p.variants.map((v, i) => (
-                      <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#b3b3b3', background: '#252525', borderRadius: 6, padding: '3px 8px' }}>
-                        {(v.imageUrl || p.imageUrl)
-                          ? <img src={v.imageUrl || p.imageUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', background: '#fff' }} />
-                          : null}
-                        {v.label || `${v.quantity}${v.unit}`} · ₹{v.price}{v.dealerPrice ? ` / D₹${v.dealerPrice}` : ''}
-                      </span>
-                    ))}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 600 }}>{p.name}</span>
+                    <span style={{ color: '#b3b3b3', fontSize: 12, flexShrink: 0 }}>₹{p.price}{p.dealerPrice ? ` · dealer ₹${p.dealerPrice}` : ''}</span>
                   </div>
-                )}
+                </div>
               </div>
-            </label>
+              {p.variants?.length > 0 && (
+                <div style={{ marginLeft: 34, marginTop: 8 }}>
+                  {selected.has(p._id) ? (
+                    <div style={{ fontSize: 11.5, color: '#1ed760', fontWeight: 600 }}>✓ All sizes included</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {p.variants.map((v, i) => {
+                        const on = variantSel.has(`${p._id}#${i}`);
+                        return (
+                          <button type="button" key={i}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleVariant(p._id, i); }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', borderRadius: 6, padding: '3px 8px',
+                              background: on ? '#1ed760' : '#252525', color: on ? '#0a3d20' : '#b3b3b3', fontWeight: on ? 700 : 400,
+                              border: on ? '1px solid #1ed760' : '1px solid transparent' }}>
+                            {(v.imageUrl || p.imageUrl)
+                              ? <img src={v.imageUrl || p.imageUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', background: '#fff' }} />
+                              : null}
+                            {v.label || `${v.quantity}${v.unit}`} · ₹{v.price}{v.dealerPrice ? ` / D₹${v.dealerPrice}` : ''} {on ? '✓' : ''}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ))}
           {filtered.length === 0 && <div style={{ padding: 12, color: '#b3b3b3', fontSize: 13 }}>No products found.</div>}
         </div>

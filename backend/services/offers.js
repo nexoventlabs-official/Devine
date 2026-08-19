@@ -17,24 +17,47 @@ export function isLive(offer, now = new Date()) {
   return true;
 }
 
-// Build a Map<productId, liveOffer> (first live offer wins per product).
+// Build the live-offer index:
+//   product: Map<productId, offer>            (whole-product offers)
+//   variant: Map<`productId#index`, offer>    (specific-variant offers)
 export async function buildOfferIndex() {
   const offers = await Offer.find({ active: true }).lean();
   const now = new Date();
-  const map = new Map();
+  const product = new Map();
+  const variant = new Map();
   for (const o of offers) {
     if (!isLive(o, now)) continue;
     for (const pid of o.productIds || []) {
       const key = String(pid);
-      if (!map.has(key)) map.set(key, o);
+      if (!product.has(key)) product.set(key, o);
+    }
+    for (const t of o.variantTargets || []) {
+      if (t?.product == null || t?.index == null) continue;
+      const key = `${String(t.product)}#${t.index}`;
+      if (!variant.has(key)) variant.set(key, o);
     }
   }
-  return map;
+  return { product, variant };
+}
+
+// Resolve the applicable offer: a variant-specific offer wins over a product-wide one.
+export function resolveOffer(idx, productId, variantIndex = null) {
+  if (!idx) return null;
+  if (variantIndex != null) {
+    const v = idx.variant.get(`${String(productId)}#${variantIndex}`);
+    if (v) return v;
+  }
+  return idx.product.get(String(productId)) || null;
 }
 
 export async function offerForProduct(productId) {
   const idx = await buildOfferIndex();
-  return idx.get(String(productId)) || null;
+  return resolveOffer(idx, productId);
+}
+
+export async function offerForVariant(productId, variantIndex) {
+  const idx = await buildOfferIndex();
+  return resolveOffer(idx, productId, variantIndex);
 }
 
 // B2C effective pricing for a base price given an (optional) offer.
@@ -55,4 +78,4 @@ export function b2bPricing(dealerPrice, offer) {
   return { original: dealerPrice, offer: null };
 }
 
-export default { applyDiscount, isLive, buildOfferIndex, offerForProduct, b2cPricing, b2bPricing };
+export default { applyDiscount, isLive, buildOfferIndex, resolveOffer, offerForProduct, offerForVariant, b2cPricing, b2bPricing };
