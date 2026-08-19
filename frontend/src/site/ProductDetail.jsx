@@ -37,7 +37,7 @@ export default function ProductDetail() {
     if (!product) return [];
     const out = [];
     const pushImg = (u) => { if (u && !out.some((m) => m.url === u)) out.push({ type: 'image', url: u }); };
-    pushImg(product.coverImageUrl);
+    // Cover is used as the hero banner (not a product photo), so it's excluded here.
     pushImg(product.imageUrl);
     (product.gallery || []).forEach(pushImg);
     (product.variants || []).forEach((v) => { pushImg(v.imageUrl); (v.images || []).forEach(pushImg); });
@@ -83,7 +83,15 @@ export default function ProductDetail() {
 
   return (
     <>
-      <section className="page-hero" style={{ padding: '64px 0 72px' }}>
+      <section
+        className="page-hero"
+        style={{
+          padding: '64px 0 72px',
+          ...(product.coverImageUrl
+            ? { background: `linear-gradient(180deg, rgba(35,48,28,0.72), rgba(35,48,28,0.55)), url(${product.coverImageUrl}) center/cover no-repeat` }
+            : {})
+        }}
+      >
         <div className="container">
           <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
           <h1>{product.name}</h1>

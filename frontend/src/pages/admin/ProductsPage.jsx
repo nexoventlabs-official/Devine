@@ -471,7 +471,8 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
         {/* Cover image + Video (product-level) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12 }}>
-            <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>Cover image <span style={{ color: '#7c7c7c' }}>(detail hero)</span></div>
+            <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 2 }}>Cover image <span style={{ color: '#7c7c7c' }}>(detail-page hero banner)</span></div>
+            <div style={{ fontSize: 11, color: '#7c7c7c', marginBottom: 8 }}>Wide banner — recommended <b style={{ color: '#b3b3b3' }}>1600 × 500 px</b> (≈16:5), landscape.</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               {(cover || coverUrl) ? (
                 <div style={{ position: 'relative' }}>
