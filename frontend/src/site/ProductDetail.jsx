@@ -17,6 +17,7 @@ export default function ProductDetail() {
   const [notFound, setNotFound] = useState(false);
   const [variantIdx, setVariantIdx] = useState(-1); // -1 = base product
   const [imgIdx, setImgIdx] = useState(0);
+  const [hoverVideo, setHoverVideo] = useState(false);
 
   useEffect(() => {
     let on = true;
@@ -108,13 +109,35 @@ export default function ProductDetail() {
           <div className="pd-grid">
             {/* Gallery */}
             <div className="pd-gallery">
-              {(() => {
-                const active = media[imgIdx] || media[0];
-                if (!active) return <img className="pd-main-img" src={product.imageUrl} alt={product.name} />;
-                return active.type === 'video'
-                  ? <video className="pd-main-img" src={active.url} controls playsInline poster={product.coverImageUrl || product.imageUrl} style={{ background: '#000' }} />
-                  : <img className="pd-main-img" src={active.url} alt={product.name} />;
-              })()}
+              <div
+                className="pd-main-wrap"
+                onMouseEnter={() => { if (product.videoUrl) setHoverVideo(true); }}
+                onMouseLeave={() => setHoverVideo(false)}
+              >
+                {(() => {
+                  const active = media[imgIdx] || media[0];
+                  // Play the video when the video thumb is selected, or on hover-preview.
+                  const showVideo = product.videoUrl && (active?.type === 'video' || hoverVideo);
+                  if (showVideo) {
+                    return (
+                      <video
+                        key="pd-video"
+                        className="pd-main-img"
+                        src={product.videoUrl}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        disablePictureInPicture
+                        controlsList="nodownload noplaybackrate nofullscreen"
+                        onContextMenu={(e) => e.preventDefault()}
+                        style={{ background: '#000' }}
+                      />
+                    );
+                  }
+                  return <img className="pd-main-img" src={active?.url || product.imageUrl} alt={product.name} />;
+                })()}
+              </div>
               {media.length > 1 && (
                 <div className="pd-thumbs">
                   {media.map((m, i) => (
