@@ -90,7 +90,7 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
         price: pr.original,
         salePrice: pr.offer,
         imageUrl: mainUrl,
-        additionalImages: extraImages(mainUrl, v.images || [], p.coverImageUrl, p.gallery || [])
+        additionalImages: extraImages(mainUrl, v.images || [], p.gallery || [])
       };
     });
   }
@@ -103,7 +103,7 @@ export function expandToCatalogItems(p, { includeRatings = true, offer = null } 
     price: pr.original,
     salePrice: pr.offer,
     imageUrl: mainUrl,
-    additionalImages: extraImages(mainUrl, p.coverImageUrl, p.gallery || [])
+    additionalImages: extraImages(mainUrl, p.gallery || [])
   }];
 }
 

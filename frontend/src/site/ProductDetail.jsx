@@ -38,18 +38,18 @@ export default function ProductDetail() {
   const media = useMemo(() => {
     if (!product) return [];
     const out = [];
-    const pushImg = (u) => { if (u && !out.some((m) => m.url === u)) out.push({ type: 'image', url: u }); };
+    const seen = new Set();
+    const pushImg = (u) => { if (u && !seen.has(u)) { seen.add(u); out.push({ type: 'image', url: u }); } };
     const vsel = variantIdx >= 0 ? (product.variants || [])[variantIdx] : null;
-    if (vsel) {
-      pushImg(vsel.imageUrl);
-      (vsel.images || []).forEach(pushImg);
-      if (!out.length) pushImg(product.imageUrl); // fallback if the variant has no image
-    } else {
-      // Cover is the hero banner (not a product photo), so it's excluded here.
-      pushImg(product.imageUrl);
-      (product.gallery || []).forEach(pushImg);
-    }
+    // Cover is the hero banner (not a product photo), so it's excluded here.
+    const imgs = vsel
+      ? [vsel.imageUrl, ...(vsel.images || [])].filter(Boolean)
+      : [product.imageUrl, ...(product.gallery || [])].filter(Boolean);
+    if (!imgs.length && product.imageUrl) imgs.push(product.imageUrl);
+    // Order: main image, then video, then the additional images.
+    pushImg(imgs[0]);
     if (product.videoUrl) out.push({ type: 'video', url: product.videoUrl });
+    imgs.slice(1).forEach(pushImg);
     return out;
   }, [product, variantIdx]);
 

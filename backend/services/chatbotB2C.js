@@ -380,7 +380,6 @@ async function sendProductGallery(phone, retailerId) {
 
   const imgs = [];
   const push = (u) => { if (u && !imgs.includes(u)) imgs.push(u); };
-  push(p.coverImageUrl);
   push(p.imageUrl);
   (p.gallery || []).forEach(push);
   (p.variants || []).forEach((v) => { push(v.imageUrl); (v.images || []).forEach(push); });
