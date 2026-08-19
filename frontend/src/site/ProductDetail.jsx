@@ -32,34 +32,38 @@ export default function ProductDetail() {
     return () => { on = false; };
   }, [id]);
 
-  // Ordered media: cover, main, gallery, then each variant's images, then video.
+  // Media shown in the gallery. When a size/variant is selected, show ONLY that
+  // variant's images (main + its extra images); otherwise show the product's own
+  // images. The product video (if any) always appears at the end.
   const media = useMemo(() => {
     if (!product) return [];
     const out = [];
     const pushImg = (u) => { if (u && !out.some((m) => m.url === u)) out.push({ type: 'image', url: u }); };
-    // Cover is used as the hero banner (not a product photo), so it's excluded here.
-    pushImg(product.imageUrl);
-    (product.gallery || []).forEach(pushImg);
-    (product.variants || []).forEach((v) => { pushImg(v.imageUrl); (v.images || []).forEach(pushImg); });
+    const vsel = variantIdx >= 0 ? (product.variants || [])[variantIdx] : null;
+    if (vsel) {
+      pushImg(vsel.imageUrl);
+      (vsel.images || []).forEach(pushImg);
+      if (!out.length) pushImg(product.imageUrl); // fallback if the variant has no image
+    } else {
+      // Cover is the hero banner (not a product photo), so it's excluded here.
+      pushImg(product.imageUrl);
+      (product.gallery || []).forEach(pushImg);
+    }
     if (product.videoUrl) out.push({ type: 'video', url: product.videoUrl });
     return out;
-  }, [product]);
+  }, [product, variantIdx]);
 
-  // Preselect a variant when arriving from a variant card (?v=index).
+  // Preselect a variant when arriving from a variant card (?v=index); else default
+  // to the first variant when the product has variants.
   useEffect(() => {
     if (!product) return;
     const v = params.get('v');
-    if (v == null) return;
-    const i = Number(v);
-    if (product.variants && product.variants[i]) {
-      setVariantIdx(i);
-      const url = product.variants[i].imageUrl;
-      if (url) { const gi = media.findIndex((m) => m.url === url); if (gi >= 0) setImgIdx(gi); }
-      return;
+    const i = v != null ? Number(v) : 0;
+    if (product.variants && product.variants.length) {
+      setVariantIdx(product.variants[i] ? i : 0);
+      setImgIdx(0);
     }
-    // No explicit variant -> default to the first one when the product has variants.
-    if (product.variants && product.variants.length) setVariantIdx(0);
-  }, [product, params, media]);
+  }, [product, params]);
 
   if (loading) return <div className="devine-site-detail"><div className="site-loader">Loading…</div></div>;
   if (notFound || !product) {
@@ -144,7 +148,7 @@ export default function ProductDetail() {
                   <div style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)' }}>Select size</div>
                   <div className="pd-variants">
                     {product.variants.map((vr, i) => (
-                      <button key={i} className={`pd-variant${variantIdx === i ? ' active' : ''}`} onClick={() => { setVariantIdx(i); if (vr.imageUrl) { const gi = media.findIndex((m) => m.url === vr.imageUrl); if (gi >= 0) setImgIdx(gi); } }}>
+                      <button key={i} className={`pd-variant${variantIdx === i ? ' active' : ''}`} onClick={() => { setVariantIdx(i); setImgIdx(0); }}>
                         {(vr.imageUrl || product.imageUrl) && <img className="pd-variant-img" src={vr.imageUrl || product.imageUrl} alt="" />}
                         <b>{vr.label || `${vr.quantity} ${vr.unit}`}</b>
                         <span>₹{vr.offerPrice && vr.offerPrice < (vr.price || product.price) ? vr.offerPrice : (vr.price || product.price)}</span>
