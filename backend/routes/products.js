@@ -85,7 +85,8 @@ const fileByField = (files, name) => (files || []).find((f) => f.fieldname === n
 async function buildProductMedia(b, files) {
   const media = {};
   const coverF = fileByField(files, 'cover');
-  if (coverF) media.coverImageUrl = await cloudinaryService.uploadBuffer(coverF.buffer, { folder: 'devine/products' });
+  // Cover is a wide detail-page hero banner — keep its original (landscape) ratio, don't 1:1 crop.
+  if (coverF) media.coverImageUrl = await cloudinaryService.uploadBuffer(coverF.buffer, { folder: 'devine/products', aspectRatio: 'original' });
   else if (b.coverImageUrl !== undefined) media.coverImageUrl = b.coverImageUrl || '';
 
   const videoF = fileByField(files, 'video');
