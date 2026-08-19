@@ -568,17 +568,17 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
-          <input required placeholder="Name *" value={form.name} onChange={set('name')} style={input} />
-          <CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} />
-          <input type="number" required placeholder="B2C price *" value={form.price} onChange={set('price')} style={input} />
-          <input type="number" placeholder="Dealer price" value={form.dealerPrice} onChange={set('dealerPrice')} style={input} />
-          <input placeholder="Margin (e.g. 20-35%)" value={form.margin} onChange={set('margin')} style={input} />
-          <input placeholder="MOQ" value={form.moq} onChange={set('moq')} style={input} />
-          <input placeholder="Badges (comma separated)" value={form.badges} onChange={set('badges')} style={input} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
+          <div><label style={fieldLbl}>Product name *</label><input required placeholder="e.g. Agarbathi" value={form.name} onChange={set('name')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Category *</label><CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} /></div>
+          <div><label style={fieldLbl}>B2C price (₹) *</label><input type="number" required placeholder="149" value={form.price} onChange={set('price')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Dealer price (₹)</label><input type="number" placeholder="120" value={form.dealerPrice} onChange={set('dealerPrice')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Dealer margin</label><input placeholder="e.g. 20-35%" value={form.margin} onChange={set('margin')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>MOQ</label><input placeholder="Min order qty" value={form.moq} onChange={set('moq')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Badges</label><input placeholder="comma separated" value={form.badges} onChange={set('badges')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
         </div>
-        <input placeholder="Short description" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box' }} />
-        <textarea placeholder="Full description" value={form.description} onChange={set('description')} rows={3} style={{ ...input, width: '100%', marginTop: 10, boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} />
+        <div style={{ marginTop: 12 }}><label style={fieldLbl}>Short description</label><input placeholder="One-line summary" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+        <div style={{ marginTop: 12 }}><label style={fieldLbl}>Full description</label><textarea placeholder="Full product description" value={form.description} onChange={set('description')} rows={3} style={{ ...input, width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} /></div>
 
         {/* Delivery / shipping charge */}
         <div style={{ marginTop: 12, background: '#181818', border: '1px solid #333', borderRadius: 12, padding: '12px 14px' }}>
@@ -682,6 +682,7 @@ function ScheduleModal({ product, onClose, onSaved }) {
 }
 
 const input = { padding: '9px 12px', background: '#1f1f1f', border: '1px solid #333', borderRadius: 500, color: '#ffffff', fontSize: 13, outline: 'none' };
+const fieldLbl = { display: 'block', fontSize: 11, color: '#8a8a8a', fontWeight: 600, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' };
 const btn = { background: '#1ed760', color: '#000000', border: 0, borderRadius: 9999, padding: '10px 18px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '1.4px', cursor: 'pointer' };
 const miniBtn = { border: 0, borderRadius: 9999, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' };
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 };
