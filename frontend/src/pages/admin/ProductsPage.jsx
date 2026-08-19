@@ -476,11 +476,11 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               {(cover || coverUrl) ? (
                 <div style={{ position: 'relative' }}>
-                  <img src={cover ? URL.createObjectURL(cover) : coverUrl} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #333' }} />
+                  <img src={cover ? URL.createObjectURL(cover) : coverUrl} alt="" style={{ width: 144, height: 45, objectFit: 'cover', borderRadius: 6, border: '1px solid #333' }} />
                   <button type="button" onClick={() => { setCover(null); setCoverUrl(''); }} title="Remove" style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#f3727f', color: '#000', border: 0, cursor: 'pointer', fontSize: 11, fontWeight: 800, padding: 0 }}>×</button>
                 </div>
               ) : (
-                <div style={{ width: 60, height: 60, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c' }}>None</div>
+                <div style={{ width: 144, height: 45, borderRadius: 6, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#7c7c7c' }}>16:5 banner</div>
               )}
               <label style={{ ...miniBtn, background: '#282828', color: '#fff', cursor: 'pointer', border: '1px solid #4d4d4d' }}>
                 {(cover || coverUrl) ? 'Change' : 'Choose'}

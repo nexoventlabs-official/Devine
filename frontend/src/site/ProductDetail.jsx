@@ -90,9 +90,14 @@ export default function ProductDetail() {
       <section
         className="page-hero"
         style={{
-          padding: '64px 0 72px',
+          padding: '48px 0 40px',
           ...(product.coverImageUrl
-            ? { background: `linear-gradient(180deg, rgba(35,48,28,0.72), rgba(35,48,28,0.55)), url(${product.coverImageUrl}) center/cover no-repeat` }
+            ? {
+                minHeight: 'clamp(220px, 28vw, 420px)',
+                display: 'flex',
+                alignItems: 'flex-end',
+                background: `linear-gradient(180deg, rgba(35,48,28,0.55), rgba(35,48,28,0.6)), url(${product.coverImageUrl}) center/contain no-repeat #23301c`
+              }
             : {})
         }}
       >
