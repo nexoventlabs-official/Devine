@@ -393,6 +393,16 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
   );
   const [cover, setCover] = useState(null); // cover image file
   const [coverUrl, setCoverUrl] = useState(product?.coverImageUrl || '');
+  const [coverDims, setCoverDims] = useState(null); // { w, h } of the current cover image
+  useEffect(() => {
+    const src = cover ? URL.createObjectURL(cover) : coverUrl;
+    if (!src) { setCoverDims(null); return undefined; }
+    const img = new Image();
+    img.onload = () => setCoverDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => setCoverDims(null);
+    img.src = src;
+    return () => { if (cover) URL.revokeObjectURL(src); };
+  }, [cover, coverUrl]);
   const [video, setVideo] = useState(null); // video file
   const [videoUrl, setVideoUrl] = useState(product?.videoUrl || '');
   const [saving, setSaving] = useState(false);
@@ -472,7 +482,11 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 2 }}>Cover image <span style={{ color: '#7c7c7c' }}>(detail-page hero banner)</span></div>
-            <div style={{ fontSize: 11, color: '#7c7c7c', marginBottom: 8 }}>Wide banner — recommended <b style={{ color: '#b3b3b3' }}>1600 × 500 px</b> (≈16:5), landscape.</div>
+            <div style={{ fontSize: 11, color: '#7c7c7c', marginBottom: 8 }}>
+              {coverDims && coverDims.h
+                ? <>Aspect ratio: <b style={{ color: '#1ed760' }}>{(coverDims.w / coverDims.h).toFixed(2)}:1</b> <span style={{ color: '#5a5a5a' }}>({coverDims.w} × {coverDims.h} px)</span></>
+                : <>Landscape banner recommended.</>}
+            </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               {(cover || coverUrl) ? (
                 <div style={{ position: 'relative' }}>
