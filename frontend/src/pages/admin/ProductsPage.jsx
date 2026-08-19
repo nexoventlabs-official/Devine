@@ -373,12 +373,8 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
     category: product?.category || '',
     shortDesc: product?.shortDesc || '',
     description: product?.description || '',
-    price: product?.price ?? '',
-    dealerPrice: product?.dealerPrice ?? '',
     margin: product?.margin || '',
     moq: product?.moq || '',
-    quantity: product?.quantity ? String(product.quantity) : '',
-    unit: product?.unit || 'unit',
     deliveryCharge: product?.deliveryCharge ?? '',
     badges: (product?.badges || []).join(', ')
   });
@@ -395,13 +391,10 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
       newImages: []
     }))
   );
-  const [file, setFile] = useState(null); // main image
   const [cover, setCover] = useState(null); // cover image file
   const [coverUrl, setCoverUrl] = useState(product?.coverImageUrl || '');
   const [video, setVideo] = useState(null); // video file
   const [videoUrl, setVideoUrl] = useState(product?.videoUrl || '');
-  // Gallery items: existing = { url }, new = { file }.
-  const [gallery, setGallery] = useState((product?.gallery || []).map((url) => ({ url })));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -409,6 +402,7 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
   async function save(e) {
     e.preventDefault();
     if (!form.category) { setErr('Please select a category'); return; }
+    if (!variants.some((v) => Number(v.price) > 0)) { setErr('Add at least one size/variant with a price.'); return; }
     setSaving(true);
     setErr('');
     try {
@@ -417,15 +411,14 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
       // Delivery charge only applies when the Shipping checkbox is on; else 0.
       fd.set('deliveryCharge', chargeDelivery ? (Number(form.deliveryCharge) || 0) : 0);
 
-      // Variants: keep quantity/unit/price/dealer/imageUrl + kept extra images; upload new files.
+      // Variants carry price/qty/unit + their own images. Backend derives the
+      // product's base price/image from the first variant.
       const variantsPayload = variants.map(({ imageFile, newImages, ...v }) => v);
       fd.append('variants', JSON.stringify(variantsPayload));
       variants.forEach((v, i) => {
         if (v.imageFile) fd.append(`variant_image_${i}`, v.imageFile);
         (v.newImages || []).forEach((f) => fd.append(`variant_gallery_${i}`, f));
       });
-
-      if (file) fd.append('image', file);
 
       // Cover image: new file, or the kept/cleared url.
       if (cover) fd.append('cover', cover);
@@ -434,10 +427,6 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
       // Video: new file, or the kept/cleared url.
       if (video) fd.append('video', video);
       else fd.append('videoUrl', videoUrl || '');
-
-      // Gallery: kept existing urls + newly chosen files.
-      fd.append('galleryKeep', JSON.stringify(gallery.filter((g) => g.url).map((g) => g.url)));
-      gallery.filter((g) => g.file).forEach((g) => fd.append('gallery', g.file));
 
       if (isEdit) await api.putForm(`/products/${product._id}`, fd);
       else await api.postForm('/products', fd);
@@ -475,50 +464,11 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
         )}
         {err && <div style={{ background: 'rgba(243,114,127,0.15)', color: '#f3727f', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{err}</div>}
 
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>
-            {isEdit ? 'Replace main image' : 'Main product image'}
-          </div>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            {(file || product?.imageUrl) ? (
-              <img
-                src={file ? URL.createObjectURL(file) : product.imageUrl}
-                alt=""
-                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #333' }}
-              />
-            ) : (
-              <div style={{ width: 72, height: 72, borderRadius: 8, background: '#252525', border: '1px dashed #4d4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#7c7c7c' }}>
-                No Image
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 16px',
-                background: '#282828',
-                color: '#ffffff',
-                border: '1px solid #4d4d4d',
-                borderRadius: 500,
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                width: 'fit-content'
-              }}>
-                <span>{file ? 'Change File' : (product?.imageUrl ? 'Replace Image' : 'Choose Image')}</span>
-                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'none' }} />
-              </label>
-              <span style={{ fontSize: 12, color: file ? '#1ed760' : '#7c7c7c' }}>
-                {file ? file.name : 'PNG, JPG, WebP up to 10MB'}
-              </span>
-            </div>
-          </div>
+        <div style={{ background: 'rgba(30,215,96,0.08)', border: '1px solid rgba(30,215,96,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12.5, color: '#b3b3b3' }}>
+          Prices, quantity, unit and product images are set per size in the <b style={{ color: '#1ed760' }}>Size / Quantity variants</b> section below. Cover image &amp; video apply to the whole product.
         </div>
 
-        {/* Cover image + Video */}
+        {/* Cover image + Video (product-level) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 8 }}>Cover image <span style={{ color: '#7c7c7c' }}>(detail hero)</span></div>
@@ -556,31 +506,9 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
           </div>
         </div>
 
-        {/* Product gallery (multiple images) */}
-        <div style={{ background: '#181818', border: '1px solid #333', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: '#b3b3b3', fontWeight: 600, marginBottom: 10 }}>Additional product images</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {gallery.map((g, idx) => (
-              <Thumb key={idx} src={g.url || URL.createObjectURL(g.file)} onRemove={() => setGallery(gallery.filter((_, j) => j !== idx))} />
-            ))}
-            <label style={{ ...miniBtn, background: '#282828', color: '#fff', cursor: 'pointer', border: '1px dashed #4d4d4d' }}>
-              + Add images
-              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => setGallery([...gallery, ...Array.from(e.target.files).map((f) => ({ file: f }))])} />
-            </label>
-          </div>
-        </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
           <div><label style={fieldLbl}>Product name *</label><input required placeholder="e.g. Agarbathi" value={form.name} onChange={set('name')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Category *</label><CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} /></div>
-          <div><label style={fieldLbl}>B2C price (₹) *</label><input type="number" required placeholder="149" value={form.price} onChange={set('price')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
-          <div><label style={fieldLbl}>Dealer price (₹)</label><input type="number" placeholder="120" value={form.dealerPrice} onChange={set('dealerPrice')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
-          <div><label style={fieldLbl}>Pack quantity</label><input type="number" placeholder="e.g. 20" value={form.quantity} onChange={set('quantity')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
-          <div><label style={fieldLbl}>Unit</label>
-            <select value={form.unit} onChange={set('unit')} style={{ ...input, width: '100%', boxSizing: 'border-box' }}>
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </div>
           <div><label style={fieldLbl}>Dealer margin</label><input placeholder="e.g. 20-35%" value={form.margin} onChange={set('margin')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>MOQ</label><input placeholder="Min order qty" value={form.moq} onChange={set('moq')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Badges</label><input placeholder="comma separated" value={form.badges} onChange={set('badges')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>

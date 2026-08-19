@@ -178,28 +178,29 @@ router.get('/:id', async (req, res) => {
 router.post('/', auth, upload.any(), async (req, res) => {
   try {
     const b = req.body;
-    let imageUrl = b.imageUrl || '';
-    const mainImg = fileByField(req.files, 'image');
-    if (mainImg) {
-      imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
-    }
     const retailerId = b.retailerId || `dvn_${genOrderId('p').toLowerCase().replace(/-/g, '')}`;
     const media = await buildProductMedia(b, req.files);
+    const variants = await buildVariants(b.variants, req.files);
+    // Price/qty/unit/image are set per-variant; derive product base fields from the first variant.
+    const v0 = variants[0] || {};
+    let imageUrl = b.imageUrl || v0.imageUrl || media.coverImageUrl || '';
+    const mainImg = fileByField(req.files, 'image');
+    if (mainImg) imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     const product = await Product.create({
       name: b.name,
       retailerId,
       category: b.category,
       description: b.description || '',
       shortDesc: b.shortDesc || '',
-      price: Number(b.price) || 0,
+      price: Number(b.price) || v0.price || 0,
       mrp: Number(b.mrp) || 0,
-      dealerPrice: Number(b.dealerPrice) || 0,
+      dealerPrice: Number(b.dealerPrice) || v0.dealerPrice || 0,
       margin: b.margin || '',
       moq: b.moq || '',
-      unit: b.unit || 'unit',
-      quantity: Number(b.quantity) || 0,
+      unit: b.unit || v0.unit || 'unit',
+      quantity: Number(b.quantity) || v0.quantity || 0,
       deliveryCharge: Number(b.deliveryCharge) || 0,
-      variants: await buildVariants(b.variants, req.files),
+      variants,
       imageUrl,
       coverImageUrl: media.coverImageUrl || '',
       videoUrl: media.videoUrl || '',
@@ -256,6 +257,14 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
         if (v.imageUrl && !newUrls.has(v.imageUrl)) staleVariantImages.push(v.imageUrl);
         (v.images || []).forEach((u) => { if (u && !newUrls.has(u)) staleVariantImages.push(u); });
       });
+
+      // Derive product base fields from the first variant (price/qty/unit/image live on variants now).
+      const v0 = update.variants[0] || {};
+      if (update.price === undefined) update.price = v0.price || 0;
+      if (update.dealerPrice === undefined) update.dealerPrice = v0.dealerPrice || 0;
+      if (update.quantity === undefined) update.quantity = v0.quantity || 0;
+      if (update.unit === undefined) update.unit = v0.unit || 'unit';
+      if (!mainImg && update.imageUrl === undefined && v0.imageUrl) update.imageUrl = v0.imageUrl;
     }
 
     // Cover / gallery / video (kept URLs + new uploads).
