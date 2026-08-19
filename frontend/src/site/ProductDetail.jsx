@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { WA_LINK } from './Layout';
 
@@ -10,6 +10,7 @@ function Stars({ value = 0 }) {
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const [params] = useSearchParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -43,6 +44,19 @@ export default function ProductDetail() {
     if (product.videoUrl) out.push({ type: 'video', url: product.videoUrl });
     return out;
   }, [product]);
+
+  // Preselect a variant when arriving from a variant card (?v=index).
+  useEffect(() => {
+    if (!product) return;
+    const v = params.get('v');
+    if (v == null) return;
+    const i = Number(v);
+    if (product.variants && product.variants[i]) {
+      setVariantIdx(i);
+      const url = product.variants[i].imageUrl;
+      if (url) { const gi = media.findIndex((m) => m.url === url); if (gi >= 0) setImgIdx(gi); }
+    }
+  }, [product, params, media]);
 
   if (loading) return <div className="devine-site-detail"><div className="site-loader">Loading…</div></div>;
   if (notFound || !product) {
