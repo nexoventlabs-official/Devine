@@ -119,7 +119,8 @@ const cloudinaryService = {
   async deleteByPublicId(publicId, resourceType = 'image') {
     ensureConfig();
     try {
-      return await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+      // invalidate: true also purges the asset from Cloudinary's CDN edge cache.
+      return await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
     } catch (err) {
       logger.error('Cloudinary delete error', { error: err.message });
       throw err;

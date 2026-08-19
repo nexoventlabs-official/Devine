@@ -69,7 +69,7 @@ async function listAll(resourceType) {
       for (let i = 0; i < orphans.length; i += 100) {
         const batch = orphans.slice(i, i + 100);
         // eslint-disable-next-line no-await-in-loop
-        await cloudinary.api.delete_resources(batch, { resource_type: rt });
+        await cloudinary.api.delete_resources(batch, { resource_type: rt, invalidate: true });
         console.log(`  deleted ${batch.length} ${rt} assets`);
       }
     }
