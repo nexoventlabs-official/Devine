@@ -89,19 +89,17 @@ export default function ProductDetail() {
     <>
       <section
         className="page-hero"
-        style={{
-          padding: '48px 0 40px',
-          ...(product.coverImageUrl
-            ? {
-                minHeight: 'clamp(220px, 28vw, 420px)',
-                display: 'flex',
-                alignItems: 'flex-end',
-                background: `linear-gradient(180deg, rgba(35,48,28,0.55), rgba(35,48,28,0.6)), url(${product.coverImageUrl}) center/contain no-repeat #23301c`
-              }
-            : {})
-        }}
+        style={product.coverImageUrl
+          ? {
+              padding: 0,
+              aspectRatio: '16 / 5',
+              display: 'flex',
+              alignItems: 'flex-end',
+              background: `linear-gradient(180deg, rgba(35,48,28,0.05) 45%, rgba(35,48,28,0.6)), url(${product.coverImageUrl}) center/cover no-repeat`
+            }
+          : { padding: '64px 0 72px' }}
       >
-        <div className="container">
+        <div className="container" style={product.coverImageUrl ? { paddingTop: 18, paddingBottom: 18 } : undefined}>
           <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
           <h1>{product.name}</h1>
         </div>
