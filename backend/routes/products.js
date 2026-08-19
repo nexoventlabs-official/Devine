@@ -237,8 +237,7 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
     const b = req.body;
     const update = { ...b };
     const mainImg = fileByField(req.files, 'image');
-    const needExisting = !!mainImg || update.variants !== undefined;
-    const existing = needExisting ? await Product.findById(req.params.id).select('imageUrl variants').lean() : null;
+    const existing = await Product.findById(req.params.id).select('imageUrl variants coverImageUrl videoUrl gallery').lean();
 
     let oldImageUrl = null;
     if (mainImg) {
@@ -280,6 +279,17 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
     // Remove replaced images (main + any removed variant images) from Cloudinary.
     if (oldImageUrl && oldImageUrl !== update.imageUrl) cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
     staleVariantImages.forEach((u) => cloudinaryService.deleteByUrl(u).catch(() => {}));
+    // Replaced/removed cover, video and removed gallery images.
+    if (update.coverImageUrl !== undefined && existing?.coverImageUrl && existing.coverImageUrl !== update.coverImageUrl) {
+      cloudinaryService.deleteByUrl(existing.coverImageUrl).catch(() => {});
+    }
+    if (update.videoUrl !== undefined && existing?.videoUrl && existing.videoUrl !== update.videoUrl) {
+      cloudinaryService.deleteByUrl(existing.videoUrl, 'video').catch(() => {});
+    }
+    if (update.gallery !== undefined) {
+      const keep = new Set(update.gallery || []);
+      (existing?.gallery || []).forEach((u) => { if (u && !keep.has(u)) cloudinaryService.deleteByUrl(u).catch(() => {}); });
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

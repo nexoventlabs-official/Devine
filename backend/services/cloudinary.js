@@ -133,7 +133,11 @@ const cloudinaryService = {
    */
   async deleteByUrl(url, resourceType) {
     if (!url || !url.includes('cloudinary.com')) return null;
-    const rt = resourceType || (/\.pdf(\?|$)/i.test(url) ? 'raw' : 'image');
+    const rt = resourceType || (
+      /\/video\/upload\//i.test(url) || /\.(mp4|mov|webm|m4v|3gp|mkv)(\?|$)/i.test(url) ? 'video'
+        : /\.pdf(\?|$)/i.test(url) ? 'raw'
+          : 'image'
+    );
     const parts = url.split('/upload/');
     if (parts.length !== 2) return null;
     const path = parts[1].split('?')[0];
