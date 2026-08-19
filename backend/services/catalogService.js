@@ -28,7 +28,8 @@ export function availabilityOf(p) {
  */
 export function buildProductDescription(p, { includeRatings = true } = {}) {
   const parts = [];
-  if (p.unit && p.unit !== 'unit') parts.push(`Per ${p.unit}`);
+  if (p.quantity > 0) parts.push(`Pack: ${p.quantity} ${p.unit || 'unit'}`);
+  else if (p.unit && p.unit !== 'unit') parts.push(`Per ${p.unit}`);
 
   if (includeRatings) {
     const rating = p.avgRating || p.rating || 0;

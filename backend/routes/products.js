@@ -197,6 +197,7 @@ router.post('/', auth, upload.any(), async (req, res) => {
       margin: b.margin || '',
       moq: b.moq || '',
       unit: b.unit || 'unit',
+      quantity: Number(b.quantity) || 0,
       deliveryCharge: Number(b.deliveryCharge) || 0,
       variants: await buildVariants(b.variants, req.files),
       imageUrl,
@@ -242,7 +243,7 @@ router.put('/:id', auth, upload.any(), async (req, res) => {
       oldImageUrl = existing?.imageUrl || null;
       update.imageUrl = await cloudinaryService.uploadBuffer(mainImg.buffer, { folder: 'devine/products' });
     }
-    ['price', 'mrp', 'dealerPrice', 'rating', 'deliveryCharge'].forEach((k) => {
+    ['price', 'mrp', 'dealerPrice', 'rating', 'deliveryCharge', 'quantity'].forEach((k) => {
       if (update[k] !== undefined) update[k] = Number(update[k]) || 0;
     });
 

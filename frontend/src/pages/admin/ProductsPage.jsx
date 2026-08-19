@@ -4,7 +4,7 @@ import Loader from './Loader';
 import { EditIcon, TrashIcon, CalendarIcon, BoxIcon, IconBtn, ConfirmModal } from './adminUi';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo'];
+const UNITS = ['g', 'kg', 'ml', 'litre', 'piece', 'pack', 'box', 'dozen', 'combo', 'sticks', 'unit', 'set'];
 
 // Small removable thumbnail used by gallery editors.
 function Thumb({ src, isVideo, onRemove }) {
@@ -377,6 +377,8 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
     dealerPrice: product?.dealerPrice ?? '',
     margin: product?.margin || '',
     moq: product?.moq || '',
+    quantity: product?.quantity ? String(product.quantity) : '',
+    unit: product?.unit || 'unit',
     deliveryCharge: product?.deliveryCharge ?? '',
     badges: (product?.badges || []).join(', ')
   });
@@ -573,6 +575,12 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
           <div><label style={fieldLbl}>Category *</label><CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} /></div>
           <div><label style={fieldLbl}>B2C price (₹) *</label><input type="number" required placeholder="149" value={form.price} onChange={set('price')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Dealer price (₹)</label><input type="number" placeholder="120" value={form.dealerPrice} onChange={set('dealerPrice')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Pack quantity</label><input type="number" placeholder="e.g. 20" value={form.quantity} onChange={set('quantity')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Unit</label>
+            <select value={form.unit} onChange={set('unit')} style={{ ...input, width: '100%', boxSizing: 'border-box' }}>
+              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
           <div><label style={fieldLbl}>Dealer margin</label><input placeholder="e.g. 20-35%" value={form.margin} onChange={set('margin')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>MOQ</label><input placeholder="Min order qty" value={form.moq} onChange={set('moq')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Badges</label><input placeholder="comma separated" value={form.badges} onChange={set('badges')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>

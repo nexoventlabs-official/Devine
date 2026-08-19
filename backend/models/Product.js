@@ -14,6 +14,7 @@ const ProductSchema = new mongoose.Schema(
     margin: { type: String, default: '' }, // e.g. "20-35%"
     moq: { type: String, default: '' },
     unit: { type: String, default: 'unit' },
+    quantity: { type: Number, default: 0 }, // pack size for single-size products (e.g. 20 sticks)
     // Per-product delivery/shipping charge (₹). 0 = free delivery for this item.
     deliveryCharge: { type: Number, default: 0 },
     // ---- Size/quantity variants (e.g. 250g, 500g, 1kg) each with its own price ----

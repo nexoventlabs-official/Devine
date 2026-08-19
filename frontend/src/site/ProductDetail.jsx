@@ -108,6 +108,9 @@ export default function ProductDetail() {
                 {hasOffer ? <><s>₹{basePrice}</s>₹{offerPrice}{product.offerTitle ? <span className="off">{product.offerTitle}</span> : null}</> : <>₹{basePrice}</>}
               </div>
               {product.deliveryCharge > 0 ? <div style={{ color: 'var(--ink-faint)', fontSize: '0.88rem' }}>+ ₹{product.deliveryCharge} delivery</div> : <div style={{ color: 'var(--olive-deep)', fontSize: '0.88rem', fontWeight: 600 }}>Free delivery</div>}
+              {product.quantity > 0 && !(product.variants && product.variants.length) && (
+                <div style={{ color: 'var(--ink-soft)', fontSize: '0.95rem', marginTop: 8 }}>Pack size: <b>{product.quantity} {product.unit}</b></div>
+              )}
 
               {product.description || product.shortDesc ? <p className="pd-desc">{product.description || product.shortDesc}</p> : null}
 
