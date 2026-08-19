@@ -87,23 +87,24 @@ export default function ProductDetail() {
 
   return (
     <>
-      <section
-        className="page-hero"
-        style={product.coverImageUrl
-          ? {
-              padding: 0,
-              aspectRatio: '16 / 5',
-              display: 'flex',
-              alignItems: 'flex-end',
-              background: `linear-gradient(180deg, rgba(35,48,28,0.05) 45%, rgba(35,48,28,0.6)), url(${product.coverImageUrl}) center/cover no-repeat`
-            }
-          : { padding: '64px 0 72px' }}
-      >
-        <div className="container" style={product.coverImageUrl ? { paddingTop: 18, paddingBottom: 18 } : undefined}>
-          <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
-          <h1>{product.name}</h1>
-        </div>
-      </section>
+      {product.coverImageUrl ? (
+        <section className="page-hero" style={{ padding: 0, position: 'relative' }}>
+          <img src={product.coverImageUrl} alt={product.name} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', background: 'linear-gradient(180deg, rgba(35,48,28,0) 45%, rgba(35,48,28,0.6))' }}>
+            <div className="container" style={{ paddingTop: 16, paddingBottom: 16 }}>
+              <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
+              <h1>{product.name}</h1>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="page-hero" style={{ padding: '64px 0 72px' }}>
+          <div className="container">
+            <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
+            <h1>{product.name}</h1>
+          </div>
+        </section>
+      )}
 
       <section className="section-pad">
         <div className="container">
