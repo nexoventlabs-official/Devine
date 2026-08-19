@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { WA_LINK } from './Layout';
 
@@ -11,6 +11,7 @@ function Stars({ value = 0 }) {
 export default function ProductDetail() {
   const { id } = useParams();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -89,10 +90,12 @@ export default function ProductDetail() {
     <>
       {product.coverImageUrl ? (
         <section className="page-hero" style={{ padding: 0 }}>
+          <button type="button" className="pd-back" onClick={() => navigate(-1)} aria-label="Go back">← Back</button>
           <img src={product.coverImageUrl} alt={product.name} style={{ width: '100%', height: 'auto', display: 'block' }} />
         </section>
       ) : (
         <section className="page-hero" style={{ padding: '64px 0 72px' }}>
+          <button type="button" className="pd-back" onClick={() => navigate(-1)} aria-label="Go back">← Back</button>
           <div className="container">
             <p className="crumbs"><Link to="/">Home</Link> / <Link to="/products">Products</Link> / {product.name}</p>
             <h1>{product.name}</h1>
