@@ -119,10 +119,12 @@ export default function ProductDetail() {
                   <div style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)' }}>Select size</div>
                   <div className="pd-variants">
                     <button className={`pd-variant${variantIdx === -1 ? ' active' : ''}`} onClick={() => setVariantIdx(-1)}>
+                      {(product.coverImageUrl || product.imageUrl) && <img className="pd-variant-img" src={product.coverImageUrl || product.imageUrl} alt="" />}
                       <b>Standard</b><span>₹{product.offerPrice && product.offerPrice < product.price ? product.offerPrice : product.price}</span>
                     </button>
                     {product.variants.map((vr, i) => (
                       <button key={i} className={`pd-variant${variantIdx === i ? ' active' : ''}`} onClick={() => { setVariantIdx(i); if (vr.imageUrl) { const gi = media.findIndex((m) => m.url === vr.imageUrl); if (gi >= 0) setImgIdx(gi); } }}>
+                        {(vr.imageUrl || product.imageUrl) && <img className="pd-variant-img" src={vr.imageUrl || product.imageUrl} alt="" />}
                         <b>{vr.label || `${vr.quantity} ${vr.unit}`}</b>
                         <span>₹{vr.offerPrice && vr.offerPrice < (vr.price || product.price) ? vr.offerPrice : (vr.price || product.price)}</span>
                       </button>

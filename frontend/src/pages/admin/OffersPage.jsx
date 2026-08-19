@@ -167,7 +167,10 @@ function OfferModal({ offer, products, onClose, onSaved }) {
                 {p.variants?.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {p.variants.map((v, i) => (
-                      <span key={i} style={{ fontSize: 11, color: '#b3b3b3', background: '#252525', borderRadius: 6, padding: '2px 8px' }}>
+                      <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#b3b3b3', background: '#252525', borderRadius: 6, padding: '3px 8px' }}>
+                        {(v.imageUrl || p.imageUrl)
+                          ? <img src={v.imageUrl || p.imageUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', background: '#fff' }} />
+                          : null}
                         {v.label || `${v.quantity}${v.unit}`} · ₹{v.price}{v.dealerPrice ? ` / D₹${v.dealerPrice}` : ''}
                       </span>
                     ))}
