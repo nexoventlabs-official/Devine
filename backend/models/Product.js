@@ -4,9 +4,11 @@ import mongoose from 'mongoose';
 const ProductSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    nameTa: { type: String, default: '' },
     retailerId: { type: String, unique: true, index: true }, // stable id for WA catalog
     category: { type: String, required: true, index: true },
     description: { type: String, default: '' },
+    descriptionTa: { type: String, default: '' },
     shortDesc: { type: String, default: '' },
     price: { type: Number, required: true }, // MRP / B2C price
     mrp: { type: Number, default: 0 },

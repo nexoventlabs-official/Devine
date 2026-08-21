@@ -370,9 +370,11 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
   }
   const [form, setForm] = useState({
     name: product?.name || '',
+    nameTa: product?.nameTa || '',
     category: product?.category || '',
     shortDesc: product?.shortDesc || '',
     description: product?.description || '',
+    descriptionTa: product?.descriptionTa || '',
     margin: product?.margin || '',
     moq: product?.moq || '',
     deliveryCharge: product?.deliveryCharge ?? '',
@@ -522,14 +524,16 @@ function ProductFormModal({ product, categories, onClose, onSaved, onDeleted }) 
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
-          <div><label style={fieldLbl}>Product name *</label><input required placeholder="e.g. Agarbathi" value={form.name} onChange={set('name')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Product name (English) *</label><input required placeholder="e.g. Cold-Pressed Sesame Oil" value={form.name} onChange={set('name')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
+          <div><label style={fieldLbl}>Product name (Tamil / தமிழ் பெயர்)</label><input placeholder="எ.கா. மரச்செக்கு நல்லெண்ணெய்" value={form.nameTa} onChange={set('nameTa')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Category *</label><CategorySelect categories={categories} value={form.category} onChange={(name) => setForm({ ...form, category: name })} /></div>
           <div><label style={fieldLbl}>Dealer margin</label><input placeholder="e.g. 20-35%" value={form.margin} onChange={set('margin')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>MOQ</label><input placeholder="Min order qty" value={form.moq} onChange={set('moq')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
           <div><label style={fieldLbl}>Badges</label><input placeholder="comma separated" value={form.badges} onChange={set('badges')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
         </div>
         <div style={{ marginTop: 12 }}><label style={fieldLbl}>Short description</label><input placeholder="One-line summary" value={form.shortDesc} onChange={set('shortDesc')} style={{ ...input, width: '100%', boxSizing: 'border-box' }} /></div>
-        <div style={{ marginTop: 12 }}><label style={fieldLbl}>Full description</label><textarea placeholder="Full product description" value={form.description} onChange={set('description')} rows={3} style={{ ...input, width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} /></div>
+        <div style={{ marginTop: 12 }}><label style={fieldLbl}>Full description (English)</label><textarea placeholder="Full product description in English" value={form.description} onChange={set('description')} rows={2} style={{ ...input, width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} /></div>
+        <div style={{ marginTop: 12 }}><label style={fieldLbl}>Full description (Tamil / தமிழ் விவரம்)</label><textarea placeholder="தமிழில் முழு விவரிப்பு" value={form.descriptionTa} onChange={set('descriptionTa')} rows={2} style={{ ...input, width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 12 }} /></div>
 
         {/* Delivery / shipping charge */}
         <div style={{ marginTop: 12, background: '#181818', border: '1px solid #333', borderRadius: 12, padding: '12px 14px' }}>
