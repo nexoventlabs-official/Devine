@@ -132,7 +132,7 @@ export default function Products() {
                           type="button"
                           className="btn btn-primary btn-sm btn-block"
                           disabled={c.outOfStock}
-                          onClick={(e) => { e.preventDefault(); addToCart(c); }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(c); }}
                         >
                           {c.outOfStock ? 'Out of Stock' : 'Add to Cart 🛒'}
                         </button>

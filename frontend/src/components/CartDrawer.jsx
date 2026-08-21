@@ -12,13 +12,22 @@ export default function CartDrawer() {
   const deliveryCharge = itemsTotal >= 500 || itemsTotal === 0 ? 0 : 50;
   const totalAmount = itemsTotal + deliveryCharge;
 
-  const handleProceedCheckout = () => {
+  const handleProceedCheckout = (e) => {
+    if (e) e.stopPropagation();
     setCartOpen(false);
     setCheckoutOpen(true);
   };
 
   return createPortal(
-    <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)}>
+    <div
+      className="cart-drawer-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation();
+          setCartOpen(false);
+        }
+      }}
+    >
       <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
         <div className="cd-header">
           <h3>Shopping Cart ({cart.reduce((sum, i) => sum + i.quantity, 0)})</h3>

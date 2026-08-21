@@ -113,7 +113,15 @@ export default function AuthModal() {
   };
 
   return createPortal(
-    <div className="modal-overlay" onClick={() => setAuthOpen(false)}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation();
+          setAuthOpen(false);
+        }
+      }}
+    >
       <div className="modal-content auth-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Close">&times;</button>
 

@@ -265,7 +265,15 @@ export default function CheckoutModal() {
   };
 
   return createPortal(
-    <div className="modal-overlay" onClick={() => setCheckoutOpen(false)}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation();
+          setCheckoutOpen(false);
+        }
+      }}
+    >
       <div className="modal-content checkout-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={() => setCheckoutOpen(false)} aria-label="Close">&times;</button>
 

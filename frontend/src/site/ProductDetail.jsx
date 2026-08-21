@@ -188,7 +188,9 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const activeVariant = variantIdx >= 0 ? product.variants[variantIdx] : null;
                     const itemKey = activeVariant ? `${product._id}__v${variantIdx}` : product._id;
                     const sizeLabel = activeVariant

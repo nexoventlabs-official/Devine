@@ -51,7 +51,15 @@ function Header() {
           </Link>
 
           {/* Cart Button */}
-          <button className="header-icon-btn" onClick={() => setCartOpen(true)} aria-label="Cart">
+          <button
+            className="header-icon-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCartOpen(true);
+            }}
+            aria-label="Cart"
+          >
             🛒 {cartCount > 0 && <span className="header-badge">{cartCount}</span>}
           </button>
 
