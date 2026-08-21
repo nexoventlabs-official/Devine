@@ -183,7 +183,11 @@ export function CartProvider({ children }) {
 
   const openAuth = (mode = 'login') => {
     setAuthMode(mode);
-    setAuthOpen(true);
+    setCartOpen(false);
+    setCheckoutOpen(false);
+    setTimeout(() => {
+      setAuthOpen(true);
+    }, 50);
   };
 
   return (

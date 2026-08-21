@@ -17,9 +17,14 @@ export default function CartDrawer() {
   const totalAmount = itemsTotal + deliveryCharge;
 
   const handleProceedCheckout = (e) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setCartOpen(false);
-    setCheckoutOpen(true);
+    setTimeout(() => {
+      setCheckoutOpen(true);
+    }, 50);
   };
 
   return createPortal(
