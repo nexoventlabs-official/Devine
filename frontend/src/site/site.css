@@ -1261,3 +1261,429 @@
   justify-content: center;
 }
 .wishlist-remove-btn:hover { color: #dc2626; background: #fee2e2; }
+
+/* ==========================================================================
+   Dedicated Checkout Page & Login Page Styling
+   ========================================================================== */
+.devine-site .checkout-page {
+  min-height: 80vh;
+}
+.devine-site .co-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.95fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .devine-site .co-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+.devine-site .co-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(35, 48, 28, 0.06);
+  margin-bottom: 24px;
+  border: 1px solid rgba(35, 48, 28, 0.08);
+}
+.devine-site .co-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ivory-deep);
+}
+.devine-site .co-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--amber-deep);
+  color: #ffffff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.devine-site .co-card-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-family: var(--font-display);
+}
+.devine-site .saved-addr-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.devine-site .saved-addr-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border: 1.5px solid var(--ivory-deep);
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--ivory);
+  transition: all 0.2s ease;
+}
+.devine-site .saved-addr-tile:hover, .devine-site .saved-addr-tile.active {
+  border-color: var(--amber-deep);
+  background: #FFFFFF;
+}
+.devine-site .saved-addr-tile.active {
+  box-shadow: 0 0 0 2px var(--amber-deep);
+}
+.devine-site .sat-info strong {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+.devine-site .sat-info p {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin: 4px 0;
+}
+.devine-site .sat-info span {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+.devine-site .location-box-rich {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.devine-site .loc-badge-rich {
+  background: #ECFDF5;
+  color: var(--olive-deep);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #A7F3D0;
+}
+.devine-site .pay-method-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.devine-site .pay-tile-rich {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border: 1.5px solid var(--ivory-deep);
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--ivory);
+  transition: all 0.2s ease;
+}
+.devine-site .pay-tile-rich:hover, .devine-site .pay-tile-rich.active {
+  border-color: var(--amber-deep);
+  background: #FFFFFF;
+}
+.devine-site .pay-tile-rich.active {
+  box-shadow: 0 0 0 2px var(--amber-deep);
+}
+.devine-site .ptr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.devine-site .ptr-header strong {
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.devine-site .ptr-badge {
+  background: var(--amber-pale);
+  color: var(--amber-deep);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.devine-site .ptr-content p {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+.devine-site .ptr-logos {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.devine-site .co-right-sticky {
+  position: sticky;
+  top: 100px;
+}
+.devine-site .summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ivory-deep);
+}
+.devine-site .summary-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.devine-site .edit-cart-link {
+  font-size: 0.85rem;
+  color: var(--amber-deep);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.devine-site .checkout-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 20px;
+}
+.devine-site .co-item-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ivory-deep);
+}
+.devine-site .co-item-thumb {
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ivory);
+  flex-shrink: 0;
+}
+.devine-site .co-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.devine-site .co-no-img {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+.devine-site .co-item-info {
+  flex: 1;
+}
+.devine-site .co-item-info h4 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.devine-site .co-item-size {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  display: block;
+}
+.devine-site .co-item-unit-price {
+  font-size: 0.82rem;
+  color: var(--amber-deep);
+  font-weight: 600;
+}
+.devine-site .co-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.devine-site .co-qty-controls button {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+.devine-site .co-qty-controls span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 4px;
+}
+.devine-site .co-item-del {
+  background: none !important;
+  border: none !important;
+  margin-left: 6px;
+  font-size: 0.85rem !important;
+  cursor: pointer;
+}
+.devine-site .co-item-total {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.devine-site .co-price-breakdown {
+  background: var(--ivory);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.devine-site .pb-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  margin-bottom: 8px;
+}
+.devine-site .pb-total {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #ccc;
+  color: var(--ink);
+}
+.devine-site .free-shipping-progress {
+  font-size: 0.82rem;
+  color: var(--amber-deep);
+  font-weight: 600;
+  text-align: right;
+  margin-bottom: 8px;
+}
+.devine-site .place-order-btn {
+  padding: 16px 24px;
+  font-size: 1.08rem;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(184, 113, 47, 0.35);
+}
+.devine-site .trust-badges-mini {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.devine-site .checkout-alert-error {
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  border: 1px solid #FCA5A5;
+}
+.devine-site .order-success-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 48px 36px;
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(35, 48, 28, 0.08);
+}
+.devine-site .osc-badge {
+  display: inline-block;
+  background: #ECFDF5;
+  color: var(--olive-deep);
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+.devine-site .osc-details {
+  background: var(--ivory);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 28px 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.devine-site .osc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+.devine-site .osc-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.devine-site .login-card-standalone {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 10px 40px rgba(35, 48, 28, 0.08);
+  border: 1px solid rgba(35, 48, 28, 0.08);
+}
+.devine-site .login-card-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.devine-site .login-card-header h2 {
+  font-size: 2rem;
+  font-family: var(--font-display);
+  margin-top: 4px;
+}
+.devine-site .auth-tabs-rich {
+  display: flex;
+  border-bottom: 2px solid var(--ivory-deep);
+  margin-bottom: 24px;
+}
+.devine-site .auth-tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink-faint);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+.devine-site .auth-tab-btn.active {
+  color: var(--amber-deep);
+}
+.devine-site .auth-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--amber-deep);
+}
+.devine-site .standalone-auth-form input, .devine-site .standalone-auth-form textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--ivory-deep);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--ivory);
+  transition: border-color 0.2s;
+}
+.devine-site .standalone-auth-form input:focus, .devine-site .standalone-auth-form textarea:focus {
+  border-color: var(--amber-deep);
+  background: #ffffff;
+  outline: none;
+}

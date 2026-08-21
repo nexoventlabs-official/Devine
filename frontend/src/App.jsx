@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './site/site.css';
-import { CartProvider, useCart } from './context/CartContext';
+import { CartProvider } from './context/CartContext';
 import Layout from './site/Layout';
 import Home from './site/Home';
 import Products from './site/Products';
@@ -12,23 +12,8 @@ import Contact from './site/Contact';
 import Dealer from './site/Dealer';
 import MyOrders from './site/MyOrders';
 import WishlistPage from './site/WishlistPage';
-
-function LoginRoute({ mode = 'login' }) {
-  const { openAuth } = useCart();
-  useEffect(() => {
-    openAuth(mode);
-  }, [mode, openAuth]);
-  return <Products />;
-}
-
-function CheckoutRoute() {
-  const { setCheckoutOpen } = useCart();
-  useEffect(() => {
-    const timer = setTimeout(() => setCheckoutOpen(true), 50);
-    return () => clearTimeout(timer);
-  }, [setCheckoutOpen]);
-  return <Products />;
-}
+import CheckoutPage from './site/CheckoutPage';
+import LoginPage from './site/LoginPage';
 
 export default function App() {
   return (
@@ -44,9 +29,9 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/login" element={<LoginRoute mode="login" />} />
-          <Route path="/signup" element={<LoginRoute mode="signup" />} />
-          <Route path="/checkout" element={<CheckoutRoute />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<LoginPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>

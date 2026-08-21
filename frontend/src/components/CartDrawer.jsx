@@ -1,10 +1,11 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function CartDrawer() {
-  const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart, setCheckoutOpen } = useCart();
+  const navigate = useNavigate();
+  const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart } = useCart();
 
   if (!cartOpen) return null;
 
@@ -22,7 +23,7 @@ export default function CartDrawer() {
       e.stopPropagation();
     }
     setCartOpen(false);
-    setCheckoutOpen(true);
+    navigate('/checkout');
   };
 
   return createPortal(

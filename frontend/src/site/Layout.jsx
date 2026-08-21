@@ -92,9 +92,9 @@ function Header() {
               )}
             </div>
           ) : (
-            <button className="btn btn-outline nav-auth-btn" onClick={() => openAuth('login')}>
+            <Link to="/login" className="btn btn-outline nav-auth-btn">
               Log In
-            </button>
+            </Link>
           )}
 
           <Link to="/contact" className="btn btn-primary nav-cta">Enquire</Link>
