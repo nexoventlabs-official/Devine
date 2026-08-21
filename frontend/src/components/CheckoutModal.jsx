@@ -197,8 +197,7 @@ export default function CheckoutModal() {
         const razorData = await razorRes.json();
 
         if (!razorData.success || !razorData.order) {
-          setError('Online payment key is invalid. Please select Cash on Delivery (COD) to complete your order.');
-          setPaymentMethod('cod');
+          setError(razorData.message || 'Failed to initialize online payment');
           setLoading(false);
           return;
         }
