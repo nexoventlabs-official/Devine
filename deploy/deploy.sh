@@ -36,9 +36,7 @@ npm ci --omit=dev 2>/dev/null || npm install --omit=dev
 
 echo "== 4/7 Frontend build =="
 cd "$APP_DIR/frontend"
-if [ ! -f .env ]; then
-  printf 'VITE_SERVER_ORIGIN=https://%s\nVITE_API_BASE_URL=https://%s/api\n' "$DOMAIN" "$DOMAIN" > .env
-fi
+printf 'VITE_SERVER_ORIGIN=https://%s\nVITE_API_BASE_URL=https://%s/api\n' "$DOMAIN" "$DOMAIN" > .env
 npm ci 2>/dev/null || npm install
 npm run build
 
