@@ -10,6 +10,7 @@ function Stars({ value = 0 }) {
 }
 
 export default function ProductDetail() {
+  const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const { id } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
