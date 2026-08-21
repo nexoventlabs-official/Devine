@@ -132,6 +132,9 @@ router.post('/categories', auth, upload.single('image'), async (req, res) => {
     if (req.file) imageUrl = await cloudinaryService.uploadBuffer(req.file.buffer, { folder: 'devine/categories' });
     const cat = await Category.create({
       name: req.body.name,
+      nameTa: req.body.nameTa || '',
+      description: req.body.description || '',
+      descriptionTa: req.body.descriptionTa || '',
       imageUrl,
       order: Number(req.body.order) || 0,
       active: req.body.active !== 'false'
@@ -152,7 +155,6 @@ router.put('/categories/:id', auth, upload.single('image'), async (req, res) => 
   }
   const cat = await Category.findByIdAndUpdate(req.params.id, update, { new: true });
   res.json({ success: true, data: cat });
-  // Remove the replaced tile image from Cloudinary.
   if (oldImageUrl && oldImageUrl !== update.imageUrl) {
     cloudinaryService.deleteByUrl(oldImageUrl).catch(() => {});
   }

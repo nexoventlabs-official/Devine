@@ -55,7 +55,10 @@ export default function CategoriesPage() {
                 <IconBtn icon={<EditIcon size={15} color="#ffffff" />} title="Edit category" onClick={() => openEdit(c)} />
               </div>
             </div>
-            <div style={{ padding: '12px 14px', fontWeight: 700, fontSize: 15, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+            <div style={{ padding: '12px 14px' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+              {c.nameTa && <div style={{ fontSize: 13, color: '#1ed760', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nameTa}</div>}
+            </div>
           </div>
         ))}
         {list.length === 0 && <div style={{ color: '#b3b3b3', fontSize: 14 }}>No categories yet. Click "+ Add Category" above.</div>}
@@ -76,6 +79,9 @@ export default function CategoriesPage() {
 function CategoryModal({ category, onClose, onSaved, onDeleted }) {
   const isEdit = !!category;
   const [name, setName] = useState(category?.name || '');
+  const [nameTa, setNameTa] = useState(category?.nameTa || '');
+  const [description, setDescription] = useState(category?.description || '');
+  const [descriptionTa, setDescriptionTa] = useState(category?.descriptionTa || '');
   const [active, setActive] = useState(category?.active !== false);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -98,6 +104,9 @@ function CategoryModal({ category, onClose, onSaved, onDeleted }) {
     try {
       const fd = new FormData();
       fd.append('name', name);
+      fd.append('nameTa', nameTa);
+      fd.append('description', description);
+      fd.append('descriptionTa', descriptionTa);
       fd.append('active', active ? 'true' : 'false');
       if (file) fd.append('image', file);
       if (isEdit) await api.putForm(`/catalog/categories/${category._id}`, fd);
@@ -177,9 +186,22 @@ function CategoryModal({ category, onClose, onSaved, onDeleted }) {
           </div>
         </div>
 
-        <label style={lbl}>Category Name *
-          <input required placeholder="e.g. Organic Honey" value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6 }} />
+        <label style={lbl}>Category Name (English) *
+          <input required placeholder="e.g. Cold-Pressed Oils" value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6 }} />
         </label>
+
+        <label style={{ ...lbl, marginTop: 12 }}>Category Name (Tamil / தமிழ் பெயர்)
+          <input placeholder="எ.கா. மரச்செக்கு எண்ணெய்கள்" value={nameTa} onChange={(e) => setNameTa(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6 }} />
+        </label>
+
+        <label style={{ ...lbl, marginTop: 12 }}>Description (English)
+          <textarea rows="2" placeholder="Short description in English" value={description} onChange={(e) => setDescription(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6, borderRadius: 10, fontFamily: 'inherit' }} />
+        </label>
+
+        <label style={{ ...lbl, marginTop: 12 }}>Description (Tamil / தமிழ் விவரம்)
+          <textarea rows="2" placeholder="தமிழில் சிறு குறிப்பு" value={descriptionTa} onChange={(e) => setDescriptionTa(e.target.value)} style={{ ...input, width: '100%', boxSizing: 'border-box', marginTop: 6, borderRadius: 10, fontFamily: 'inherit' }} />
+        </label>
+
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0 6px', color: '#ffffff', fontWeight: 600, fontSize: 13 }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (visible on site & catalog)
         </label>

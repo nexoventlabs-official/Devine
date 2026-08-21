@@ -7,9 +7,11 @@ This document contains all user-facing text strings, button labels, flow headers
 ## 1. Welcome & Language Selection Flow (First-Time Greeting)
 
 ### **Header Image**
+
 - **Image**: Welcome Banner Image (16:9 / 1:1)
 
 ### **Welcome Message**
+
 > Welcome to **Devine Natural & Organic Foods**! 🌿
 >
 > We deliver 100% pure, unadulterated cold-pressed oils, traditional wood-pressed spices, organic honey, and natural wellness products directly from pristine farms to your doorstep.
@@ -17,6 +19,7 @@ This document contains all user-facing text strings, button labels, flow headers
 > Please choose your preferred language to continue:
 
 ### **Quick Reply Buttons**
+
 1. `🇬🇧 English`
 2. `🇮🇳 தமிழ்`
 
@@ -25,6 +28,7 @@ This document contains all user-facing text strings, button labels, flow headers
 ## 2. Language Selection Confirmation
 
 ### **English Selected Confirmation**
+
 > ✅ **Language set to English!**
 > How can we assist you today? Please tap below to explore our services.
 
@@ -50,6 +54,7 @@ This document contains all user-facing text strings, button labels, flow headers
 ## 4. Browse Products Flow
 
 ### **Catalog Category Selection**
+
 > Select a category to explore fresh natural products:
 >
 > 1. 🛢️ Cold-Pressed Oils (Groundnut, Sesame, Coconut)
@@ -62,9 +67,11 @@ This document contains all user-facing text strings, button labels, flow headers
 ## 5. Order Summary & WhatsApp Checkout Flow
 
 ### **Cart Details Header**
+
 > 🛍️ **Your Devine Cart Summary**
 
 ### **Price Breakdown Template**
+
 > - **Items Total**: ₹{subtotal}
 > - **Delivery Charge**: {delivery_charge}
 > - **Total Amount Payable**: ₹{total_amount}
@@ -72,6 +79,7 @@ This document contains all user-facing text strings, button labels, flow headers
 > 📍 **Delivery Location**: {address}
 
 ### **Action Buttons**
+
 - `💳 Pay Online (UPI / Card / NetBanking)`
 - `💵 Cash on Delivery (COD)`
 - `✏️ Edit Cart / Delivery Address`
@@ -93,9 +101,11 @@ This document contains all user-facing text strings, button labels, flow headers
 ## 7. Change Language Flow
 
 ### **Header**
+
 > 🌐 **Select Language / மொழி தேர்ந்தெடுக்கவும்**
 
 ### **Options**
+
 - **🇬🇧 English**
   - *Subtitle*: Continue in English
 - **🇮🇳 தமிழ் (Tamil)**

@@ -4,8 +4,11 @@ import mongoose from 'mongoose';
 const CategorySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true },
+    nameTa: { type: String, default: '' },
     slug: { type: String, index: true },
     imageUrl: { type: String, default: '' },
+    description: { type: String, default: '' },
+    descriptionTa: { type: String, default: '' },
     order: { type: Number, default: 0 },
     active: { type: Boolean, default: true }
   },
