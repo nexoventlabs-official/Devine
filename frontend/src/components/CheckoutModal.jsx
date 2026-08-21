@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useCart } from '../context/CartContext';
@@ -263,7 +264,7 @@ export default function CheckoutModal() {
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={() => setCheckoutOpen(false)}>
       <div className="modal-content checkout-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={() => setCheckoutOpen(false)} aria-label="Close">&times;</button>
@@ -447,7 +448,7 @@ export default function CheckoutModal() {
                 </div>
                 <div className="co-row">
                   <span>Delivery Charge</span>
-                  <span>{deliveryCharge === 0 ? <strong style={{ color: 'var(--olive-deep)' }}>FREE</strong> : `₹${deliveryCharge}`}</span>
+                  <span>{deliveryCharge === 0 ? <strong style={{ color: 'var(--olive-deep, #4F5C38)' }}>FREE</strong> : `₹${deliveryCharge}`}</span>
                 </div>
                 <div className="co-row co-total">
                   <span>Total Amount Payable</span>
@@ -498,6 +499,7 @@ export default function CheckoutModal() {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

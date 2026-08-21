@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { API_BASE_URL } from '../config';
 import { useCart } from '../context/CartContext';
 
@@ -111,7 +112,7 @@ export default function AuthModal() {
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={() => setAuthOpen(false)}>
       <div className="modal-content auth-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Close">&times;</button>
@@ -264,6 +265,7 @@ export default function AuthModal() {
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

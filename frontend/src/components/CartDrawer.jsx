@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -16,7 +17,7 @@ export default function CartDrawer() {
     setCheckoutOpen(true);
   };
 
-  return (
+  return createPortal(
     <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)}>
       <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
         <div className="cd-header">
@@ -67,7 +68,7 @@ export default function CartDrawer() {
               </div>
               <div className="cd-row">
                 <span>Delivery Charge</span>
-                <span>{deliveryCharge === 0 ? <strong style={{ color: 'var(--olive-deep)' }}>FREE</strong> : `₹${deliveryCharge}`}</span>
+                <span>{deliveryCharge === 0 ? <strong style={{ color: 'var(--olive-deep, #4F5C38)' }}>FREE</strong> : `₹${deliveryCharge}`}</span>
               </div>
               {deliveryCharge > 0 && (
                 <div className="cd-free-shipping-tip">
@@ -85,6 +86,7 @@ export default function CartDrawer() {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
