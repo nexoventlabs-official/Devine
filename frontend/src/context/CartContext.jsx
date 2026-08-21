@@ -97,16 +97,29 @@ export function CartProvider({ children }) {
   }, [token, user]);
 
   // Cart operations
-  const addToCart = (item) => {
-    // item: { key, productId, variantIndex, name, sizeLabel, image, price, deliveryCharge }
+  const addToCart = (rawItem) => {
+    if (!rawItem) return;
+    const itemKey = String(rawItem.key || rawItem.productId || rawItem._id || Date.now());
+    const cleanItem = {
+      key: itemKey,
+      productId: String(rawItem.productId || rawItem._id || itemKey),
+      variantIndex: rawItem.variantIndex != null ? rawItem.variantIndex : null,
+      name: String(rawItem.name || 'Devine Product'),
+      sizeLabel: String(rawItem.sizeLabel || ''),
+      image: String(rawItem.image || rawItem.imageUrl || ''),
+      price: Number(rawItem.price) || 0,
+      quantity: Math.max(1, Number(rawItem.quantity) || 1)
+    };
+
     setCart((prev) => {
-      const idx = prev.findIndex((i) => i.key === item.key);
+      const idx = prev.findIndex((i) => i.key === cleanItem.key);
       if (idx >= 0) {
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
+        const currentQty = Number(updated[idx].quantity) || 1;
+        updated[idx] = { ...updated[idx], quantity: currentQty + 1 };
         return updated;
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, cleanItem];
     });
     setCartOpen(true);
   };
@@ -120,7 +133,8 @@ export function CartProvider({ children }) {
       return prev
         .map((i) => {
           if (i.key === key) {
-            const newQty = i.quantity + delta;
+            const currentQty = Number(i.quantity) || 1;
+            const newQty = currentQty + delta;
             return newQty > 0 ? { ...i, quantity: newQty } : null;
           }
           return i;
