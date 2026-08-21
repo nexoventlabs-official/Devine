@@ -4,7 +4,7 @@ import Order from '../models/Order.js';
 import DealerProfile from '../models/DealerProfile.js';
 import { getClient } from '../services/metaCloud.js';
 import { getAsset, ASSET_KEYS } from '../services/assets.js';
-import { genDealerId } from '../services/ids.js';
+import { genDealerId, genOrderId } from '../services/ids.js';
 import { triggerReview } from '../services/chatbot.js';
 import { generateInvoicePdf } from '../services/pdf.js';
 import { scheduleDealerWelcome } from '../services/scheduler.js';
@@ -169,6 +169,129 @@ router.post('/dealers/approve', auth, async (req, res) => {
     scheduleDealerWelcome(dealer);
     res.json({ success: true, data: dealer });
   } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Create order from Website Checkout (COD or Online)
+router.post('/create', async (req, res) => {
+  try {
+    const { items, customer, deliveryLocation, paymentMethod, paymentRef, deliveryCharge } = req.body;
+
+    if (!items || !items.length || !customer || !customer.phone) {
+      return res.status(400).json({ success: false, message: 'Items and customer phone number are required' });
+    }
+
+    const orderId = genOrderId('ORD');
+    const trackId = genOrderId('TRK');
+
+    const itemsTotal = items.reduce((acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+    const charge = Number(deliveryCharge) || (itemsTotal >= 500 ? 0 : 50);
+    const totalAmount = itemsTotal + charge;
+
+    const formattedItems = items.map((i) => ({
+      retailerId: i.retailerId || i._id || 'ITEM',
+      name: i.name + (i.sizeLabel ? ` (${i.sizeLabel})` : ''),
+      price: Number(i.price) || 0,
+      quantity: Number(i.quantity) || 1,
+      imageUrl: i.imageUrl || i.image || ''
+    }));
+
+    const cleanPhone = String(customer.phone).replace(/[^\d+]/g, '').trim();
+    const cleanWhatsapp = customer.whatsappPhone ? String(customer.whatsappPhone).replace(/[^\d+]/g, '').trim() : cleanPhone;
+
+    const isPaid = paymentMethod === 'online' && paymentRef ? 'paid' : 'pending';
+
+    const order = await Order.create({
+      orderId,
+      trackId,
+      channel: 'website',
+      customer: {
+        name: customer.name || 'Valued Customer',
+        phone: cleanPhone,
+        whatsappPhone: cleanWhatsapp,
+        email: customer.email || ''
+      },
+      items: formattedItems,
+      itemsTotal,
+      deliveryCharge: charge,
+      totalAmount,
+      paymentMethod: paymentMethod || 'cod',
+      paymentStatus: isPaid,
+      paymentRef: paymentRef || '',
+      status: 'pending',
+      deliveryLocation: {
+        latitude: deliveryLocation?.latitude || null,
+        longitude: deliveryLocation?.longitude || null,
+        address: deliveryLocation?.address || 'Standard Delivery'
+      },
+      trackingUpdates: [
+        { status: 'pending', message: 'Order Placed via Website', timestamp: new Date() }
+      ]
+    });
+
+    // Notify Admin via Socket.IO
+    emitOrder(order);
+    req.app.get('io')?.emit('new_order', order);
+
+    // Send WhatsApp notification if customer phone is provided
+    try {
+      const wa = getClient('b2c');
+      const trackUrl = `${FRONTEND()}/track?order=${order.trackId}`;
+      const msg =
+        `🎉 *Order Confirmed!*\n\n` +
+        `Thank you for ordering with Devine, ${customer.name || ''}.\n` +
+        `*Order ID:* ${order.orderId}\n` +
+        `*Total Amount:* ₹${order.totalAmount}\n` +
+        `*Payment Method:* ${(paymentMethod || 'cod').toUpperCase()}\n\n` +
+        `Track your order live: ${trackUrl}`;
+      await wa.sendText(cleanWhatsapp || cleanPhone, msg).catch(() => {});
+    } catch (err) {
+      logger.warn('WhatsApp order alert skipped', { error: err.message });
+    }
+
+    res.json({ success: true, data: order });
+  } catch (err) {
+    logger.error('Order creation error', { error: err.message });
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Fetch My Orders for User (matches website orders AND WhatsApp B2C chatbot orders)
+router.get('/my-orders', async (req, res) => {
+  try {
+    const { phone, whatsapp } = req.query;
+    if (!phone && !whatsapp) {
+      return res.status(400).json({ success: false, message: 'Phone or WhatsApp number required' });
+    }
+
+    const phones = new Set();
+    if (phone) {
+      const p = String(phone).trim();
+      phones.add(p);
+      phones.add(p.replace(/[^\d+]/g, ''));
+      phones.add(p.replace(/^\+?91/, ''));
+    }
+    if (whatsapp) {
+      const w = String(whatsapp).trim();
+      phones.add(w);
+      phones.add(w.replace(/[^\d+]/g, ''));
+      phones.add(w.replace(/^\+?91/, ''));
+    }
+
+    const queryPhones = Array.from(phones).filter(Boolean);
+    const regexList = queryPhones.map((p) => new RegExp(p.replace('+', '\\+'), 'i'));
+
+    const orders = await Order.find({
+      $or: [
+        { 'customer.phone': { $in: regexList } },
+        { 'customer.whatsappPhone': { $in: regexList } }
+      ]
+    }).sort({ createdAt: -1 });
+
+    res.json({ success: true, data: orders });
+  } catch (err) {
+    logger.error('My orders fetch error', { error: err.message });
     res.status(500).json({ success: false, message: err.message });
   }
 });

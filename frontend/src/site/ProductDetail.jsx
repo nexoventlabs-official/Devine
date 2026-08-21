@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { WA_LINK } from './Layout';
+import { useCart } from '../context/CartContext';
 
 function Stars({ value = 0 }) {
   const full = Math.round(value);
@@ -183,8 +184,46 @@ export default function ProductDetail() {
               )}
 
               <div className="pd-actions">
-                <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn btn-primary">Order on WhatsApp</a>
-                <Link to={enquireLink} className="btn btn-outline">Enquire About This Product</Link>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const activeVariant = variantIdx >= 0 ? product.variants[variantIdx] : null;
+                    const itemKey = activeVariant ? `${product._id}__v${variantIdx}` : product._id;
+                    const sizeLabel = activeVariant
+                      ? (activeVariant.label || `${activeVariant.quantity} ${activeVariant.unit}`)
+                      : (product.quantity > 0 ? `${product.quantity} ${product.unit}` : '');
+                    const itemPrice = activeVariant
+                      ? (activeVariant.offerPrice || activeVariant.price || product.price)
+                      : (product.offerPrice || product.price);
+                    const itemImage = (activeVariant && activeVariant.imageUrl) || product.imageUrl;
+
+                    addToCart({
+                      key: itemKey,
+                      productId: product._id,
+                      variantIndex: variantIdx >= 0 ? variantIdx : null,
+                      name: product.name,
+                      sizeLabel,
+                      image: itemImage,
+                      price: itemPrice
+                    });
+                  }}
+                >
+                  Add to Cart 🛒
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-outline ${isInWishlist(variantIdx >= 0 ? `${product._id}__v${variantIdx}` : product._id) ? 'active-wish' : ''}`}
+                  onClick={() => {
+                    const key = variantIdx >= 0 ? `${product._id}__v${variantIdx}` : product._id;
+                    toggleWishlist(key);
+                  }}
+                >
+                  {isInWishlist(variantIdx >= 0 ? `${product._id}__v${variantIdx}` : product._id) ? '❤️ Saved to Wishlist' : '🤍 Add to Wishlist'}
+                </button>
+
+                <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn btn-outline">Order on WhatsApp</a>
               </div>
 
               {product.badges?.length > 0 && (

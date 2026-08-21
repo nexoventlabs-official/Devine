@@ -22,6 +22,7 @@ import leadsRouter from './routes/leads.js';
 import ordersRouter from './routes/orders.js';
 import crmRouter from './routes/crm.js';
 import paymentRouter from './routes/payment.js';
+import userRouter from './routes/user.js';
 import { startSchedulers } from './services/scheduler.js';
 import { startProductScheduler } from './services/productScheduler.js';
 import logger from './services/logger.js';
@@ -128,6 +129,7 @@ app.use('/api/leads', leadsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/crm', crmRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/user', userRouter);
 
 // ==========================================
 // Existing Enquiry / Career / Admin endpoints (unchanged behaviour)

@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import CartDrawer from '../components/CartDrawer';
+import AuthModal from '../components/AuthModal';
+import CheckoutModal from '../components/CheckoutModal';
 
 export const WA_LINK = 'https://wa.me/919962918979?text=Hi%2C%20I%27m%20interested%20in%20Devine%20products.';
 export const LOGO = '/site/logo.svg';
@@ -23,24 +27,87 @@ const WaIcon = () => (
 
 function Header() {
   const [open, setOpen] = useState(false);
+  const [userDropdown, setUserDropdown] = useState(false);
+
+  const { cart, setCartOpen, wishlist, user, openAuth, logoutUser } = useCart();
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <header className="site-header">
       <div className="header-inner">
         <Link to="/" className="logo"><img src={LOGO} alt="Devine" width="140" height="40" /></Link>
+
         <nav className="nav">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>{n.label}</NavLink>
           ))}
+          <NavLink to="/my-orders" className={({ isActive }) => (isActive ? 'active' : '')}>My Orders</NavLink>
         </nav>
-        <Link to="/contact" className="btn btn-primary nav-cta">Enquire Now</Link>
-        <button className="nav-toggle" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          <span></span><span></span><span></span>
-        </button>
+
+        <div className="header-actions">
+          {/* Wishlist Link */}
+          <Link to="/wishlist" className="header-icon-btn" aria-label="Wishlist">
+            ❤️ {wishlist.length > 0 && <span className="header-badge">{wishlist.length}</span>}
+          </Link>
+
+          {/* Cart Button */}
+          <button className="header-icon-btn" onClick={() => setCartOpen(true)} aria-label="Cart">
+            🛒 {cartCount > 0 && <span className="header-badge">{cartCount}</span>}
+          </button>
+
+          {/* User Account / Auth Button */}
+          {user ? (
+            <div className="user-menu-wrap">
+              <button
+                className="user-menu-btn"
+                onClick={() => setUserDropdown((v) => !v)}
+              >
+                👤 {user.name.split(' ')[0]}
+              </button>
+              {userDropdown && (
+                <div className="user-dropdown">
+                  <div className="ud-header">
+                    <strong>{user.name}</strong>
+                    <span>{user.phone}</span>
+                  </div>
+                  <Link to="/my-orders" onClick={() => setUserDropdown(false)}>📦 My Orders</Link>
+                  <Link to="/wishlist" onClick={() => setUserDropdown(false)}>❤️ Wishlist</Link>
+                  <button
+                    onClick={() => {
+                      setUserDropdown(false);
+                      logoutUser();
+                    }}
+                  >
+                    🚪 Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="btn btn-outline nav-auth-btn" onClick={() => openAuth('login')}>
+              Log In
+            </button>
+          )}
+
+          <Link to="/contact" className="btn btn-primary nav-cta">Enquire</Link>
+
+          <button className="nav-toggle" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </div>
+
       <div className={`mobile-nav${open ? ' open' : ''}`}>
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')}>{n.label}</NavLink>
         ))}
+        <NavLink to="/my-orders" onClick={() => setOpen(false)}>My Orders</NavLink>
+        <NavLink to="/wishlist" onClick={() => setOpen(false)}>Wishlist ({wishlist.length})</NavLink>
+        {user ? (
+          <button className="btn btn-outline" onClick={() => { setOpen(false); logoutUser(); }}>Log Out ({user.name})</button>
+        ) : (
+          <button className="btn btn-outline" onClick={() => { setOpen(false); openAuth('login'); }}>Log In / Sign Up</button>
+        )}
         <Link to="/contact" className="btn btn-primary" onClick={() => setOpen(false)}>Enquire Now</Link>
       </div>
     </header>
@@ -68,7 +135,8 @@ function Footer() {
             <h4>Explore</h4>
             <ul>
               <li><Link to="/products">All Products</Link></li>
-              <li><Link to="/contact">Become a Stockist</Link></li>
+              <li><Link to="/my-orders">My Orders</Link></li>
+              <li><Link to="/wishlist">Wishlist</Link></li>
               <li><a href={WA_LINK} target="_blank" rel="noreferrer">WhatsApp Us</a></li>
             </ul>
           </div>
@@ -169,6 +237,9 @@ export default function Layout({ children }) {
       {children}
       <Footer />
       <WaFloat />
+      <CartDrawer />
+      <AuthModal />
+      <CheckoutModal />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { TrustBand } from './Layout';
+import { useCart } from '../context/CartContext';
 
 function Stars({ value = 0 }) {
   const full = Math.round(value);
@@ -9,6 +10,7 @@ function Stars({ value = 0 }) {
 }
 
 export default function Products() {
+  const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState('All');
@@ -42,7 +44,9 @@ export default function Products() {
           key: `${p._id}__v${i}`, productId: p._id, variantIndex: i,
           name: p.name, sizeLabel: v.label || `${v.quantity} ${v.unit}`.trim(),
           category: p.category, image: v.imageUrl || p.imageUrl,
-          price, offerPrice: v.offerPrice && v.offerPrice < price ? v.offerPrice : null,
+          price: v.offerPrice && v.offerPrice < price ? v.offerPrice : price,
+          originalPrice: price,
+          offerPrice: v.offerPrice && v.offerPrice < price ? v.offerPrice : null,
           rating: p.avgRating || p.rating || 0, totalRatings: p.totalRatings || p.reviewCount || 0,
           outOfStock: p.isPaused || p.inStock === false
         });
@@ -52,7 +56,9 @@ export default function Products() {
         key: p._id, productId: p._id, variantIndex: null,
         name: p.name, sizeLabel: p.quantity > 0 ? `${p.quantity} ${p.unit}`.trim() : '',
         category: p.category, image: p.imageUrl,
-        price: p.price, offerPrice: p.offerPrice && p.offerPrice < p.price ? p.offerPrice : null,
+        price: p.offerPrice && p.offerPrice < p.price ? p.offerPrice : p.price,
+        originalPrice: p.price,
+        offerPrice: p.offerPrice && p.offerPrice < p.price ? p.offerPrice : null,
         rating: p.avgRating || p.rating || 0, totalRatings: p.totalRatings || p.reviewCount || 0,
         outOfStock: p.isPaused || p.inStock === false
       });
@@ -94,22 +100,45 @@ export default function Products() {
             <div className="shop-grid">
               {filtered.map((c) => {
                 const to = c.variantIndex != null ? `/product/${c.productId}?v=${c.variantIndex}` : `/product/${c.productId}`;
+                const isWished = isInWishlist(c.key);
                 return (
-                  <Link to={to} className="shop-card" key={c.key}>
-                    <div className="thumb">
-                      {c.offerPrice && <span className="badge-offer">Offer</span>}
-                      {c.image ? <img src={c.image} alt={c.name} /> : null}
-                      {c.outOfStock && <span className="oos">Out of stock</span>}
-                    </div>
-                    <div className="body">
-                      <span className="cat">{c.category}</span>
-                      <h3>{c.name}{c.sizeLabel ? <span style={{ color: 'var(--ink-faint)', fontWeight: 400 }}> — {c.sizeLabel}</span> : ''}</h3>
-                      <div className="rating"><Stars value={c.rating} /> <span style={{ color: 'var(--ink-faint)' }}>({c.totalRatings})</span></div>
-                      <div className="price">
-                        {c.offerPrice ? <><s>₹{c.price}</s>₹{c.offerPrice}</> : <>₹{c.price}</>}
+                  <div className="shop-card-wrap" key={c.key}>
+                    <div className="shop-card">
+                      <button
+                        type="button"
+                        className={`card-wishlist-btn${isWished ? ' active' : ''}`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(c.key); }}
+                        aria-label="Add to wishlist"
+                      >
+                        {isWished ? '❤️' : '🤍'}
+                      </button>
+                      <Link to={to} className="card-link">
+                        <div className="thumb">
+                          {c.offerPrice && <span className="badge-offer">Offer</span>}
+                          {c.image ? <img src={c.image} alt={c.name} /> : null}
+                          {c.outOfStock && <span className="oos">Out of stock</span>}
+                        </div>
+                        <div className="body">
+                          <span className="cat">{c.category}</span>
+                          <h3>{c.name}{c.sizeLabel ? <span style={{ color: 'var(--ink-faint)', fontWeight: 400 }}> — {c.sizeLabel}</span> : ''}</h3>
+                          <div className="rating"><Stars value={c.rating} /> <span style={{ color: 'var(--ink-faint)' }}>({c.totalRatings})</span></div>
+                          <div className="price">
+                            {c.offerPrice ? <><s>₹{c.originalPrice}</s>₹{c.offerPrice}</> : <>₹{c.price}</>}
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="card-action-bar">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm btn-block"
+                          disabled={c.outOfStock}
+                          onClick={(e) => { e.preventDefault(); addToCart(c); }}
+                        >
+                          {c.outOfStock ? 'Out of Stock' : 'Add to Cart 🛒'}
+                        </button>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
