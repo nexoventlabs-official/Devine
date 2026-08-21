@@ -81,28 +81,4 @@ Instructions: Please fill in your Tamil translations in the **Tamil Content (Fil
 | Option | English Label | Tamil Label | English Subtitle | Tamil Subtitle |
 | :--- | :--- | :--- | :--- | :--- |
 | **English** | 🇬🇧 English | 🇬🇧 English | Continue in English | ஆங்கிலத்தில் தொடரவும் |
-| **Tamil** | 🇮🇳 தமிழ் (Tamil) | 🇮🇳 தமிழ் (Tamil) | Continue in Tamil | தமிழில் தொடரவும் |  >
-  > **Order ID**: `{order_id}`
-  > **Tracking Code**: `{track_id}`
-  > **Payment Method**: `{payment_method}`
-  >
-  > Thank you for choosing Devine Natural Foods! You will receive live WhatsApp status updates when your parcel is dispatched.
-- **Tamil**:
-  > 🎉 **ஆர்டர் வெற்றிகரமாக செய்யப்பட்டது!**
-  >
-  > **ஆர்டர் எண்**: `{order_id}`
-  > **டிராக் குறியீடு**: `{track_id}`
-  > **பணம் செலுத்தும் முறை**: `{payment_method}`
-  >
-  > தெய்வீன் நேச்சுரல் ஃபுட்ஸ்-ஐ தேர்ந்தெடுத்தமைக்கு நன்றி!
-
----
-
-## 7. Change Language Menu Options
-
-### **Header**
-> 🌐 **Select Language / மொழி தேர்ந்தெடுக்கவும்**
-
-### **Options**
-- **🇬🇧 English** (*Subtitle*: Continue in English)
-- **🇮🇳 தமிழ் (Tamil)** (*Subtitle*: தமிழில் தொடரவும்)
+| **Tamil** | 🇮🇳 தமிழ் (Tamil) | 🇮🇳 தமிழ் (Tamil) | Continue in Tamil | தமிழில் தொடரவும் |
