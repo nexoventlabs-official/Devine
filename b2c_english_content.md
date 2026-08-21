@@ -37,18 +37,7 @@ Instructions: Please fill in your Tamil translations in the **Tamil Content (Fil
 
 ---
 
-## 4. Browse Products & Catalog Categories
-
-| # | Category Name (English) | Category Name (Tamil) | Category Description (English) | Category Description (Tamil) |
-| :---: | :--- | :--- | :--- | :--- |
-| **1** | Cold-Pressed Oils | | Pure unadulterated groundnut, sesame & coconut oils | |
-| **2** | Pure Organic Honey | | 100% raw unprocessed mountain honey | |
-| **3** | Traditional Spices | | Wood-pressed authentic spices & masala | |
-| **4** | Gift Combo Packs | | Festive & corporate wellness gift hampers | |
-
----
-
-## 5. Order Summary & WhatsApp Checkout Flow
+## 4. Order Summary & WhatsApp Checkout Flow
 
 | Key / Context | English Content | Tamil Content (Fill Here) |
 | :--- | :--- | :--- |
@@ -64,7 +53,7 @@ Instructions: Please fill in your Tamil translations in the **Tamil Content (Fil
 
 ---
 
-## 6. Order Confirmation Message
+## 5. Order Confirmation Message
 
 | Key / Context | English Content | Tamil Content (Fill Here) |
 | :--- | :--- | :--- |
@@ -76,7 +65,7 @@ Instructions: Please fill in your Tamil translations in the **Tamil Content (Fil
 
 ---
 
-## 7. Change Language Menu
+## 6. Change Language Menu
 
 | Option | English Label | Tamil Label | English Subtitle | Tamil Subtitle |
 | :--- | :--- | :--- | :--- | :--- |
