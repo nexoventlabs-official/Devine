@@ -24,7 +24,7 @@ export default function CartDrawer() {
 
   return createPortal(
     <div
-      className="cart-drawer-overlay"
+      className="devine-site cart-drawer-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           e.stopPropagation();

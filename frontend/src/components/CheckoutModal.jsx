@@ -266,7 +266,7 @@ export default function CheckoutModal() {
 
   return createPortal(
     <div
-      className="modal-overlay"
+      className="devine-site modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           e.stopPropagation();
