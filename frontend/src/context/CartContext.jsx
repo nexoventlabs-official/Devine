@@ -185,9 +185,7 @@ export function CartProvider({ children }) {
     setAuthMode(mode);
     setCartOpen(false);
     setCheckoutOpen(false);
-    setTimeout(() => {
-      setAuthOpen(true);
-    }, 50);
+    setAuthOpen(true);
   };
 
   return (

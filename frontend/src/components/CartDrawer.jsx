@@ -22,9 +22,7 @@ export default function CartDrawer() {
       e.stopPropagation();
     }
     setCartOpen(false);
-    setTimeout(() => {
-      setCheckoutOpen(true);
-    }, 50);
+    setCheckoutOpen(true);
   };
 
   return createPortal(

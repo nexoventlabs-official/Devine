@@ -239,15 +239,17 @@ function ScrollTop() {
 
 export default function Layout({ children }) {
   return (
-    <div className="devine-site">
-      <ScrollTop />
-      <Header />
-      {children}
-      <Footer />
-      <WaFloat />
-      <CartDrawer />
+    <>
+      <div className="devine-site">
+        <ScrollTop />
+        <Header />
+        {children}
+        <Footer />
+        <WaFloat />
+        <CartDrawer />
+      </div>
       <AuthModal />
       <CheckoutModal />
-    </div>
+    </>
   );
 }
