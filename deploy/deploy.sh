@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# One-shot deploy for Devine on an Ubuntu droplet (domain: kavithahostel.me).
+# One-shot deploy for Devine on an Ubuntu droplet (domain: devinefoodproducts.com).
 # Prereq: backend/.env and backend/keys/*.pem must already be uploaded (see DEPLOY.md).
 # Run as root:  bash deploy/deploy.sh
 set -euo pipefail
 
-DOMAIN="kavithahostel.me"
+DOMAIN="devinefoodproducts.com"
 APP_DIR="/var/www/devine"
 REPO="https://github.com/nexoventlabs-official/Devine.git"
 LETSENCRYPT_EMAIL="admin@${DOMAIN}"

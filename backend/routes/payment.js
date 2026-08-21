@@ -11,7 +11,7 @@ const router = express.Router();
 // stamp into the Razorpay notes when sending order_details.
 //
 // Register this URL in Razorpay Dashboard > Settings > Webhooks:
-//   https://kavithahostel.me/api/payment/razorpay-webhook
+//   https://devinefoodproducts.com/api/payment/razorpay-webhook
 //   events: payment.captured, payment.failed, order.paid
 router.post('/razorpay-webhook', async (req, res) => {
   try {

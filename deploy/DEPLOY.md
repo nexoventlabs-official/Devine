@@ -1,4 +1,4 @@
-# Deploy Devine to the droplet (kavithahostel.me → 168.144.180.123)
+# Deploy Devine to the droplet (devinefoodproducts.com → 168.144.180.123)
 
 DNS: A records for `@` and `www` → `168.144.180.123` (already done).
 
@@ -29,7 +29,7 @@ The script installs Node/Nginx/PM2, builds the frontend, starts the API with PM2
 
 ## 3. Point Meta at the new domain
 
-- Webhook callback URL: `https://kavithahostel.me/api/whatsapp/webhook`
+- Webhook callback URL: `https://devinefoodproducts.com/api/whatsapp/webhook`
 - Verify token: value of `WA_VERIFY_TOKEN` in `backend/.env`
 - Re-publish flows so their endpoint points here:
   ```bash
