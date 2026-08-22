@@ -44,6 +44,7 @@ export const ASSET_KEYS = {
   B2C_ICON_GIFTING: 'b2c_icon_gifting',
   B2C_ICON_TRACK: 'b2c_icon_track',
   B2C_ICON_TALK: 'b2c_icon_talk',
+  B2C_ICON_LANG: 'b2c_icon_lang',
   ORDER_CONFIRMED: 'order_confirmed',
   // 1:1 status logos for the in-flow order list + tracking messages
   ORDER_STATUS_PENDING: 'order_status_pending',

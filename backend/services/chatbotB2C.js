@@ -21,37 +21,117 @@ const GREETING = /^(hi|hello|hey|start|menu|hai|vanakkam|namaskaram)/i;
 const FRONTEND = () => (process.env.FRONTEND_BASE_URL || '').replace(/\/$/, '');
 const cleanPhone = (p) => (p || '').replace(/\D/g, '');
 
-export async function sendWelcome(phone, name = '') {
+const TEXTS = {
+  en: {
+    welcomeHeader: 'Devine Natural Foods',
+    welcomeBody:
+      'Welcome to *Devine Natural & Organic Foods!* 🌿\n\n' +
+      'We bring you a delicious range of traditional, natural and quality food products, carefully prepared to deliver authentic taste and goodness to your family. ❤️\n\n' +
+      '🛍️ Explore our products\n' +
+      '📦 Order your favourites\n' +
+      '🚚 Get them delivered to your doorstep\n\n' +
+      'Thank you for choosing Devine Food Products – Taste the Tradition, Feel the Goodness! 🌿',
+    chooseServiceCta: 'Choose Service',
+    langConfirm: '✅ Language set to English! How can we assist you today? Please tap below to explore our services.',
+    orderSummaryHeader: '🛍️ *Your Devine Cart Summary*',
+    itemsTotalLabel: 'Items Total',
+    deliveryFeeLabel: 'Delivery Charge',
+    freeDelivery: 'FREE Delivery',
+    totalAmountLabel: 'Total Amount Payable',
+    payOnlineBtn: '💳 Pay Securely Online',
+    codBtn: '💵 Cash on Delivery (COD)',
+    editCartBtn: '✏️ Edit Cart / Address',
+    orderSuccessTitle: '🎉 Order Placed Successfully!',
+    orderIdLabel: 'Order ID',
+    trackCodeLabel: 'Tracking Code',
+    payMethodLabel: 'Payment Method',
+    thankYouOrder: 'Thank you for choosing Devine Natural Foods! You will receive live WhatsApp status updates when your parcel is dispatched.'
+  },
+  ta: {
+    welcomeHeader: 'Devine ஃபூட் பிராடக்ட்ஸ்',
+    welcomeBody:
+      'வணக்கம்! 🙏 *Devine Food Products-க்கு அன்புடன் வரவேற்கிறோம்!* 🌿\n\n' +
+      'உங்கள் குடும்பத்திற்கான பாரம்பரிய சுவை, இயற்கையான நன்மை மற்றும் தரமான உணவுப் பொருட்களை அக்கறையுடன் தயாரித்து வழங்குகிறோம். ❤️\n\n' +
+      '🛍️ எங்கள் தயாரிப்புகளைப் பாருங்கள்\n' +
+      '📦 உங்களுக்கு பிடித்தவற்றை ஆர்டர் செய்யுங்கள்\n' +
+      '🚚 உங்கள் இல்லத்திற்கே டெலிவரி பெறுங்கள்\n\n' +
+      'Devine Food Products-ஐ தேர்வு செய்ததற்கு நன்றி – பாரம்பரிய சுவை, இயற்கையின் நன்மை! 🌿',
+    chooseServiceCta: 'சேவையைத் தேர்ந்தெடுக்கவும்',
+    langConfirm: '✅ மொழி தமிழ் என மாற்றப்பட்டது! எங்களை தொடர்பு கொண்டதற்கு நன்றி.',
+    orderSummaryHeader: '🛍️ *உங்கள் Devine கார்ட் சுருக்கம்*',
+    itemsTotalLabel: 'மொத்த பொருட்கள்',
+    deliveryFeeLabel: 'டெலிவரி கட்டணம்',
+    freeDelivery: 'இலவச டெலிவரி',
+    totalAmountLabel: 'செலுத்த வேண்டிய மொத்த தொகை',
+    payOnlineBtn: '💳 ஆன்லைனில் செலுத்துங்கள் (UPI/Card)',
+    codBtn: '💵 டெலிவரி நேரத்தில் பணம் (COD)',
+    editCartBtn: '✏️ கார்ட் / முகவரியை மாற்றுங்கள்',
+    orderSuccessTitle: '🎉 ஆர்டர் வெற்றிகரமாக பதிவு செய்யப்பட்டது!',
+    orderIdLabel: 'ஆர்டர் எண்',
+    trackCodeLabel: 'டிராக்கிங் குறியீடு',
+    payMethodLabel: 'பணம் செலுத்தும் முறை',
+    thankYouOrder: 'Devine Food Products-ஐ தேர்வு செய்ததற்கு நன்றி! உங்கள் ஆர்டர் அனுப்பப்பட்டதும் WhatsApp மூலம் தகவல் தெரிவிக்கப்படும்.'
+  }
+};
+
+export async function sendLanguagePrompt(phone, name = '') {
   const messageHeader = await getAsset(ASSET_KEYS.WELCOME_HEADER_B2C);
-  const body =
-    '🌿 *Namaskaram! Welcome to Devine Food Products.*\n\n' +
-    'We make natural, preservative-free food products - straight from Tamil Nadu to your home since 2015.\n\n' +
-    '*What brings you here today?*';
+  const promptText =
+    'வணக்கம்! 🙏 *Devine Food Products-க்கு அன்புடன் வரவேற்கிறோம்!* 🌿\n' +
+    'Welcome to *Devine Natural & Organic Foods!* 🌿\n\n' +
+    'We bring you a delicious range of traditional, natural and quality food products, carefully prepared to deliver authentic taste and goodness to your family. ❤️\n\n' +
+    'Please choose your preferred language to continue / தொடர்ந்து சேவையைப் பெற, உங்களுக்கு விருப்பமான மொழியைத் தேர்வு செய்யுங்கள். 👇';
+
+  const buttons = [
+    { id: 'lang_en', text: '🇬🇧 English' },
+    { id: 'lang_ta', text: '🇮🇳 தமிழ்' }
+  ];
+
+  await setStep(phone, CH, 'awaiting_language', { name });
+  if (messageHeader) {
+    return wa().sendImageWithButtons(phone, messageHeader, promptText, buttons);
+  }
+  return wa().sendButtons(phone, promptText, buttons);
+}
+
+export async function sendWelcome(phone, name = '', langOverride = '') {
+  const convo = await getConversation(phone, CH);
+  const lang = langOverride || convo?.context?.lang;
+  if (!lang) {
+    return sendLanguagePrompt(phone, name);
+  }
+  const texts = TEXTS[lang] || TEXTS.en;
+  const messageHeader = await getAsset(ASSET_KEYS.WELCOME_HEADER_B2C);
+  const body = texts.welcomeBody;
   const fId = flowId('b2c_service');
   await setStep(phone, CH, 'awaiting_service', { name });
 
   if (fId) {
-    // Open with data_exchange (no payload) so Meta calls the endpoint's INIT,
-    // which supplies the SERVICE_MENU data: base64 banner + services list.
-    // (Opening with navigate + no data was leaving the screen empty/broken.)
     return wa().sendFlowMessage(phone, {
       flowId: fId,
-      flowCta: 'Choose Service',
+      flowCta: texts.chooseServiceCta,
       headerImageUrl: messageHeader || undefined,
-      headerText: messageHeader ? undefined : 'Devine Natural Foods',
+      headerText: messageHeader ? undefined : texts.welcomeHeader,
       bodyText: body,
       flowToken: `b2c_service_${cleanPhone(phone)}`,
       flowAction: 'data_exchange'
     });
   }
-  return wa().sendList(phone, 'Welcome', body, 'Choose Service', [
+  return wa().sendList(phone, texts.welcomeHeader, body, texts.chooseServiceCta, [
     {
-      title: 'Services',
-      rows: [
-        { id: 'browse', title: 'Browse our products' },
-        { id: 'gifting', title: 'Corporate / Bulk gifting' },
-        { id: 'track', title: 'Track Order' },
-        { id: 'talk', title: 'Talk to us' }
+      title: lang === 'ta' ? 'சேவைகள்' : 'Services',
+      rows: lang === 'ta' ? [
+        { id: 'browse', title: '🛍️ தயாரிப்பு பொருட்கள்' },
+        { id: 'track', title: '📦 ஆர்டரை கண்காணிக்க' },
+        { id: 'gifting', title: '🎁 பரிசுகள்' },
+        { id: 'talk', title: '💬 வாடிக்கையாளர் சேவை' },
+        { id: 'lang_switch', title: '🌐 மொழி மாற்றம்' }
+      ] : [
+        { id: 'browse', title: '🛍️ Browse Products' },
+        { id: 'track', title: '📦 Track Order' },
+        { id: 'gifting', title: '🎁 Gifting' },
+        { id: 'talk', title: '💬 Customer Support' },
+        { id: 'lang_switch', title: '🌐 Change Language' }
       ]
     }
   ]);
@@ -61,6 +141,9 @@ export async function handle(msg) {
   const { phone, text, type, selectedId, flowResponse, location, name, order } = msg;
 
   if (type === 'text' && GREETING.test((text || '').trim())) {
+    const convo = await getConversation(phone, CH);
+    const lang = convo?.context?.lang;
+    if (!lang) return sendLanguagePrompt(phone, name);
     return sendWelcome(phone, name);
   }
 
@@ -76,6 +159,7 @@ export async function handle(msg) {
     return finishOrder(phone, convo, location);
   }
 
+  if (!convo?.context?.lang) return sendLanguagePrompt(phone, name);
   return sendWelcome(phone, name);
 }
 
@@ -83,6 +167,9 @@ async function handleFlowResponse(phone, resp, name) {
   const token = resp.flow_token || '';
 
   if (token.startsWith('b2c_service_')) {
+    if (resp.selected_service === 'lang_switch' || resp.selected_service === 'change_language') {
+      return sendLanguagePrompt(phone, name);
+    }
     // Corporate / bulk gifting details captured within the same flow.
     if (resp.service === 'gifting' || resp.hampers) return finishGifting(phone, resp, name);
     // Category chosen inside the flow -> send the catalog message for it.
@@ -170,8 +257,22 @@ async function finishGifting(phone, resp, name) {
 }
 
 async function handleSelection(phone, selectedId, name) {
+  if (selectedId === 'lang_en') {
+    await patchContext(phone, CH, { lang: 'en' });
+    await wa().sendText(phone, TEXTS.en.langConfirm);
+    return sendWelcome(phone, name, 'en');
+  }
+  if (selectedId === 'lang_ta') {
+    await patchContext(phone, CH, { lang: 'ta' });
+    await wa().sendText(phone, TEXTS.ta.langConfirm);
+    return sendWelcome(phone, name, 'ta');
+  }
+  if (selectedId === 'lang_switch' || selectedId === 'change_language') {
+    return sendLanguagePrompt(phone, name);
+  }
+
   // Service list fallback
-  if (['browse', 'gifting', 'track', 'talk'].includes(selectedId)) {
+  if (['browse', 'gifting', 'track', 'talk', 'lang_switch'].includes(selectedId)) {
     return routeService(phone, selectedId, name);
   }
   // Category chosen: cat_<slug>
@@ -248,6 +349,9 @@ async function routeService(phone, service, name) {
       return showCategories(phone);
     case 'gifting':
       return startGifting(phone, name);
+    case 'lang_switch':
+    case 'change_language':
+      return sendLanguagePrompt(phone, name);
     case 'track':
       return wa().sendCtaUrl(
         phone,
@@ -302,19 +406,33 @@ async function showCategories(phone) {
   const cleanPhone = (p) => (p || '').replace(/\D/g, '');
   const fId = flowId('b2c_service');
 
+  const convo = await getConversation(phone, CH);
+  const lang = convo?.context?.lang || 'en';
+  const btnText = lang === 'ta' ? 'பொருட்களைப் பார்க்க' : 'View Products';
+
   // Show each category as an image card with a "View Products" button.
   const withImages = cats.filter((c) => c.imageUrl);
   if (withImages.length) {
     for (const c of withImages.slice(0, 10)) {
+      const displayName = (lang === 'ta' && c.nameTa) ? c.nameTa : c.name;
       await wa()
-        .sendImageWithButtons(phone, c.imageUrl, `*${c.name}*`, [{ id: `cat_${c.slug}`, text: 'View Products' }])
+        .sendImageWithButtons(phone, c.imageUrl, `*${displayName}*`, [{ id: `cat_${c.slug}`, text: btnText }])
         .catch(() => {});
     }
     const noImage = cats.filter((c) => !c.imageUrl);
     if (noImage.length) {
-      await wa().sendList(phone, 'More Categories', 'Select a category:', 'Categories', [
-        { title: 'Categories', rows: noImage.map((c) => ({ id: `cat_${c.slug}`, title: c.name })) }
-      ]);
+      await wa().sendList(
+        phone,
+        lang === 'ta' ? 'மேலும் பிரிவுகள்' : 'More Categories',
+        lang === 'ta' ? 'பிரிவைத் தேர்ந்தெடுக்கவும்:' : 'Select a category:',
+        lang === 'ta' ? 'பிரிவுகள்' : 'Categories',
+        [
+          {
+            title: lang === 'ta' ? 'பிரிவுகள்' : 'Categories',
+            rows: noImage.map((c) => ({ id: `cat_${c.slug}`, title: (lang === 'ta' && c.nameTa) ? c.nameTa : c.name }))
+          }
+        ]
+      );
     }
     return true;
   }
@@ -354,16 +472,21 @@ async function showCategoryProducts(phone, slug) {
   }
 
   // Fallback: send each product as an image card with an Add button.
+  const convo = await getConversation(phone, CH);
+  const lang = convo?.context?.lang || 'en';
+
   for (const p of products.slice(0, 8)) {
+    const pName = (lang === 'ta' && p.nameTa) ? p.nameTa : p.name;
+    const pDesc = (lang === 'ta' && p.descriptionTa) ? p.descriptionTa : (p.shortDesc || p.description || '');
     const body =
-      `*${p.name}*\n` +
-      `${p.shortDesc || p.description || ''}\n\n` +
+      `*${pName}*\n` +
+      `${pDesc}\n\n` +
       `⭐ ${p.rating || 4.5} (${p.reviewCount || 0})\n` +
       `*Rs.${p.price}*${p.mrp && p.mrp > p.price ? `  ~Rs.${p.mrp}~` : ''}`;
     const hasMedia = (p.gallery && p.gallery.length) || p.videoUrl || (p.variants || []).some((v) => v.imageUrl || (v.images && v.images.length));
     const buttons = [
-      { id: `add_${p.retailerId}`, text: 'Add to cart' },
-      { id: 'view_summary', text: 'View cart' }
+      { id: `add_${p.retailerId}`, text: lang === 'ta' ? 'கார்ட்டில் சேர்' : 'Add to cart' },
+      { id: 'view_summary', text: lang === 'ta' ? 'கார்ட்டைப் பார்க்க' : 'View cart' }
     ];
     if (hasMedia) buttons.push({ id: `photos_${p.retailerId}`, text: '📷 Photos' });
     await wa().sendImageWithButtons(phone, p.imageUrl, body, buttons).catch(() => {});

@@ -63,8 +63,11 @@ router.post('/', async (req, res) => {
         return sendEncrypted(res, { screen: 'BUSINESS_NAME', data: {} }, aesKeyBuffer, initialVectorBuffer);
       }
       // B2C service menu (default for b2c_service_... or any welcome flow token)
+      const phone = token.replace(/^b2c_service_/, '');
+      const convo = phone ? await (await import('../services/conversationState.js')).getConversation(phone, 'b2c') : null;
+      const lang = convo?.context?.lang || 'en';
       const { b64: welcomeBannerB64, hasBanner } = await getWelcomeBannerB64();
-      const services = await serviceOptions();
+      const services = await serviceOptions(lang);
       return sendEncrypted(
         res,
         {
@@ -72,8 +75,8 @@ router.post('/', async (req, res) => {
           data: {
             welcome_banner: welcomeBannerB64,
             has_welcome_banner: hasBanner,
-            heading: 'Welcome to Devine Natural Foods 🌿',
-            subheading: 'Select a service below to explore',
+            heading: lang === 'ta' ? 'Devine Food Products-க்கு வரவேற்கிறோம் 🌿' : 'Welcome to Devine Natural Foods 🌿',
+            subheading: lang === 'ta' ? 'சேவையைத் தேர்ந்தெடுக்க கீழே தேர்வு செய்யுங்கள்' : 'Select a service below to explore',
             services
           }
         },
@@ -157,38 +160,76 @@ async function b2bServiceOptions(phone) {
 }
 
 // Build 1:1 ratio icon options for B2C service menu (raw base64 format required for Meta Flow)
-async function serviceOptions() {
+async function serviceOptions(lang = 'en') {
   const assets = await getAssets([
     ASSET_KEYS.B2C_ICON_BROWSE,
     ASSET_KEYS.B2C_ICON_GIFTING,
     ASSET_KEYS.B2C_ICON_TRACK,
-    ASSET_KEYS.B2C_ICON_TALK
+    ASSET_KEYS.B2C_ICON_TALK,
+    ASSET_KEYS.B2C_ICON_LANG
   ]);
 
-  const items = [
+  const items = lang === 'ta' ? [
     {
       id: 'browse',
-      title: 'Browse our products',
-      description: 'Explore natural food items, honey, ghee & spices',
+      title: '🛍️ தயாரிப்பு பொருட்களை ஆர்டர் செய்ய',
+      description: 'எங்கள் Devine தயாரிப்புகளைப் பார்த்து, உங்களுக்கு பிடித்தவற்றை ஆர்டர் செய்யுங்கள்.',
       rawUrl: assets[ASSET_KEYS.B2C_ICON_BROWSE] || ''
     },
     {
-      id: 'gifting',
-      title: 'Corporate / Bulk gifting',
-      description: 'Custom hampers starting from Rs.299 (MOQ: 50)',
-      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || ''
-    },
-    {
       id: 'track',
-      title: 'Track Order',
-      description: 'Live delivery status & map tracking',
+      title: '📦 எனது ஆர்டரை கண்காணிக்க',
+      description: 'உங்கள் Devine ஆர்டரின் தற்போதைய நிலையைப் பார்த்து, தகவல்களை தெரிந்துகொள்ளுங்கள்.',
       rawUrl: assets[ASSET_KEYS.B2C_ICON_TRACK] || ''
     },
     {
+      id: 'gifting',
+      title: '🎁 கார்ப்பரேட் & பண்டிகை பரிசுகள்',
+      description: 'பண்டிகை, திருமணம் மற்றும் கார்ப்பரேட் நிகழ்வுகளுக்கான பரிசுத் தொகுப்புகள்.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || ''
+    },
+    {
       id: 'talk',
-      title: 'Talk to us',
-      description: 'Chat or call with customer support',
+      title: '💬 வாடிக்கையாளர் சேவையைத் தொடர்புகொள்ள',
+      description: 'உதவி தேவையா? எங்கள் WhatsApp சேவை குழுவைத் தொடர்புகொள்ளுங்கள்.',
       rawUrl: assets[ASSET_KEYS.B2C_ICON_TALK] || ''
+    },
+    {
+      id: 'lang_switch',
+      title: '🌐 மொழி மாற்றம் / Change Language',
+      description: 'எப்போது வேண்டுமானாலும் தமிழ் மற்றும் ஆங்கில மொழிகளுக்கு இடையே மாற்றிக்கொள்ளலாம்.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_LANG] || ''
+    }
+  ] : [
+    {
+      id: 'browse',
+      title: '🛍️ Browse & Buy Products',
+      description: 'Explore our products and order your favourites.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_BROWSE] || ''
+    },
+    {
+      id: 'track',
+      title: '📦 Track My Order',
+      description: 'Check the latest status of your Devine order and stay updated on your delivery.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TRACK] || ''
+    },
+    {
+      id: 'gifting',
+      title: '🎁 Corporate & Festive Gifting',
+      description: 'Gift hampers for festivals, weddings & corporate events.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_GIFTING] || ''
+    },
+    {
+      id: 'talk',
+      title: '💬 Talk to Customer Support',
+      description: 'Need help? Chat with our support team on WhatsApp.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_TALK] || ''
+    },
+    {
+      id: 'lang_switch',
+      title: '🌐 Change Language / மொழி மாற்றம்',
+      description: 'Switch between English and Tamil anytime for a more convenient shopping experience.',
+      rawUrl: assets[ASSET_KEYS.B2C_ICON_LANG] || ''
     }
   ];
 
